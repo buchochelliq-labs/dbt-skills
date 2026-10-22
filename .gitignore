@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.py[cod]
+.uol-cache/
+*.uol.sqlite3
+*.uol.sqlite3-shm
+*.uol.sqlite3-wal
