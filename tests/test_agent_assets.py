@@ -50,7 +50,8 @@ class AgentAssetTests(unittest.TestCase):
         self.assertIn(".github/skills/", guide)
         self.assertIn(".github/agents/", guide)
         self.assertIn("local stdio MCP bridge for the UOL", guide)
-        self.assertIn("not encrypted at rest", guide)
+        self.assertIn("encrypted local cache", guide)
+        self.assertIn("compromised account or authorized process", guide)
         self.assertIn("Do not commit credentials", guide)
 
 

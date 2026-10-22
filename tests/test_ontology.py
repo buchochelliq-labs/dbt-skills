@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.cache_test_support import MemoryKeyStore
 from dbt_skills.ontology import (
     LocalOntologyStore,
     OntologyClaim,
@@ -75,7 +76,7 @@ class LocalOntologyStoreTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
         self.database = Path(self.temp_dir.name) / "uol.sqlite3"
-        self.store = LocalOntologyStore(self.database)
+        self.store = LocalOntologyStore(self.database, key_store=MemoryKeyStore())
 
     def register(self, *, enabled=True, scope=None):
         self.store.register_source(

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from mcp import Client, MCPError, StdioServerParameters
 
+from tests.cache_test_support import FileKeyStore
 from dbt_skills.ontology import LocalOntologyStore, OntologyClaim
 from dbt_skills.ontology_sources import DBT_MANIFEST_PROVIDER, manifest_source_id
 from dbt_skills.project import discover_project
@@ -57,20 +58,32 @@ class UOLMCPTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.database = self.root / "uol.sqlite3"
+        self.key_file = self.root / "test-key.json"
 
     async def _client(self):
         env = os.environ.copy()
         src = str(ROOT / "src")
         env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
+        bootstrap = (
+            "import asyncio, sys; "
+            "from pathlib import Path; "
+            "from tests.cache_test_support import FileKeyStore; "
+            "from dbt_skills.ontology import LocalOntologyStore; "
+            "from dbt_skills.ontology_sources import configured_provider; "
+            "from dbt_skills.uol_mcp import create_server; "
+            "from dbt_skills.project import discover_project; "
+            "store = LocalOntologyStore(sys.argv[1], key_store=FileKeyStore(sys.argv[3])); "
+            "server = create_server(store, selected_project=discover_project(sys.argv[2])); "
+            "asyncio.run(server.run_stdio_async())"
+        )
         parameters = StdioServerParameters(
             command=sys.executable,
             args=[
-                "-m",
-                "dbt_skills.uol_mcp",
-                "--db",
+                "-c",
+                bootstrap,
                 str(self.database),
-                "--project-dir",
                 str(self.project_dir),
+                str(self.key_file),
             ],
             cwd=ROOT,
             env=env,
@@ -81,7 +94,10 @@ class UOLMCPTests(unittest.TestCase):
     def test_stdio_tools_ingest_manifest_preserve_provenance_and_enforce_bounds(self):
         project = discover_project(self.project_dir)
         source_id = manifest_source_id(project)
-        store = LocalOntologyStore(self.database)
+        store = LocalOntologyStore(
+            self.database,
+            key_store=FileKeyStore(self.key_file),
+        )
         store.register_source(
             source_id,
             DBT_MANIFEST_PROVIDER,
@@ -186,7 +202,7 @@ class UOLMCPTests(unittest.TestCase):
                     "local_overlay",
                 )
                 status = await client.call_tool("uol_status", {})
-                self.assertFalse(status.structured_content["cache_protection"]["encrypted_at_rest"])
+                self.assertTrue(status.structured_content["cache_protection"]["encrypted_at_rest"])
 
                 purged = await client.call_tool(
                     "uol_purge_source",
@@ -200,7 +216,10 @@ class UOLMCPTests(unittest.TestCase):
     def test_disabled_source_is_not_synced(self):
         project = discover_project(self.project_dir)
         source_id = manifest_source_id(project)
-        store = LocalOntologyStore(self.database)
+        store = LocalOntologyStore(
+            self.database,
+            key_store=FileKeyStore(self.key_file),
+        )
         store.register_source(
             source_id,
             DBT_MANIFEST_PROVIDER,
@@ -235,7 +254,10 @@ class UOLMCPTests(unittest.TestCase):
     def test_manifest_source_must_match_selected_project(self):
         project = discover_project(self.project_dir)
         source_id = manifest_source_id(project)
-        store = LocalOntologyStore(self.database)
+        store = LocalOntologyStore(
+            self.database,
+            key_store=FileKeyStore(self.key_file),
+        )
         store.register_source(
             source_id,
             DBT_MANIFEST_PROVIDER,
@@ -255,15 +277,25 @@ class UOLMCPTests(unittest.TestCase):
         async def exercise():
             env = os.environ.copy()
             env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
+            bootstrap = (
+                "import asyncio, sys; "
+                "from pathlib import Path; "
+                "from tests.cache_test_support import FileKeyStore; "
+                "from dbt_skills.ontology import LocalOntologyStore; "
+                "from dbt_skills.uol_mcp import create_server; "
+                "from dbt_skills.project import discover_project; "
+                "store = LocalOntologyStore(sys.argv[1], key_store=FileKeyStore(sys.argv[3])); "
+                "server = create_server(store, selected_project=discover_project(sys.argv[2])); "
+                "asyncio.run(server.run_stdio_async())"
+            )
             parameters = StdioServerParameters(
                 command=sys.executable,
                 args=[
-                    "-m",
-                    "dbt_skills.uol_mcp",
-                    "--db",
+                    "-c",
+                    bootstrap,
                     str(self.database),
-                    "--project-dir",
                     str(other_project),
+                    str(self.key_file),
                 ],
                 cwd=ROOT,
                 env=env,

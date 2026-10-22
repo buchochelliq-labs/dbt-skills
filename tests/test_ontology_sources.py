@@ -7,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
+from tests.cache_test_support import MemoryKeyStore
 from dbt_skills.ods_mcp import ODSAnalysis, ODSMCPConfig, ODSUnavailable
 from dbt_skills.ontology import LocalOntologyStore, ProviderContractError
 from dbt_skills.ontology_cli import main as ontology_main
@@ -24,6 +25,7 @@ class OntologySourceTests(unittest.TestCase):
         self.addCleanup(self.temp_dir.cleanup)
         self.root = Path(self.temp_dir.name) / "analytics"
         self.root.mkdir()
+        self.key_store = MemoryKeyStore()
         (self.root / "dbt_project.yml").write_text(
             "name: analytics_demo\nversion: '1.0'\n",
             encoding="utf-8",
@@ -138,7 +140,16 @@ class OntologySourceTests(unittest.TestCase):
 
     def test_cli_registers_manifest_and_ods_sources_disabled_with_scopes(self):
         database = Path(self.temp_dir.name) / "cli.sqlite3"
-        with redirect_stdout(StringIO()):
+        with (
+            patch(
+                "dbt_skills.ontology_cli.LocalOntologyStore",
+                side_effect=lambda path: LocalOntologyStore(
+                    path,
+                    key_store=self.key_store,
+                ),
+            ),
+            redirect_stdout(StringIO()),
+        ):
             self.assertEqual(
                 ontology_main(
                     [
@@ -173,7 +184,7 @@ class OntologySourceTests(unittest.TestCase):
                 ),
                 0,
             )
-        store = LocalOntologyStore(database)
+        store = LocalOntologyStore(database, key_store=self.key_store)
         sources = {item["provider_name"]: item for item in store.sources()}
         self.assertFalse(sources["dbt_manifest"]["enabled"])
         self.assertEqual(sources["dbt_manifest"]["scope"]["include_entity_types"], ["model"])

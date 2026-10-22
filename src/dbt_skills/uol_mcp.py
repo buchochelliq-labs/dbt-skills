@@ -95,8 +95,14 @@ def create_server(
             "cache_reads_enabled": store.cache_reads_enabled(),
             "sources": store.sources(),
             "cache_protection": {
-                "encrypted_at_rest": False,
-                "warning": "Do not use this prototype cache for sensitive production data.",
+                "encrypted_at_rest": True,
+                "cipher": "SQLCipher",
+                "key_storage": "native OS credential store",
+                "filesystem_access_control": "validated",
+                "warning": (
+                    "The cache is readable by authorized processes running as the "
+                    "current user while the OS credential store is available."
+                ),
             },
         }
 
