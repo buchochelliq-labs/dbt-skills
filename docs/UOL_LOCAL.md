@@ -1,6 +1,6 @@
 # Local Unified Ontology Layer
 
-The local UOL core provides an indexed SQLite graph, opt-in provider sync, claim-level provenance, source scopes, and a separate user-authored overlay. It has one development adapter today: a local JSON snapshot. No Ontos, OntoBricks, Unity Catalog, Genie, or remote MCP adapter is included; this core does not imply that any of those systems can currently be synchronized.
+The local UOL core provides an indexed SQLite graph, opt-in source sync, claim-level provenance, source scopes, and a separate user-authored overlay. Development sources include local JSON snapshots, a project-matched dbt manifest, and optional ODS MCP column-lineage analysis. The local stdio MCP bridge lets a compatible agent query this cache and invoke separately exposed sync/cache controls. No Ontos, OntoBricks, Unity Catalog, or Genie adapter is included; this prototype does not imply that those systems can currently be synchronized.
 
 ## Run the CLI
 
@@ -25,6 +25,38 @@ python -m dbt_skills.ontology_cli neighbors "finance:net_bookings"
 ```
 
 The snapshot is synchronized only when the user runs `sync`. Use `--full-refresh` to replace the synchronized generation; `--restart` discards any incomplete staged sync and starts a fresh full refresh. A changed JSON file invalidates an in-progress cursor rather than mixing claims from different snapshot versions. A failed sync leaves the last published generation available with stale/partial status.
+
+## dbt manifest and ODS sources
+
+Registering a dbt manifest checks that its project name matches the selected local dbt project. The source starts disabled; enable and refresh it explicitly:
+
+```powershell
+python -m dbt_skills.ontology_cli source add-manifest dbt_project .
+python -m dbt_skills.ontology_cli source enable dbt_project
+python -m dbt_skills.ontology_cli sync dbt_project --full-refresh
+```
+
+The manifest contributes dbt resources and **resource-level** `depends_on` edges, not column lineage. The optional ODS adapter asks the configured ODS MCP server for static SQL column-lineage/impact evidence and preserves its coverage, diagnostics, version, and opaque-model details. Register it with the ODS MCP launch command and the exact project/target and focus/change inputs required by that analysis:
+
+```powershell
+python -m dbt_skills.ontology_cli source add-ods ods_lineage <ods-mcp-command> . .\target --focus orders --change orders.order_id=changed
+python -m dbt_skills.ontology_cli source enable ods_lineage
+python -m dbt_skills.ontology_cli sync ods_lineage --full-refresh
+```
+
+Replace the example focus/change with the requested analysis. Both source types are snapshot providers and require full refresh; no incremental sync is implied. Missing ODS, opaque SQL, or unavailable output is reported as unavailable/partial coverage, never as zero impact. Neither source is enabled or synchronized automatically.
+
+## Local stdio MCP bridge
+
+Install the pinned runtime dependencies with `python -m pip install -r requirements.txt`, then configure Copilot CLI from the repository root:
+
+```powershell
+copilot mcp add dbt-skills-uol --env PYTHONPATH=src -- python -m dbt_skills.uol_mcp --project-dir .
+```
+
+The server uses the same default user-profile database as the UOL CLI; `--db <path>` can select another database. The selected project directory is used to validate manifest/ODS identity. Restart or reload the MCP server after changing source registrations. Copilot CLI installation and live discovery have not yet been smoke-tested in this environment.
+
+The bridge exposes three bounded, local-only read tools: `uol_status`, `uol_search`, and `uol_neighbors`. State-changing tools are separate: `uol_sync_source` (incremental providers only), `uol_full_refresh_source`, `uol_set_source_enabled`, `uol_set_cache_reads_enabled`, `uol_purge_source`, and `uol_purge_all_sources`. Configure sources and scopes through the CLI; MCP does not provide source registration or overlay editing. Read results include local sync status and scope with provider provenance. MCP annotations and tool descriptions are advisory, not authorization: configure the host to require user approval for sync, cache changes, and purge, and do not auto-approve state-changing tools.
 
 ## Scope and cache controls
 

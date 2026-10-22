@@ -17,8 +17,9 @@
 | Genie One MCP | Optional natural-language analytics delegated to the service under caller permissions | A replacement for importing Genie Space configuration or a guaranteed available tool |
 | Ontology backend MCP | Concepts, definitions, synonyms, relationships, and asset links from the specific configured ontology provider (for example, Ontos or OntoBricks) | Genie Ontology, other providers' definitions, or permission to read a linked asset in another backend |
 | UOL local cache | User-selected ontology records synchronized to a local indexed snapshot for fast local-agent queries | That the snapshot is current, complete, still authorized, or equivalent to unselected/excluded source records |
+| UOL local stdio MCP bridge | Bounded local reads and separately exposed source sync/cache controls for a compatible agent host | That tool annotations enforce approval, that the host has discovered/approved the tools, or that the cache is encrypted |
 | UOL local overlay | User-authored facts, relationships, and typed cross-source links stored locally and separately from provider claims | That user assertions are provider-verified, conflict-free, or written back to any remote source |
-| Unified Ontology Layer (UOL) | One agent-facing interface that reads the local snapshot and manages synchronization from configured ontology backends while preserving provider provenance and access boundaries | That similarly named concepts are equivalent, that conflicts have a single answer, or that Genie’s inferred ontology is accessible |
+| Unified Ontology Layer (UOL) | One agent-facing interface over the local snapshot, currently available through a local stdio MCP bridge, with explicit synchronization controls and provider provenance | That similarly named concepts are equivalent, that conflicts have a single answer, or that Genie’s inferred ontology is accessible |
 
 ## Evidence envelope
 

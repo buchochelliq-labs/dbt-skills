@@ -63,7 +63,7 @@ The secret is never accepted as a command-line value or written to the project c
 - Provider errors are surfaced without echoing response bodies or credentials.
 - Retrieved project metadata is marked untrusted in the system prompt. This prompt instruction is a defense-in-depth hint, not a security boundary or substitute for reviewing provider data handling.
 - There is no tool use, interactive conversation memory, streaming, automatic file editing, approvals, or warehouse access. Tool execution must wait for policy/approval controls (issue #11).
-- The UOL is not yet queried by this runtime. Connecting local ontology, manifest graph, and optional ODS column-lineage claims is follow-up integration work (issue #31); resource lineage and column lineage must retain distinct evidence types.
+- The text-only `dbt-skills ask` runtime does not query the UOL. A separate local stdio MCP bridge exposes the UOL cache to compatible agent hosts, including manifest resource lineage and optional ODS column-lineage claims; keep these evidence types distinct. See [the UOL guide](UOL_LOCAL.md) for setup and boundaries.
 
 ## Validation evidence
 
