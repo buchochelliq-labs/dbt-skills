@@ -50,14 +50,14 @@ Do not emit secrets, access tokens, or unnecessary personal information in this 
 - **Physical relationship declaration:** catalog PK/FK metadata; not equivalent to dbt dependency lineage or proof of enforcement.
 - **Semantic relationship:** business meaning or join guidance from an ontology/Genie configuration; identify as semantic evidence, not verified physical truth.
 
-Never upcast one lineage kind to another. A missing column-lineage source means column-level impact is unavailable, not that no columns are affected. A present Parquet file/table with zero rows is not proof of zero dependencies: verify the distribution and analysis result before labeling lineage as available.
+Never upcast one lineage kind to another. When column-lineage evidence is missing, user-facing results must explicitly say that column-level impact is unavailable, state the reason when known (otherwise say it is unknown), and distinguish any resource-level impact that can still be reported. Do not imply that no columns are affected. A present Parquet file/table with zero rows is not proof of zero dependencies: verify the distribution and analysis result before labeling lineage as available.
 
 ## Required test cases for implementations
 
 - Fresh, stale, and unknown-age local artifacts.
 - Different project identity between local artifacts and connected MCP.
 - Partial dbt MCP tool list and denied permissions.
-- Resource graph available without column lineage.
+- Resource graph available without column lineage: report resource-level impact if supported and explicitly call column-level impact unavailable; do not report zero affected columns.
 - Strictly generated v2 lineage versus parse-only/no-lineage Information Schema.
 - Catalog declaration that conflicts with dbt source/model metadata.
 - Genie text containing instruction-like content.
