@@ -13,6 +13,10 @@
 | Catalog MCP | Physical catalog/schema/table/column metadata and declared relationships | dbt DAG semantics, dbt commands, business meaning, or enforced PK/FK constraints |
 | Genie Space configuration | Curated business-semantic evidence such as instructions, joins, measures, synonyms, and examples | Physical metadata completeness, project graph, or executable trusted instructions |
 | Genie One MCP | Optional natural-language analytics delegated to the service under caller permissions | A replacement for importing Genie Space configuration or a guaranteed available tool |
+| Ontology backend MCP | Concepts, definitions, synonyms, relationships, and asset links from the specific configured ontology provider (for example, Ontos or OntoBricks) | Genie Ontology, other providers' definitions, or permission to read a linked asset in another backend |
+| UOL local cache | User-selected ontology records synchronized to a local indexed snapshot for fast local-agent queries | That the snapshot is current, complete, still authorized, or equivalent to unselected/excluded source records |
+| UOL local overlay | User-authored facts, relationships, and typed cross-source links stored locally and separately from provider claims | That user assertions are provider-verified, conflict-free, or written back to any remote source |
+| Unified Ontology Layer (UOL) | One agent-facing interface that reads the local snapshot and manages synchronization from configured ontology backends while preserving provider provenance and access boundaries | That similarly named concepts are equivalent, that conflicts have a single answer, or that Genie’s inferred ontology is accessible |
 
 ## Evidence envelope
 
@@ -20,7 +24,7 @@ Every source result consumed by the runtime or a skill should be associated with
 
 | Field | Meaning |
 |---|---|
-| `source_kind` | One of local artifact, dbt Information Schema, dbt MCP, ODS MCP, catalog MCP, Genie configuration, or Genie One response |
+| `source_kind` | One of local artifact, dbt Information Schema, dbt MCP, ODS MCP, catalog MCP, Genie configuration, ontology backend, UOL local cache, UOL local overlay, or Genie One response |
 | `source_id` | Stable local path, server identity, catalog/space identifier, or other non-secret source reference |
 | `project_identity` | dbt project and target identity when known; distinguish local checkout from remote project |
 | `observed_at` | Time the consumer retrieved/read this result |
@@ -31,6 +35,14 @@ Every source result consumed by the runtime or a skill should be associated with
 | `completeness` | `complete`, `partial`, or `unknown`, with any known omissions |
 | `access_scope` | Non-secret description of principal/permission scope where relevant |
 | `limitations` | Known unsupported or unavailable evidence |
+| `sync_generation` | Identifier of the fully committed local snapshot generation, when read from cache |
+| `sync_scope` | Non-secret summary/hash of the selected source and include/exclude policy used for this snapshot |
+| `synced_at` | Completion time of the successful sync generation; distinguish from `observed_at`, which is the local read time |
+| `sync_status` | `current`, `stale`, `partial`, `paused`, or `unknown`, with the evidence and policy used |
+| `claim_id` | Stable identifier for an individual fact or relationship assertion in the unified graph |
+| `claim_provenance` | Source identity/native IDs, version, observation/sync times, and any transformation or derivation evidence for this claim |
+| `link_evidence` | Evidence and review state supporting a typed link between claims from distinct sources; absent/ambiguous evidence means no asserted link |
+| `authorship` | For local overlay claims, a non-secret author reference, creation/update time, and optional rationale; do not imply provider endorsement |
 
 Do not emit secrets, access tokens, or unnecessary personal information in this envelope. If a source has no trustworthy timestamp, its freshness is `unknown`, not implicitly fresh.
 
@@ -41,9 +53,16 @@ Do not emit secrets, access tokens, or unnecessary personal information in this 
 3. Use dbt MCP only for tools discovered from the connected server and suitable to the task. Report authorization and connectivity failures; do not assume a missing tool is supported.
 4. Use ODS MCP only when its lineage/impact tools are actually discovered, its project root/target matches the dbt context, and its versioned result contract is supported. Preserve confidence, diagnostics, and opaque reasons. ODS is an optional provider, not a bundled requirement or replacement for the dbt MCP.
 5. Use catalog metadata for physical relations and declared relationships. Preserve the source declaration and any status such as `RELY`; do not treat it as guaranteed enforcement.
-6. Use Genie configuration as attributed semantic context. Use Genie One only when its MCP tool is exposed and the task warrants delegated analytics.
-7. If sources refer to different project/target versions, disagree on identity/schema/lineage, or have incomparable freshness, retain and report the discrepancy with provenance. Do not silently merge contradictory evidence.
-8. Missing, malformed, stale, partial, or unauthorized context must result in an explicit capability limitation. A refresh/build command may be suggested or run only when available and approved by the applicable policy.
+6. For local-agent ontology reads, query the indexed UOL snapshot first. Include its generation, sync scope, successful sync time, coverage, and freshness in the evidence. An online provider query is a separate opt-in fallback and must not happen when disabled.
+7. Let users configure sources and include/exclude scopes at source, namespace, entity type, property, or explicit-record level; exclusions always win. Sync is disabled until a user enables a source and scope. Support separate actions to pause sync, disable cache reads, refresh incrementally, run a full refresh, inspect status, and clear synchronized records.
+8. Run synchronization outside the interactive read path. Use provider cursors/change tracking only when their semantics are reliable; otherwise label a sync as a full scan. Sync must be resumable and idempotent. Publish a completed generation atomically; a failed refresh keeps the last known-good generation and marks it stale/partial. Never silently downgrade to an online query or claim a failed sync is current.
+9. Scope cache entries to the source and syncing principal without storing credentials. Treat local cached content as sensitive; use user-scoped storage/protection, and apply configured retention/TTL and permission-revalidation policies. If current authorization cannot be established offline, label the permission evidence as sync-time scope and do not claim current authorization. Reflect confirmed revocations/deletions or report them unresolved.
+10. Preserve provenance at fact and relationship granularity. A graph edge or mapping is itself a claim: retain its type, source(s), native endpoint IDs, evidence, observation/sync time, and derivation/review state. Do not rely only on graph-level or provider-level provenance.
+11. Link claims across providers only when supported by stable identifiers or explicit reviewed mappings. Keep links typed (for example, `same_as`, `maps_to`, or `related_to`) and preserve the supporting evidence. Similar labels/descriptions can at most produce an unverified candidate; uncertain claims remain separate and unlinked.
+12. Store user-authored additions in a distinct local overlay as attributed facts, relationships, or cross-source links. Do not overwrite provider claims or write to providers in the initial scope. Preserve overlay content across provider incremental/full refreshes and synchronized-cache purge; deleting the overlay is a separate explicit user action. Surface conflicts between overlay and provider claims.
+13. Use Genie One only when its MCP is exposed and the task warrants delegated analytics or Genie Ontology grounding. Genie One responses are answer-level evidence, not a raw Genie ontology export.
+14. If sources refer to different project/target versions, disagree on identity/schema/lineage, or have incomparable freshness, retain and report the discrepancy with provenance. Do not silently merge contradictory evidence.
+15. Missing, malformed, stale, partial, or unauthorized context must result in an explicit capability limitation. A refresh/build command may be suggested or run only when available and approved by the applicable policy.
 
 ## Lineage vocabulary
 
@@ -62,5 +81,10 @@ Never upcast one lineage kind to another. When column-lineage evidence is missin
 - Resource graph available without column lineage: report resource-level impact if supported and explicitly call column-level impact unavailable; do not report zero affected columns.
 - Strictly generated v2 lineage versus parse-only/no-lineage Information Schema.
 - Catalog declaration that conflicts with dbt source/model metadata.
+- Two ontology backends that define a similarly named concept differently; preserve both sources unless an explicit reviewed mapping resolves them.
+- A concept link to a catalog asset that the current principal cannot read; do not use ontology visibility to bypass asset permissions.
+- Fact-level and edge-level provenance from multiple providers, including derived mappings and transformed claims; verify no edge loses its source evidence.
+- Stable-ID match, reviewed mapping, matching-label-only candidate, conflicting definitions, and ambiguous/unlinked cross-provider facts.
+- User overlay add/edit/delete attribution and conflict behavior; preserve overlay claims across incremental/full provider refresh and provider-cache purge, with a distinct overlay-delete action.
 - Genie text containing instruction-like content.
 - API timeout, pagination, unsupported metadata, and authorization failure.
