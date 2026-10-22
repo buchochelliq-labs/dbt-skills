@@ -1,6 +1,6 @@
 # Integration workflow prototypes
 
-**Status:** M0 prototypes based on public API documentation and synthetic examples. The optional ODS MCP path has passed a local smoke test with ODS v0.0.2 on its dbt v1.10 and v2.0.5 fixtures; this does not yet validate a dbt-skills client or dbt-oss 2.0.8 interoperability. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
+**Status:** M0 prototypes based on public API documentation and synthetic examples. ODS v0.0.2 has passed CLI tests on its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. A raw stdio MCP wire test also exercised project summary, lineage, impact, and opaque reporting on that project. This does not yet validate a dbt-skills runtime/client or broader source/catalog-heavy behavior. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
 
 ## Prototype A: map a physical table to a dbt source/model
 
@@ -128,7 +128,16 @@ Resource-level impact: <separately labeled dbt graph paths, if available>
 - `ods lineage columns --model customers --json` succeeded against the ODS fixture artifacts for dbt 1.10 and dbt 2.0.5. The v2 fixture returned column-by-column inputs and separate indirect row inputs (join, grouping, and filter) with exact confidence.
 - An stdio MCP session negotiated protocol `2025-06-18`, discovered the documented tools, and successfully called `ods_project_summary`, `ods_lineage`, and `ods_list_opaque`. The v2 summary reported 9 analyzed models and 1 opaque model. The opaque report identified the Python model and explained that it had no SQL to analyze.
 - Running ODS against the earlier standalone `dbt-oss` 2.0.8 reproduction fixture failed closed with `ODS-E0202`: its seed and source both claim the same physical relation. This is an inconsistent test artifact, so it does not establish dbt-oss 2.0.8 compatibility or a lineage result.
-- This smoke test demonstrates that the optional ODS tools can return static column lineage and opaque reasons over stdio in isolation. It does not demonstrate integration with a dbt-skills runtime, compatibility with dbt-oss 2.0.8, Databricks dialect behavior, or live Unity Catalog/Genie APIs.
+- The committed fixture in `tests/fixtures/ods-dbt-oss-2.0.8` compiles with `dbt-oss` 2.0.8. It includes three explicit-SQL models and one `select *` model reading a source with no catalog. ODS v0.0.2 returned exact identity/transformation column edges from both the manifest/compiled-SQL path and dbt v2's Parquet Information Schema path; it evaluated four models and identified one as opaque because its source columns were unknown.
+- The reusable [MCP contract check](../tests/check_ods_mcp_interop.py) negotiated protocol `2025-06-18`, identified ODS `0.0.2` and dbt `2.0.8`, and successfully called `ods_project_summary`, `ods_lineage`, `ods_impact`, and `ods_list_opaque` in both artifact modes. The impact result traced a modified `base_customers.customer_name` through `customer_summary` to `customer_metrics`; the opaque result retained the unknown-column explanation.
+- Reproduce from the repository root after installing `dbt-oss` 2.0.8 and ODS 0.0.2:
+
+  ```powershell
+  python tests\check_ods_mcp_interop.py --dbt <path-to-dbt.exe> --ods <path-to-ods.exe>
+  ```
+
+  The script compiles into a temporary directory and tests both artifact readers. The expected dbt warning that `dbt-oss` lacks dbt's strict static-analysis engine is intentional; ODS independently analyzes the compiled SQL.
+- These smoke tests establish basic artifact and wire-protocol interoperability only. They do not demonstrate an implemented dbt-skills MCP client/runtime, compatibility across arbitrary project shapes, Databricks dialect behavior, or live Unity Catalog/Genie APIs.
 
 ## Remaining validation
 
