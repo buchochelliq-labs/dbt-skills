@@ -1,5 +1,5 @@
 # dbt-skills
 
-Portable dbt agent skills and supporting metadata-tooling roadmap. This repository currently contains research and proposed direction; implementation has not started.
+Roadmap for an open-source, local-first alternative to dbt Wizard, with reusable dbt skills, project-context and MCP integrations, and catalog/ontology grounding. Implementation has not started.
 
-See [ROADMAP.md](ROADMAP.md) for the researched skill catalog, generic catalog MCP, Unity Catalog and Genie integration plan, compatibility considerations, and priorities.
+See [ROADMAP.md](ROADMAP.md) for the product goals, architecture, upstream dbt skill strategy, generic catalog MCP, Unity Catalog and Genie integration plan, compatibility considerations, and priorities.
