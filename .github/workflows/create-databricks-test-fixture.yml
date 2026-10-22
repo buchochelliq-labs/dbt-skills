@@ -1,0 +1,25 @@
+name: Create Databricks test fixture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create-fixture:
+    runs-on: ubuntu-latest
+    environment: databricks-free
+    timeout-minutes: 10
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create and verify synthetic Unity Catalog tables
+        run: python scripts/create_databricks_test_fixture.py
