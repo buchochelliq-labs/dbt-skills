@@ -120,7 +120,7 @@ Keep portable instructions in `AGENTS.md` where supported. Add client-specific a
 
 ### Phase 0 — Foundation and compatibility
 
-Document intended users and supported dbt versions; pin the reviewed upstream catalog snapshot and classify covered vs additive scenarios; establish attribution/provenance, package/install strategy, and scenario evaluation criteria. Specify the local artifact/Information Schema and dbt MCP provider contract, capability/freshness reporting, fallback behavior, and conflict reporting. Prototype the catalog/Genie tool contracts and validate the highest-value integration workflows before broad skill authoring.
+Document intended users and supported dbt versions; pin the reviewed upstream catalog snapshot and classify covered vs additive scenarios; establish attribution/provenance, package/install strategy, and scenario evaluation criteria. Specify the local artifact/Information Schema and dbt MCP provider contract, capability/freshness reporting, fallback behavior, and conflict reporting. Explicitly investigate column-lineage availability and licensing: distinguish locally generated dbt v2 `dbt.column_lineage` Information Schema from column-level lineage in hosted dbt Catalog, verify whether the former can be generated/read with the self-hosted product under its applicable terms, and document the exact version, command, static-analysis requirements, limitations, and any plan/API entitlements. Prototype the catalog/Genie tool contracts and validate the highest-value integration workflows before broad skill authoring.
 
 ### Phase 1 — Integration skills and thin routing
 
@@ -128,7 +128,7 @@ Add the catalog-grounded discovery, Genie Ontology grounding, cross-context mode
 
 ### Phase 2 — Project context and dbt MCP support
 
-Implement artifact discovery/parsing and Information Schema support where available, plus dbt MCP connection/tool discovery for supported MCP transports and server types. Report dbt version, source, freshness, and available capabilities; retain useful read-only artifact fallback when MCP is unavailable. Use the existing dbt MCP server for its provided operations rather than rebuilding them. Test absent/stale artifacts, partial MCP tool sets, authorization failures, and disagreement between sources.
+Implement artifact discovery/parsing and Information Schema support where available, plus dbt MCP connection/tool discovery for supported MCP transports and server types. Report dbt version, source, freshness, and available capabilities; retain useful read-only artifact fallback when MCP is unavailable. Use the existing dbt MCP server for its provided operations rather than rebuilding them. Treat column lineage as a capability only when the detected source actually provides it; distinguish local Information Schema results from hosted dbt Catalog lineage and honor their separate license, plan, and API access requirements. Test absent/stale artifacts, partial MCP tool sets, authorization failures, and disagreement between sources.
 
 ### Phase 3 — Catalog MCP v1
 
@@ -146,7 +146,7 @@ Add minimal client-specific agent profiles where they improve tool routing, comp
 
 This roadmap does not promise parity with Wizard's private or native metadata engine, built-in tool orchestration, product UI, hosted governance, billing, session management, or review/audit workflow. Nor does public-skill absence prove product absence. Focus on a complementary open implementation whose useful behavior can be validated with public APIs and reproducible scenarios.
 
-Implementation planning should still settle the concrete CLI and MCP runtimes, dbt MCP connection/configuration and transport support, supported local artifact versions/schema readers, Databricks authentication flows for local and remote transports, catalog backend configuration, Genie Space refresh/cache behavior, supported non-Databricks catalog backends after Unity Catalog, and which client-specific profiles justify maintenance.
+Implementation planning should still settle the concrete CLI and MCP runtimes, dbt MCP connection/configuration and transport support, supported local artifact versions/schema readers, Databricks authentication flows for local and remote transports, catalog backend configuration, Genie Space refresh/cache behavior, supported non-Databricks catalog backends after Unity Catalog, and which client-specific profiles justify maintenance. Confirm local dbt v2 Information Schema column-lineage availability and terms independently from the Enterprise-plan column-lineage feature advertised for dbt Catalog; do not assume that a locally generated artifact requires the hosted entitlement without verifying product/version terms.
 
 ## Sources
 
@@ -155,6 +155,9 @@ Implementation planning should still settle the concrete CLI and MCP runtimes, d
 - [dbt Wizard skills](https://docs.getdbt.com/docs/dbt-ai/wizard-skills)
 - [dbt Wizard use cases](https://docs.getdbt.com/docs/dbt-ai/wizard-use-cases)
 - [dbt Information Schema](https://docs.getdbt.com/docs/build/dbt-information-schema)
+- [dbt Information Schema tables](https://docs.getdbt.com/reference/info-schema)
+- [dbt v2 source and license notes](https://github.com/dbt-labs/dbt)
+- [dbt pricing and hosted Catalog feature tiers](https://www.getdbt.com/pricing)
 - [dbt MCP server overview](https://docs.getdbt.com/docs/dbt-ai/about-mcp)
 - [dbt MCP server setup](https://docs.getdbt.com/docs/dbt-ai/setup-local-mcp)
 - [dbt package skills](https://docs.getdbt.com/docs/dbt-ai/package-skills)
