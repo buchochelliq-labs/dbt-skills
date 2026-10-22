@@ -1,0 +1,6 @@
+ods_dbt_compat:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ./target/ods_dbt_compat.duckdb

@@ -1,0 +1,6 @@
+name: ods_dbt_compat
+version: 1.0.0
+config-version: 2
+profile: ods_dbt_compat
+model-paths: ["models"]
+clean-targets: ["target"]
