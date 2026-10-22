@@ -4,9 +4,9 @@
 **Tested distribution:** `dbt-oss` 2.0.8, Windows x86_64, installed into an isolated Python 3.14 virtual environment  
 **Result:** the Apache-2.0-only distribution does not generate column lineage in this test.
 
-**Project direction:** use OpenDataSuite's Apache-2.0 static SQL lineage as an optional provider through its read-only stdio MCP, rather than require dbt's full product distribution or duplicate ODS's analyzer. This reproduction remains important because dbt Information Schema may be empty even when ODS can independently analyze compiled SQL. A minimal `dbt-oss` 2.0.8 artifact and ODS MCP wire contract are now smoke-tested; a dbt-skills runtime client and broader source/catalog cases remain unverified.
+**Project direction:** use OpenDataSuite's Apache-2.0 static SQL lineage as an optional provider through its read-only stdio MCP, rather than require dbt's full product distribution or duplicate ODS's analyzer. This reproduction remains important because dbt Information Schema may be empty even when ODS can independently analyze compiled SQL. The minimal `dbt-oss` 2.0.8 artifact is now smoke-tested through the raw MCP contract and a dbt-skills Python SDK adapter prototype; broader source/catalog cases and integration into the full runtime remain unverified.
 
-**ODS smoke test:** ODS v0.0.2 (release commit `f18ed9aad5e5121509fd4b649d336990ff605000`) successfully produced lineage for its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. The 2.0.8 fixture passed through both manifest/compiled SQL and Parquet Information Schema paths; a raw stdio MCP test returned project summary, lineage, impact, and opaque-model results. One `select *` model without catalog columns was correctly reported opaque. The earlier, larger reproduction project was rejected with `ODS-E0202` because a seed and a source both declared the same relation. These results establish basic artifact/wire compatibility, not a dbt-skills runtime client or support for arbitrary project shapes. See the reproducible [fixture](../../tests/fixtures/ods-dbt-oss-2.0.8), [MCP contract check](../../tests/check_ods_mcp_interop.py), and [workflow prototype](../WORKFLOW_PROTOTYPES.md#ods-v002-local-smoke-test-evidence).
+**ODS smoke test:** ODS v0.0.2 (release commit `f18ed9aad5e5121509fd4b649d336990ff605000`) successfully produced lineage for its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. The 2.0.8 fixture passed through both manifest/compiled SQL and Parquet Information Schema paths; raw stdio MCP and official Python SDK adapter checks returned project summary, lineage, impact, and opaque-model results. The adapter also returned unavailable status for an opaque focus and a missing optional ODS executable. One `select *` model without catalog columns was correctly reported opaque. The earlier, larger reproduction project was rejected with `ODS-E0202` because a seed and a source both declared the same relation. These results establish basic artifact and client-contract compatibility, not full runtime integration or support for arbitrary project shapes. See the reproducible [fixture](../../tests/fixtures/ods-dbt-oss-2.0.8), [wire contract check](../../tests/check_ods_mcp_interop.py), [SDK adapter check](../../tests/check_ods_sdk_adapter.py), and [workflow prototype](../WORKFLOW_PROTOTYPES.md#ods-v002-local-smoke-test-evidence).
 
 ## Reproduction
 
@@ -48,7 +48,7 @@ As a separate check, running `dbt parse --generate-info-schema` emitted an `Info
 
 ## Reproducing ODS interoperability
 
-The minimal dbt project and standard-library stdio MCP check are committed under `tests/`. With `dbt-oss` 2.0.8 and ODS 0.0.2 installed, run from the repository root:
+The minimal dbt project and stdio MCP checks are committed under `tests/`. The raw wire-level check needs no SDK dependency. With `dbt-oss` 2.0.8 and ODS 0.0.2 installed, run from the repository root:
 
 ```powershell
 python tests\check_ods_mcp_interop.py --dbt <path-to-dbt.exe> --ods <path-to-ods.exe>
@@ -56,10 +56,18 @@ python tests\check_ods_mcp_interop.py --dbt <path-to-dbt.exe> --ods <path-to-ods
 
 The check compiles the fixture with strict dbt static analysis requested, verifies the expected OSS warning, then negotiates MCP protocol `2025-06-18` and checks summary, exact lineage, downstream impact, and opaque diagnostics using both manifest and Parquet Information Schema inputs. The fixture expects three analyzable models plus one opaque source-wildcard model. This is a wire-contract smoke test, not an implementation of the dbt-skills runtime.
 
+The Python adapter prototype uses the official MCP SDK pinned in `requirements.txt`. Install it, then run:
+
+```powershell
+python tests\check_ods_sdk_adapter.py --dbt <path-to-dbt.exe> --ods <path-to-ods.exe>
+```
+
+This checks the direct SDK client contract in both artifact modes, including explicit fallback when the optional ODS process is absent. It remains a prototype for integration, not a complete CLI/runtime.
+
 ## What remains unresolved
 
 - Full dbt distribution lineage terms are no longer a dependency decision for this product because the user selected ODS as the optional open-source local lineage provider. This is not a legal conclusion about dbt's full distribution; it must not be required or redistributed by dbt-skills without separate review.
-- ODS v0.0.2 accepts a minimal `dbt-oss` 2.0.8 manifest and Parquet Information Schema and returns useful lineage over stdio. A dbt-skills client/runtime contract test is still needed; ODS marks its lineage/MCP features preview and warns that 0.0.x interfaces can change.
+- The Python SDK adapter contract passes on a minimal `dbt-oss` 2.0.8 manifest and Parquet Information Schema. ODS marks its lineage/MCP features preview and warns that 0.0.x interfaces can change; broader source/catalog-dependent behavior and full runtime integration remain needed.
 - Broader source-heavy projects need catalog/schema evidence where `select *` depends on columns not available from compiled SQL or manifest context; validate ODS compatibility and the intended dbt-skills behavior for those cases.
 - Cross-platform behavior and other dbt v2 releases.
 - The exact license/terms for the full distribution must be reviewed for the version being considered; it must not be treated as part of the Apache-2.0-only source subset.

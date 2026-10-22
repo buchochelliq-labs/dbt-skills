@@ -1,6 +1,6 @@
 # Integration workflow prototypes
 
-**Status:** M0 prototypes based on public API documentation and synthetic examples. ODS v0.0.2 has passed CLI tests on its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. A raw stdio MCP wire test also exercised project summary, lineage, impact, and opaque reporting on that project. This does not yet validate a dbt-skills runtime/client or broader source/catalog-heavy behavior. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
+**Status:** M0 prototypes based on public API documentation and synthetic examples. ODS v0.0.2 has passed CLI tests on its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. Raw stdio MCP and an official Python MCP SDK adapter check also passed against the 2.0.8 project in both artifact modes. The adapter is a narrow optional prototype, not a general runtime; broader source/catalog-heavy behavior remains unverified. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
 
 ## Prototype A: map a physical table to a dbt source/model
 
@@ -130,6 +130,8 @@ Resource-level impact: <separately labeled dbt graph paths, if available>
 - Running ODS against the earlier standalone `dbt-oss` 2.0.8 reproduction fixture failed closed with `ODS-E0202`: its seed and source both claim the same physical relation. This is an inconsistent test artifact, so it does not establish dbt-oss 2.0.8 compatibility or a lineage result.
 - The committed fixture in `tests/fixtures/ods-dbt-oss-2.0.8` compiles with `dbt-oss` 2.0.8. It includes three explicit-SQL models and one `select *` model reading a source with no catalog. ODS v0.0.2 returned exact identity/transformation column edges from both the manifest/compiled-SQL path and dbt v2's Parquet Information Schema path; it evaluated four models and identified one as opaque because its source columns were unknown.
 - The reusable [MCP contract check](../tests/check_ods_mcp_interop.py) negotiated protocol `2025-06-18`, identified ODS `0.0.2` and dbt `2.0.8`, and successfully called `ods_project_summary`, `ods_lineage`, `ods_impact`, and `ods_list_opaque` in both artifact modes. The impact result traced a modified `base_customers.customer_name` through `customer_summary` to `customer_metrics`; the opaque result retained the unknown-column explanation.
+- The official SDK adapter in [`src/dbt_skills/ods_mcp.py`](../src/dbt_skills/ods_mcp.py) pins the ODS server contract to version `0.0.2`, checks server identity, tool availability/schema, target-directory identity, and project-version presence, and reports unavailable/partial coverage instead of assuming complete analysis. The adapter is optional and does not install or bundle ODS.
+- [`tests/check_ods_sdk_adapter.py`](../tests/check_ods_sdk_adapter.py) exercises the adapter through the official `mcp==2.3.0` SDK in both artifact modes. It verifies exact column lineage, downstream impact, unrelated opaque-model preservation, partial status for a mixed analyzable/opaque focus, unavailable status and reason for an opaque-only focus, and explicit unavailable fallback when the ODS executable is missing.
 - Reproduce from the repository root after installing `dbt-oss` 2.0.8 and ODS 0.0.2:
 
   ```powershell
@@ -137,7 +139,14 @@ Resource-level impact: <separately labeled dbt graph paths, if available>
   ```
 
   The script compiles into a temporary directory and tests both artifact readers. The expected dbt warning that `dbt-oss` lacks dbt's strict static-analysis engine is intentional; ODS independently analyzes the compiled SQL.
-- These smoke tests establish basic artifact and wire-protocol interoperability only. They do not demonstrate an implemented dbt-skills MCP client/runtime, compatibility across arbitrary project shapes, Databricks dialect behavior, or live Unity Catalog/Genie APIs.
+- To exercise the Python SDK adapter, install the pinned dependency from `requirements.txt` and run:
+
+  ```powershell
+  python tests\check_ods_sdk_adapter.py --dbt <path-to-dbt.exe> --ods <path-to-ods.exe>
+  ```
+
+  It compiles the fixture into temporary targets and tests both artifact readers; the same expected dbt OSS static-analysis warning applies.
+- These smoke tests establish basic artifact and client-contract interoperability only. They do not demonstrate integration into a complete dbt-skills CLI/runtime, compatibility across arbitrary project shapes, Databricks dialect behavior, or live Unity Catalog/Genie APIs.
 
 ## Remaining validation
 
