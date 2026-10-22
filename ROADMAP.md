@@ -39,6 +39,10 @@ The public skill catalog is observable; the complete internal Wizard implementat
 
 When upstream content is needed, prefer an installation dependency or a clearly attributed, minimal adaptation over copying/forking. Verify the license and notices before redistributing derivative content.
 
+### Related project: OpenDataSuite
+
+[`buchochelliq-labs/open-data-suite`](https://github.com/buchochelliq-labs/open-data-suite) is a broader analytics-engineering project in the same organization. It has adjacent work on a CLI, dbt and catalog context, lineage, MCP, and an agent runtime; its current README describes the project as pre-alpha, with agent capabilities planned. This roadmap remains focused on the dbt-specific Wizard alternative; ODS is not a current dependency, does not replace the planned scope here, and does not expand this project's remit beyond dbt. The work may be integrated into a broader product later. Keep skills and interfaces portable so that remains possible, and evaluate ODS capabilities, maturity, and licensing if a concrete integration is pursued.
+
 ### Public skill coverage and complement opportunity
 
 This is a comparison to the published upstream skills, not a claim about all dbt Wizard internals.
