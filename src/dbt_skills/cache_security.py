@@ -208,9 +208,10 @@ def _secure_windows_path(path: Path, *, directory: bool) -> None:
         win32security.SetNamedSecurityInfo(
             str(path),
             win32security.SE_FILE_OBJECT,
-            win32security.DACL_SECURITY_INFORMATION
+            win32security.OWNER_SECURITY_INFORMATION
+            | win32security.DACL_SECURITY_INFORMATION
             | win32security.PROTECTED_DACL_SECURITY_INFORMATION,
-            None,
+            user_sid,
             None,
             acl,
             None,
