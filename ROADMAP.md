@@ -13,6 +13,15 @@ Wizard has a public-beta CLI, and its published docs describe account credits an
 
 **Reuse before building:** for each layer, first identify a maintained open-source project or standard that already solves the problem. Prefer adopting or integrating it over writing a replacement; build only the missing dbt-specific orchestration and catalog/ontology adapters. Check license compatibility, maintenance health, security posture, extensibility, and whether the component works in a self-hosted workflow before selecting it. Attribute and pin dependencies, and keep replaceable adapters around external components where practical.
 
+**Dependency backout strategy:** no critical capability should depend on silently tracking an upstream default branch or an unreviewed license change. Pin versions/commits, record provenance and the applicable license for the exact version, and check dependency/license changes during upgrades. If an upstream project changes its license or becomes closed:
+
+1. Stop automatic upgrades and block adoption of the newly licensed version until reviewed.
+2. Keep using the last version under terms already approved for this project only where those terms permit continued use and distribution; preserve notices and seek legal review if scope is uncertain.
+3. Because integrations are isolated behind adapters, evaluate an alternative open-source implementation first. If none fits, maintain a fork of the last suitable version only when its license allows that, or replace the capability with a clean implementation against public interfaces.
+4. If no lawful, maintainable replacement exists, disable/remove the affected optional capability and clearly document the impact rather than making the core CLI depend on proprietary access.
+
+Apply this policy to the dbt skills package, dbt MCP, CLI/agent framework, MCP SDKs, model-provider libraries, and catalog/ontology clients—not just direct runtime dependencies.
+
 Treat the metadata sources as complementary:
 
 - The **catalog MCP** answers structured questions about catalogs, schemas, tables, columns, descriptions, and declared primary/foreign keys.
@@ -121,12 +130,14 @@ Keep portable instructions in `AGENTS.md` where supported. Add client-specific a
 - Add adversarial metadata fixtures (for example, descriptions containing instruction-like text) to ensure agents treat catalog and Genie content as data.
 - Support portable skill installers and consider dbt package distribution as a versioned option. Keep install instructions and version pinning clear.
 - Track upstream dbt Agent Skills changes and dbt/Databricks API changes; preserve provenance and review updates for changed behavior before synchronizing.
+- Maintain a dependency inventory/SBOM with pinned versions, source URLs, and license identifiers; run license-policy and vulnerability checks in CI. Require explicit review for license/source changes, with CI failing closed for newly unapproved licenses.
+- Exercise the dependency backout path in release planning: prove that optional integrations can be disabled/replaced and the local core still works without hosted or newly proprietary components.
 
 ## Prioritized roadmap
 
 ### Phase 0 — Foundation and compatibility
 
-Document intended users and supported dbt versions; pin the reviewed upstream catalog snapshot and classify covered vs additive scenarios; establish attribution/provenance, package/install strategy, and scenario evaluation criteria. Specify the local artifact/Information Schema and dbt MCP provider contract, capability/freshness reporting, fallback behavior, and conflict reporting. Explicitly investigate column-lineage availability and licensing: distinguish locally generated dbt v2 `dbt.column_lineage` Information Schema from column-level lineage in hosted dbt Catalog, verify whether the former can be generated/read with the self-hosted product under its applicable terms, and document the exact version, command, static-analysis requirements, limitations, and any plan/API entitlements. Prototype the catalog/Genie tool contracts and validate the highest-value integration workflows before broad skill authoring.
+Document intended users and supported dbt versions; pin the reviewed upstream catalog snapshot and classify covered vs additive scenarios; establish attribution/provenance, package/install strategy, and scenario evaluation criteria. Define the dependency inventory, license allowlist/change gate, and backout process for every reused component. Specify the local artifact/Information Schema and dbt MCP provider contract, capability/freshness reporting, fallback behavior, and conflict reporting. Explicitly investigate column-lineage availability and licensing: distinguish locally generated dbt v2 `dbt.column_lineage` Information Schema from column-level lineage in hosted dbt Catalog, verify whether the former can be generated/read with the self-hosted product under its applicable terms, and document the exact version, command, static-analysis requirements, limitations, and any plan/API entitlements. Prototype the catalog/Genie tool contracts and validate the highest-value integration workflows before broad skill authoring.
 
 ### Phase 1 — Open CLI/runtime foundation
 
