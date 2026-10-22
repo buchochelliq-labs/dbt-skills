@@ -1,6 +1,6 @@
 # Open-Source dbt Wizard Alternative Roadmap
 
-**Status:** Research and proposed roadmap for an open-source dbt Wizard alternative; no CLI, skills, agents, or MCP server are implemented in this repository yet.
+**Status:** M0 foundation work is in progress. Product requirements, context-contract and workflow-prototype drafts, a preliminary component assessment, and a dbt v2 lineage reproduction are in the worktree. No CLI, skills, agents, or MCP server are implemented yet; runtime selection remains gated on the outstanding M0 compatibility, licensing, and security checks.
 **Research checked:** 2026-10-22
 
 ## Recommendation
@@ -31,7 +31,7 @@ Treat the metadata sources as complementary:
 
 ### Current repository and upstream baseline
 
-This repository currently contains only a README and this roadmap. The public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) repo already covers everyday dbt development, tests, docs, semantic-layer modeling and questions, Mesh, dbt MCP setup, documentation lookup, command use, dbt Information Schema, dbt State, job troubleshooting, and migration. It also provides multiple distribution paths, tests, and an evaluation harness. Its license is Apache-2.0.
+This repository currently contains the README, research/product requirements, and this roadmap; software implementation has not started. The public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) repo already covers everyday dbt development, tests, docs, semantic-layer modeling and questions, Mesh, dbt MCP setup, documentation lookup, command use, dbt Information Schema, dbt State, job troubleshooting, and migration. It also provides multiple distribution paths, tests, and an evaluation harness. Its license is Apache-2.0.
 
 dbt documents installing Agent Skills from packages with `dbt deps` (dbt v2), and Wizard documents that it ships with skills from this upstream catalog. Project/user skills can override built-ins. That makes publishing a second general dbt catalog a poor differentiator and creates duplicate names and maintenance burden. Prefer using the dbt Labs package directly when its coverage fits. If this project distributes any shared skills through a dbt package, give them distinct integration-oriented names and document package skill enable/disable behavior.
 
@@ -71,7 +71,7 @@ A Wizard-like CLI should support **both** a local project snapshot and dbt MCP f
 | Source | Primary role | Important limitations |
 |---|---|---|
 | Local `manifest.json` and related dbt artifacts | Offline, reproducible snapshot of parsed resources, configs, and graph dependencies for the checked-out project; useful fallback for dbt v1 and when MCP is unavailable | May be missing or stale; parse-level state does not provide all runtime or column-lineage details |
-| dbt Information Schema, when generated and supported | Structured, queryable dbt metadata; can add column types/lineage with strict static analysis and runtime results after execution | dbt v2 feature; available detail depends on the command that generated it and the artifact's freshness |
+| dbt Information Schema, when generated and supported | Structured, queryable dbt metadata; supported distributions can add column types/lineage with strict static analysis and runtime results after execution | dbt v2 feature; `dbt-oss` 2.0.8 does not include the static-analysis engine and produced zero lineage rows in a reproduction. Available detail depends on distribution, command, and artifact freshness. |
 | Existing dbt MCP server | Live, tool-mediated dbt capabilities exposed by the configured server, such as supported project discovery, dbt commands, platform APIs, semantic queries, or job evidence | Actual tools vary by server type, configuration, permissions, account, and client; never assume a tool exists solely because MCP is connected |
 | Data-catalog MCP proposed here | Physical catalog metadata not represented in, or sufficient from, the local dbt project graph: tables, columns, descriptions, and declared key relationships | Not a replacement for dbt dependency lineage, compiled state, dbt commands, or platform APIs |
 | Genie Space / Genie One | Curated business definitions and ontology; optionally delegate natural-language analytics to Genie One | Semantic/business context is not the project DAG or a complete physical catalog |
@@ -149,7 +149,7 @@ Evaluate and select maintained open-source CLI/agent runtimes, MCP SDKs, artifac
 
 ### Phase 2 — Project context, dbt MCP, and skills
 
-Implement artifact discovery/parsing and Information Schema support where available, plus dbt MCP connection/tool discovery for supported MCP transports and server types. Report dbt version, source, freshness, and available capabilities; retain useful read-only artifact fallback when MCP is unavailable. Use the existing dbt MCP server for its provided operations rather than rebuilding them. Treat column lineage as a capability only when the detected source actually provides it; distinguish local Information Schema results from hosted dbt Catalog lineage and honor their separate license, plan, and API access requirements. Add the catalog-grounded discovery, Genie Ontology grounding, cross-context modeling/change-planning, and dbt MCP setup/routing skills. Test absent/stale artifacts, partial MCP tool sets, authorization failures, and disagreement between sources.
+Implement artifact discovery/parsing and Information Schema support where available, plus dbt MCP connection/tool discovery for supported MCP transports and server types. Report dbt version, source distribution, freshness, and available capabilities; retain useful read-only artifact fallback when MCP is unavailable. Use the existing dbt MCP server for its provided operations rather than rebuilding them. Treat column lineage as a capability only when the detected source actually provides non-empty lineage; the Apache-2.0 `dbt-oss` 2.0.8 subset lacks the static-analysis engine even though strict lineage generation is documented for supported dbt v2 distributions. Distinguish local Information Schema results from hosted dbt Catalog lineage and honor their separate license, plan, and API access requirements. Add the catalog-grounded discovery, Genie Ontology grounding, cross-context modeling/change-planning, and dbt MCP setup/routing skills. Test absent/stale artifacts, partial MCP tool sets, authorization failures, and disagreement between sources.
 
 ### Phase 3 — Catalog MCP v1
 
@@ -167,7 +167,7 @@ Add minimal client-specific agent profiles where they improve tool routing, comp
 
 This roadmap aims to provide an open-source alternative for the core local dbt agent workflow, not to reproduce dbt Wizard's proprietary implementation or every hosted product surface. Public-skill absence does not prove product absence. Focus on independently implemented, inspectable capabilities that work with public APIs, open protocols, local artifacts, and user-configured providers. Hosted UI, managed billing, and private dbt platform features may remain integrations rather than requirements.
 
-Implementation planning should still select reused open-source CLI/agent/MCP components and verify license compatibility, then settle dbt MCP connection/configuration and transport support, supported local artifact versions/schema readers, Databricks authentication flows for local and remote transports, catalog backend configuration, Genie Space refresh/cache behavior, supported non-Databricks catalog backends after Unity Catalog, and which client-specific profiles justify maintenance. Confirm local dbt v2 Information Schema column-lineage availability and terms independently from the Enterprise-plan column-lineage feature advertised for dbt Catalog; do not assume that a locally generated artifact requires the hosted entitlement without verifying product/version terms.
+Implementation planning should still select reused open-source CLI/agent/MCP components and verify license compatibility, then settle dbt MCP connection/configuration and transport support, supported local artifact versions/schema readers, Databricks authentication flows for local and remote transports, catalog backend configuration, Genie Space refresh/cache behavior, supported non-Databricks catalog backends after Unity Catalog, and which client-specific profiles justify maintenance. A `dbt-oss` 2.0.8 Windows reproduction confirmed that the Apache-2.0 subset warns that strict static analysis is unavailable and returns an empty `dbt.column_lineage` result. Verify whether local lineage in the separate full dbt distribution is available under self-hosted terms independently from the Enterprise-plan column-lineage feature advertised for hosted dbt Catalog.
 
 ## Sources
 
@@ -179,13 +179,21 @@ Implementation planning should still select reused open-source CLI/agent/MCP com
 - [dbt Wizard use cases](https://docs.getdbt.com/docs/dbt-ai/wizard-use-cases)
 - [dbt Information Schema](https://docs.getdbt.com/docs/build/dbt-information-schema)
 - [dbt Information Schema tables](https://docs.getdbt.com/reference/info-schema)
+- [dbt local installation and v2 distributions](https://docs.getdbt.com/docs/local/install-dbt?version=2)
+- [`dbt-oss` v2.0.8 package description](https://pypi.org/project/dbt-oss/2.0.8/)
 - [dbt v2 source and license notes](https://github.com/dbt-labs/dbt)
+- [Local column-lineage reproduction record](docs/research/dbt-v2-column-lineage.md)
+- [dbt Product Licensing Agreement](https://www.getdbt.com/dbt-product-license-agreement)
 - [dbt pricing and hosted Catalog feature tiers](https://www.getdbt.com/pricing)
 - [dbt MCP server overview](https://docs.getdbt.com/docs/dbt-ai/about-mcp)
 - [dbt MCP server setup](https://docs.getdbt.com/docs/dbt-ai/setup-local-mcp)
 - [dbt package skills](https://docs.getdbt.com/docs/dbt-ai/package-skills)
 - [dbt Agent Skills repository](https://github.com/dbt-labs/dbt-agent-skills)
 - [Reviewed upstream skills snapshot](https://github.com/dbt-labs/dbt-agent-skills/tree/b8facde20b7a92c40ce3e6b86b71c4b92aa44040/skills/dbt/skills)
+- [Product requirements and scenario matrix](docs/PRODUCT_REQUIREMENTS.md)
+- [Project context contract](docs/CONTEXT_CONTRACT.md)
+- [Reuse/component assessment](docs/COMPONENT_ASSESSMENT.md)
+- [Catalog and Genie workflow prototypes](docs/WORKFLOW_PROTOTYPES.md)
 - [Databricks Unity Catalog Table API](https://docs.databricks.com/api/workspace/tables/get)
 - [Databricks Genie Space API](https://docs.databricks.com/api/workspace/genie/getspace)
 - [Databricks Genie One MCP](https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp)
