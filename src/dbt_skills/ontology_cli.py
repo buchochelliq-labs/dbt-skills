@@ -18,6 +18,14 @@ from dbt_skills.ontology import (
     SyncScope,
     default_store_path,
 )
+from dbt_skills.ontology_sources import (
+    DBT_MANIFEST_PROVIDER,
+    ODS_LINEAGE_PROVIDER,
+    configured_provider,
+    manifest_source_id,
+    ods_source_id,
+)
+from dbt_skills.project import discover_project
 
 
 def _scope_from_args(args: argparse.Namespace) -> SyncScope:
@@ -77,6 +85,29 @@ def build_parser() -> argparse.ArgumentParser:
     add_json.add_argument("snapshot", type=Path)
     add_json.add_argument("--enable", action="store_true")
     _add_scope_arguments(add_json)
+
+    add_manifest = source_commands.add_parser(
+        "add-manifest", help="Register one project's dbt manifest as a disabled source"
+    )
+    add_manifest.add_argument("source_id")
+    add_manifest.add_argument("project_dir", type=Path)
+    add_manifest.add_argument("--manifest", type=Path)
+    add_manifest.add_argument("--enable", action="store_true")
+    _add_scope_arguments(add_manifest)
+
+    add_ods = source_commands.add_parser(
+        "add-ods", help="Register an optional ODS MCP lineage source as disabled"
+    )
+    add_ods.add_argument("source_id")
+    add_ods.add_argument("ods_command")
+    add_ods.add_argument("project_dir", type=Path)
+    add_ods.add_argument("target_dir", type=Path)
+    add_ods.add_argument("--artifacts", choices=("auto", "json", "info-schema"), default="auto")
+    add_ods.add_argument("--expected-version", default="0.0.2")
+    add_ods.add_argument("--focus", action="append", required=True)
+    add_ods.add_argument("--change", action="append", required=True)
+    add_ods.add_argument("--enable", action="store_true")
+    _add_scope_arguments(add_ods)
 
     set_enabled = source_commands.add_parser("enable", help="Enable a source for sync")
     set_enabled.add_argument("source_id")
@@ -151,18 +182,58 @@ def _store(args: argparse.Namespace) -> LocalOntologyStore:
 def _run(args: argparse.Namespace) -> int:
     store = _store(args)
     if args.command == "source":
-        if args.source_command == "add-json":
-            snapshot = args.snapshot.expanduser().resolve()
-            if not snapshot.is_file():
-                raise FileNotFoundError(f"Ontology JSON snapshot not found: {snapshot}")
+        if args.source_command in ("add-json", "add-manifest", "add-ods"):
+            if args.source_command == "add-json":
+                source_id = args.source_id
+                snapshot = args.snapshot.expanduser().resolve()
+                if not snapshot.is_file():
+                    raise FileNotFoundError(f"Ontology JSON snapshot not found: {snapshot}")
+                provider_name = JSONSnapshotProvider.provider_name
+                options = {"snapshot_path": str(snapshot)}
+            elif args.source_command == "add-manifest":
+                project = discover_project(args.project_dir)
+                manifest = (
+                    args.manifest.expanduser().resolve()
+                    if args.manifest
+                    else project.manifest_path
+                )
+                if args.source_id == "auto":
+                    source_id = manifest_source_id(project)
+                else:
+                    source_id = args.source_id
+                if not manifest.is_file():
+                    raise FileNotFoundError(f"dbt manifest not found: {manifest}")
+                provider_name = DBT_MANIFEST_PROVIDER
+                options = {
+                    "project_dir": str(project.root),
+                    "manifest_path": str(manifest),
+                }
+            else:
+                project = discover_project(args.project_dir)
+                target_dir = args.target_dir.expanduser().resolve()
+                source_id = (
+                    ods_source_id(project, target_dir)
+                    if args.source_id == "auto"
+                    else args.source_id
+                )
+                provider_name = ODS_LINEAGE_PROVIDER
+                options = {
+                    "command": args.ods_command,
+                    "project_dir": str(project.root),
+                    "target_dir": str(target_dir),
+                    "artifacts": args.artifacts,
+                    "expected_version": args.expected_version,
+                    "focus": args.focus,
+                    "changes": args.change,
+                }
             store.register_source(
-                args.source_id,
-                JSONSnapshotProvider.provider_name,
+                source_id,
+                provider_name,
                 scope=_scope_from_args(args),
-                options={"snapshot_path": str(snapshot)},
+                options=options,
                 enabled=args.enable,
             )
-            _print(store.source_status(args.source_id))
+            _print(store.source_status(source_id))
         elif args.source_command in ("enable", "disable"):
             store.set_source_enabled(args.source_id, args.source_command == "enable")
             _print(store.source_status(args.source_id))
@@ -179,19 +250,12 @@ def _run(args: argparse.Namespace) -> int:
             }
         )
     elif args.command == "sync":
-        config = store.source_config(args.source_id)
-        if config["provider_name"] != JSONSnapshotProvider.provider_name:
-            raise ValueError(f"No CLI adapter is registered for {config['provider_name']}")
         if args.restart:
             store.discard_pending_sync(args.source_id)
-        options = config["options"]
-        path_value = options.get("snapshot_path")
-        if not isinstance(path_value, str):
-            raise ValueError(f"JSON source {args.source_id} has no snapshot path")
         result = asyncio.run(
             store.sync_source(
                 args.source_id,
-                JSONSnapshotProvider(path_value),
+                configured_provider(store, args.source_id),
                 full_refresh=args.full_refresh or args.restart,
                 page_size=args.page_size,
             )

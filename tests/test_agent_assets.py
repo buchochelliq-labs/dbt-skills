@@ -30,7 +30,7 @@ class AgentAssetTests(unittest.TestCase):
         self.assertNotIn("allowed-tools", metadata)
         self.assertIn("dbt-labs/dbt-agent-skills", body)
         self.assertIn("Use Genie One only when its MCP tool is exposed", body)
-        self.assertIn("Do not claim that Copilot can query its cache", body)
+        self.assertIn("If the host exposes the `dbt-skills-uol` MCP tools", body)
         self.assertIn("do not infer column dependencies", body)
 
     def test_copilot_profile_is_thin_and_does_not_assume_tool_access(self):
@@ -49,7 +49,8 @@ class AgentAssetTests(unittest.TestCase):
 
         self.assertIn(".github/skills/", guide)
         self.assertIn(".github/agents/", guide)
-        self.assertIn("does not currently expose the local UOL cache", guide)
+        self.assertIn("local stdio MCP bridge for the UOL", guide)
+        self.assertIn("not encrypted at rest", guide)
         self.assertIn("Do not commit credentials", guide)
 
 
