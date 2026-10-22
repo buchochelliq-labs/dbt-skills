@@ -2,9 +2,29 @@
 
 The local UOL core provides an indexed SQLite graph, opt-in source sync, claim-level provenance, source scopes, and a separate user-authored overlay. Development sources include local JSON snapshots, a project-matched dbt manifest, and optional ODS MCP column-lineage analysis. The local stdio MCP bridge lets a compatible agent query this cache and invoke separately exposed sync/cache controls. No Ontos, OntoBricks, Unity Catalog, or Genie adapter is included; this prototype does not imply that those systems can currently be synchronized.
 
+## Encrypted local cache
+
+The local database is encrypted with SQLCipher 4 and a random 256-bit key stored in the current user's native credential store (Windows Credential Locker, macOS Keychain, or Linux Secret Service/KWallet). The application refuses to open or create a cache if SQLCipher, an approved OS key-store backend, or filesystem access protections are unavailable; there is no plaintext fallback. Linux requires an active Secret Service or supported KWallet session. The database, WAL/SHM sidecars, and SQL temporary storage are encrypted or memory-only. The cache directory and files are restricted to the current user (and Windows SYSTEM); startup fails if ACLs or POSIX permissions cannot be established and verified.
+
+Install the pinned dependencies before using the CLI or MCP server:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Existing caches created by earlier versions are plaintext and are intentionally rejected. Stop every UOL CLI/MCP process using the cache, then migrate it explicitly:
+
+```powershell
+python -m dbt_skills.ontology_cli --db .\.uol-cache\ontology.sqlite3 protect-cache
+```
+
+By default, migration keeps an encrypted recovery copy beside the database at `<database>.encrypted-backup`. You can choose another path with `protect-cache --backup <path>`. The command verifies the source and encrypted result before replacing the original file, checkpoints and removes legacy plaintext WAL/SHM sidecars, and leaves the original untouched if verification fails. Do not remove the recovery copy until the encrypted cache has been verified and backed up according to your retention policy. Restore it to the original database path: the key-store entry is bound to that path. The migration cannot erase historical plaintext copies, filesystem snapshots, backups, or flash-storage remnants; find and protect or remove those separately.
+
+The encryption key is not stored in the database, repository, or logs. Losing or deleting the OS key-store entry makes the cache and its encrypted recovery copy unrecoverable; retain an OS-protected backup of the credential store as part of the user's system backup plan. Key rotation is not yet exposed. Encryption protects cache files at rest, not data from a compromised user account, an authorized process while the key is loaded, or an unlocked credential-store session. Do not store provider credentials in the cache.
+
 ## Run the CLI
 
-The CLI uses Python's standard library. From the repository root in PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -114,6 +134,6 @@ Each claim needs a non-empty `claim_id`, `subject_id`, `predicate`, and JSON `ob
 
 Providers implement the `OntologyProvider` protocol in `src/dbt_skills/ontology.py`: a stable `provider_name`, an incremental-sync capability flag, and an async paginated `fetch_page` that returns claims, a next cursor, completion status, and optional deleted claim IDs. A provider cursor must be stable for the same source snapshot; a full refresh must be fully paginated before the new generation is published. Provider adapters must also enforce the requested source scope and preserve permission/revocation failures rather than silently returning partial data as complete.
 
-The local core uses SQLite WAL and indexed token search. Sync is opt-in per source, staged generations are published atomically, and user overlay facts and reviewed links retain separate authorship and evidence. Cache files are **not encrypted at rest** by this implementation. The default user-profile path and POSIX permission tightening are not a substitute for platform-backed encryption or a validated Windows ACL policy. Treat the prototype cache as sensitive; do not put credentials in it. Production readiness requires an encryption/OS-keystore design, permission-revocation behavior, performance benchmarks, and real provider adapters.
+The local core uses encrypted SQLCipher WAL storage and indexed token search. Sync is opt-in per source, staged generations are published atomically, and user overlay facts and reviewed links retain separate authorship and evidence. Encryption and permissions reduce offline exposure but do not solve permission revocation for cached data, compromised user accounts, key loss, performance benchmarking, or the absence of remote provider adapters. See the product requirements and issue #30 for platform CI and production-hardening status.
 
 Calls made through one `LocalOntologyStore` instance serialize syncs for the same source. Until cross-process sync leasing is added, do not run overlapping CLI syncs for one source from separate processes.

@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 import re
-import sqlite3
 import uuid
 from collections import deque
 from collections.abc import Mapping, Sequence
@@ -18,6 +17,15 @@ from pathlib import Path
 from typing import Literal, Protocol
 from urllib.parse import quote, unquote
 
+from sqlcipher3 import dbapi2 as sqlite3
+
+from dbt_skills.cache_security import (
+    CacheProtectionError,
+    CacheKeyStore,
+    OSKeyringKeyStore,
+    open_encrypted_database,
+    secure_path,
+)
 
 JsonObject = dict[str, object]
 SyncStatus = Literal["unknown", "current", "stale", "partial", "paused"]
@@ -228,33 +236,50 @@ def _split_claim_reference(reference: str) -> tuple[str, str] | None:
 
 
 class LocalOntologyStore:
-    """SQLite-backed local graph with atomic source snapshots and a separate overlay.
+    """SQLCipher-backed local graph with atomic snapshots and a separate overlay."""
 
-    The database is scoped to the current OS user by its path and filesystem
-    permissions. This does not provide cryptographic encryption at rest.
-    """
-
-    def __init__(self, path: str | Path):
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        key_store: CacheKeyStore | None = None,
+    ):
         self.path = Path(path).expanduser().resolve()
         self._sync_locks: dict[str, asyncio.Lock] = {}
+        self._key_store = key_store or OSKeyringKeyStore()
         if self.path.exists() and self.path.is_dir():
             raise ValueError(f"UOL database path is a directory: {self.path}")
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        self._restrict_permissions(self.path.parent, directory=True)
+        secure_path(self.path.parent, directory=True)
+        exists = self.path.exists()
+        if exists:
+            secure_path(self.path)
+            try:
+                with self.path.open("rb") as database_file:
+                    is_plaintext = database_file.read(16) == b"SQLite format 3\x00"
+            except OSError as error:
+                raise CacheProtectionError(
+                    "Cannot inspect the existing UOL cache before opening it."
+                ) from error
+            if is_plaintext:
+                raise CacheProtectionError(
+                    "This UOL cache is plaintext. Run the explicit "
+                    "'protect-cache' migration before using the encrypted store."
+                )
+        key = self._key_store.get_or_create_key(self.path, create=not exists)
+        if key is None:
+            raise ValueError(
+                "No UOL encryption key exists in the native credential store; "
+                "the database was not opened."
+            )
+        self._key = key
         self._initialize()
-
-    @staticmethod
-    def _restrict_permissions(path: Path, *, directory: bool = False) -> None:
-        if os.name != "nt":
-            path.chmod(0o700 if directory else 0o600)
+        secure_path(self.path)
 
     @contextmanager
     def _connect(self):
-        connection = sqlite3.connect(self.path, timeout=30.0)
+        connection = open_encrypted_database(self.path, self._key)
         connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute("PRAGMA busy_timeout = 30000")
-        connection.execute("PRAGMA synchronous = FULL")
         try:
             with connection:
                 yield connection
@@ -262,9 +287,7 @@ class LocalOntologyStore:
             connection.close()
 
     def _initialize(self) -> None:
-        connection = sqlite3.connect(self.path, timeout=30.0)
-        try:
-            connection.execute("PRAGMA journal_mode = WAL")
+        with self._connect() as connection:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS sources (
@@ -361,14 +384,11 @@ class LocalOntologyStore:
                 PRAGMA user_version = 1;
                 """
             )
-            connection.commit()
-        finally:
-            connection.close()
-        self._restrict_permissions(self.path)
+        secure_path(self.path)
         for suffix in ("-wal", "-shm"):
             sidecar = Path(f"{self.path}{suffix}")
             if sidecar.exists():
-                self._restrict_permissions(sidecar)
+                secure_path(sidecar)
 
     def register_source(
         self,

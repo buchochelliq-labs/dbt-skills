@@ -11,6 +11,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
+from dbt_skills.cache_security import migrate_plaintext_cache
 from dbt_skills.ontology import (
     JSONSnapshotProvider,
     LocalOntologyStore,
@@ -134,6 +135,16 @@ def build_parser() -> argparse.ArgumentParser:
     cache_reads = commands.add_parser("cache-reads", help="Enable or disable provider-cache reads")
     cache_reads.add_argument("setting", choices=("on", "off"))
 
+    protect_cache = commands.add_parser(
+        "protect-cache",
+        help="Encrypt an existing plaintext UOL cache and retain an encrypted recovery copy",
+    )
+    protect_cache.add_argument(
+        "--backup",
+        type=Path,
+        help="Encrypted recovery-copy path (default: <database>.encrypted-backup)",
+    )
+
     purge = commands.add_parser("purge", help="Purge synchronized provider data, not the local overlay")
     purge_group = purge.add_mutually_exclusive_group(required=True)
     purge_group.add_argument("--source")
@@ -180,6 +191,13 @@ def _store(args: argparse.Namespace) -> LocalOntologyStore:
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.command == "protect-cache":
+        backup = migrate_plaintext_cache(
+            args.db or default_store_path(),
+            backup_path=args.backup,
+        )
+        _print({"encrypted_cache": str(args.db or default_store_path()), "recovery_copy": str(backup)})
+        return 0
     store = _store(args)
     if args.command == "source":
         if args.source_command in ("add-json", "add-manifest", "add-ods"):
