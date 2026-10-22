@@ -1,6 +1,6 @@
 # Integration workflow prototypes
 
-**Status:** M0 prototypes based on public API documentation and synthetic examples. ODS v0.0.2 has passed CLI tests on its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. Raw stdio MCP and an official Python MCP SDK adapter check also passed against the 2.0.8 project in both artifact modes. The adapter is a narrow optional prototype, not a general runtime; broader source/catalog-heavy behavior remains unverified. Ontos and OntoBricks MCP contracts have been reviewed from public docs, but the Unified Ontology Layer has not been implemented or connected to a live endpoint. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
+**Status:** M0 prototypes based on public API documentation and synthetic examples. ODS v0.0.2 has passed CLI tests on its dbt v1.10/v2.0.5 fixtures and a committed four-model `dbt-oss` 2.0.8 project. Raw stdio MCP and an official Python MCP SDK adapter check also passed against the 2.0.8 project in both artifact modes. The local SQLite UOL core and a source-tree scripted CLI/runtime prototype are implemented, but no live ontology provider or agent MCP tool integration has been validated. Broader source/catalog-heavy behavior remains unverified. Ontos and OntoBricks MCP contracts have been reviewed from public docs. These are not live Databricks integration tests; a workspace and appropriately scoped credentials are required before claiming API behavior is validated end to end.
 
 ## Prototype A: map a physical table to a dbt source/model
 
@@ -217,7 +217,7 @@ Normalize only the query envelope, not the truth claims:
   ```
 
   It compiles the fixture into temporary targets and tests both artifact readers; the same expected dbt OSS static-analysis warning applies.
-- These smoke tests establish basic artifact and client-contract interoperability only. They do not demonstrate integration into a complete dbt-skills CLI/runtime, compatibility across arbitrary project shapes, Databricks dialect behavior, or live Unity Catalog/Genie APIs.
+- These smoke tests establish basic artifact and client-contract interoperability only. The source-tree CLI/runtime is not yet integrated with ODS or the UOL; arbitrary project shapes, Databricks dialect behavior, and live Unity Catalog/Genie APIs remain unverified.
 
 ## Remaining validation
 

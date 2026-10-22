@@ -1,6 +1,6 @@
 # Reuse and component assessment
 
-**Status:** M0 preliminary assessment, checked 2026-10-22. This is not a complete SBOM or final runtime selection. Revisions below are evidence snapshots, not approved production pins; the MCP SDK is pinned only for the ODS adapter prototype. Verify transitive licenses, security advisories, and compatibility before production adoption.
+**Status:** Initial local runtime decision recorded 2026-10-22. This is not a complete SBOM or production approval. Revisions below are evidence snapshots; verify transitive licenses, security advisories, and compatibility before production adoption.
 
 ## Reuse candidates and boundaries
 
@@ -15,6 +15,8 @@
 | [Official MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) | GitHub API reports `NOASSERTION` for repository license metadata | Candidate only if TypeScript is selected | Do not adopt until the exact release license is independently established. |
 | [Pydantic AI](https://github.com/pydantic/pydantic-ai) | MIT; evidence revision `7e0d7b32e0ba0d3b8bebc50cfcf6bf756402c5b9` | Candidate agent/runtime/provider abstraction if Python is selected | Candidate only; prototype tool lifecycle, approval hooks, provider coverage, and memory/runtime fit before adoption. |
 | [Typer](https://github.com/fastapi/typer) | MIT; evidence revision `a5882dedf0bc7a46cd861fdfca020f88519e0f21` | Candidate Python CLI framework | Candidate only; evaluate help/completion, packaging, cross-platform behavior, and compatibility with selected runtime. |
+| [PyYAML](https://pyyaml.org/) | MIT; pinned release 6.0.3 | Safe parsing of `dbt_project.yml` for project discovery | Adopted as the only new runtime dependency. Its transitive dependency set is empty in the tested installation; include its MIT notice in future packaged distributions. |
+| `argparse`, `urllib`, `tomllib`, `sqlite3`, and other Python standard-library modules | Python Software Foundation License; bundled with the configured Python runtime | CLI, OpenAI-compatible HTTP adapter, project-local TOML config, and SQLite UOL | Adopt; no separate runtime package dependency. The project itself has no GitHub license metadata, so distributable packaging remains blocked on resolving repository licensing. |
 | [OpenDataSuite](https://github.com/buchochelliq-labs/open-data-suite) | Apache-2.0; reviewed main revision `965527c4ab9b84d8b2a6c2f9707c00555aa7ad9a`; ODS v0.0.2 release commit `f18ed9aad5e5121509fd4b649d336990ff605000` | Optional external provider via ODS's read-only stdio MCP for local SQL column-lineage, impact, and opaque-node diagnostics | User-directed reuse. CLI, raw stdio MCP, and official Python SDK adapter checks passed on the four-model dbt-oss 2.0.8 fixture in both artifact modes. The prototype is optional, not bundled, and pins the expected server contract at ODS 0.0.2; ODS labels lineage/MCP preview and warns 0.0.x interfaces may break. Broader source/catalog coverage and release-time license/provenance/security gates remain open. |
 
 ## Selection criteria
@@ -31,13 +33,15 @@ Before choosing a CLI/runtime or library, record:
 
 No dependency is approved merely because it appears in this table. Do not silently follow a moving branch. Pin reviewed versions, scan and review updates, and fail CI on newly unapproved license identifiers. Where a component is optional, keep the core usable without it.
 
-This M0 inventory is not yet an SBOM or a complete security audit: transitive dependency licenses, CVEs/advisories, threat models, and exact pinned package artifacts must be checked in the implementation milestone before dependencies are adopted.
+This inventory is not yet an SBOM or a complete security audit. The initial runtime adopts PyYAML after recording its license and dependency footprint; production adoption still requires transitive dependency/license verification, CVE/advisory review, threat modeling, and exact pinned package artifact checks.
 
-## Preliminary runtime direction
+## Initial runtime decision
 
-The dbt and MCP integration ecosystem is Python-oriented: the public dbt MCP server and official MCP Python SDK provide possible building blocks, while a typed CLI/runtime such as Typer and Pydantic AI are candidates. The user selected a Python adapter prototype using the official SDK; `src/dbt_skills/ods_mcp.py` now connects to optional ODS stdio MCP and explicitly preserves unavailable/partial lineage status. Its contract check passed against ODS v0.0.2 and dbt-oss 2.0.8 in both artifact modes, including an opaque focus and absent-provider fallback. This does not select the eventual CLI/agent runtime or validate source-heavy/catalog-dependent projects. Continue the broader runtime/component comparison before scaffolding the CLI.
+The initial local runtime uses Python 3.11+ and a small in-repository orchestration module, the Python standard library for CLI/HTTP/config/storage, and PyYAML 6.0.3 (MIT) with `safe_load` for `dbt_project.yml`. `argparse` is sufficient for the first CLI, so Typer is not added. A provider protocol keeps model access replaceable; the first adapter speaks the OpenAI Chat Completions-compatible HTTP contract, supporting local endpoints such as Ollama's OpenAI-compatible API and hosted BYOK endpoints without a provider SDK. Credentials are read by environment-variable name and are never written into project config. Plain HTTP is restricted to loopback hosts.
 
-For the first interactive CLI, the working product decision is a provider-neutral adapter interface with multiple BYOK provider options from the outset; select exact providers only after verifying their SDKs, licensing, and local/self-hosted support. This preserves the roadmap's provider-flexibility requirement without prematurely locking the runtime.
+No general-purpose agent framework is selected: this runtime only sends a single scripted prompt and does not call tools. That keeps approvals and tool execution out of scope until policy controls are implemented in issue #11. dbt MCP remains the source for dbt operations; the local runtime does not duplicate dbt commands. The official MCP Python SDK remains pinned for the optional ODS adapter and is not a dependency of the CLI's model-provider adapter.
+
+This decision favors a narrow seam and low dependency surface over Pydantic AI/Typer until tool lifecycle, streaming, interactive memory, approval hooks, and client compatibility are actually needed. Current evidence: Python 3.14 local test runtime; PyYAML 6.0.3 reports MIT and no package dependencies; model-protocol behavior is covered by local mocked HTTP tests, not by live provider calls. The repository has no declared license, so installable/distributable packaging and redistribution of this code remain blocked pending the repository licensing decision. Back out by replacing the `ModelProvider` adapter and `AgentRuntime` implementation while retaining project discovery and UOL storage interfaces; if dependency/license policy rejects PyYAML, remove project config parsing through this adapter seam rather than substituting an unreviewed parser.
 
 ## Verified dbt v2 lineage boundary
 
