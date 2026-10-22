@@ -5,9 +5,9 @@
 
 ## Recommendation
 
-Build a portable dbt agent toolkit rather than attempting to recreate the dbt Wizard product. The core should be reusable Agent Skills, paired with a read-only data-catalog MCP that can provide governed physical metadata. Reuse the maintained dbt Agent Skills catalog as the starting point, adapt it with clear attribution, and avoid duplicating Wizard's product-specific runtime.
+**Supplement dbt's open catalog; do not fork or mirror it as the default.** Use `dbt-labs/dbt-agent-skills` for common dbt workflows and focus this project on the part that is not represented in that public skills catalog: agents that can combine dbt project context with external catalog metadata and business ontology. The project should contribute a small number of well-evaluated integration skills, a generic metadata-only catalog MCP, and thin agent profiles that route between these tools.
 
-Treat the two metadata sources as complementary:
+Treat the metadata sources as complementary:
 
 - The **catalog MCP** answers structured questions about catalogs, schemas, tables, columns, descriptions, and declared primary/foreign keys.
 - The **Genie integrations** provide Databricks business semantics and, optionally, delegated natural-language analytics. Genie Space configuration ingestion and Genie One MCP question-answering are separate features.
@@ -16,14 +16,28 @@ Treat the two metadata sources as complementary:
 
 ### Current repository and upstream baseline
 
-This repository currently contains only a minimal README. The public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) repo already has everyday dbt, semantic-layer, Mesh, testing, documentation, metadata, troubleshooting, command, and migration skills. It also provides multiple distribution paths, tests, and an evaluation harness. Its license is Apache-2.0.
+This repository currently contains only a README and this roadmap. The public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) repo already covers everyday dbt development, tests, docs, semantic-layer modeling and questions, Mesh, dbt MCP setup, documentation lookup, command use, dbt Information Schema, dbt State, job troubleshooting, and migration. It also provides multiple distribution paths, tests, and an evaluation harness. Its license is Apache-2.0.
 
-dbt Wizard documents these skills as built-in and automatically selected. Its own user/project skills can take precedence, so a mirror should not blindly duplicate every skill under the same name. Instead:
+dbt documents installing Agent Skills from packages with `dbt deps` (dbt v2), and Wizard documents that it ships with skills from this upstream catalog. Project/user skills can override built-ins. That makes publishing a second general dbt catalog a poor differentiator and creates duplicate names and maintenance burden. Prefer using the dbt Labs package directly when its coverage fits. If this project distributes any shared skills through a dbt package, give them distinct integration-oriented names and document package skill enable/disable behavior.
 
-1. Inventory upstream skill names, coverage, and release provenance.
-2. Adapt the catalog where this project adds useful portability, MCP/catalog grounding, or client-specific guidance.
-3. Preserve required upstream notices and license terms for any copied or derivative material.
-4. Document intentional name collisions/replacements, and keep skills focused so they activate only for relevant tasks.
+The public skill catalog is observable; the complete internal Wizard implementation and any non-public skills are not. A feature not listed in the public repository is **not evidence** that Wizard lacks it. Scope the opportunity as "capabilities absent from the public skill catalog that this project can provide openly," not as confirmed gaps in dbt's private product.
+
+When upstream content is needed, prefer an installation dependency or a clearly attributed, minimal adaptation over copying/forking. Verify the license and notices before redistributing derivative content.
+
+### Public skill coverage and complement opportunity
+
+This is a comparison to the published upstream skills, not a claim about all dbt Wizard internals.
+
+| Publicly documented upstream coverage | Complementary gap for this project |
+|---|---|
+| Create/refactor dbt models; inspect existing project, impact, tests, errors, and docs | **Join up contexts:** explain how to resolve dbt model/source nodes to physical catalog tables and use both project lineage and catalog PK/FK/declarations when planning work |
+| Query dbt v2 Information Schema and inspect manifest/catalog artifacts | **External catalog access:** portable instructions and tools for catalogs that are not represented in the local dbt project or artifacts |
+| Build/query dbt Semantic Layer metrics; general semantic modeling and business Q&A | **Databricks Genie Ontology grounding:** retrieve/use curated Genie instructions, joins, synonyms, measures, and examples; distinguish ontology context from physical metadata and delegate Q&A to Genie One when available |
+| Configure dbt MCP and use dbt-specific tools | **Generic catalog MCP:** a backend-configurable interface for metadata discovery, starting with Unity Catalog, rather than dbt-only project APIs |
+| Agent Skills package delivery through `dbt deps` on dbt v2 | **Tool deployment and routing:** a server is a separate runtime from package-installed skills; document how compatible clients connect to local or remote MCP transports and which tool to use for which question |
+| Common build, test, debug, and migration workflows | **Catalog/ontology-specific evaluations:** prove relationship-aware discovery, source-to-model mapping, semantic conflict handling, and safe behavior when metadata is missing or contradictory |
+
+These are reasonable open-source opportunities based on public source review. Validate each with concrete user scenarios and tool/API prototypes before treating it as a committed feature or claiming that no private Wizard equivalent exists.
 
 ### What makes Wizard more than a skill collection
 
@@ -43,17 +57,18 @@ Genie Space configuration is a distinct semantic source. Its serialized configur
 
 Use the Agent Skills format as the canonical content (`SKILL.md` with focused descriptions and optional references). Keep general project guidance separate from task skills, and make agent-specific profiles thin wrappers around the shared skills.
 
-Recommended skill groups:
+Do not recreate these upstream skill groups by default: general modeling, generic tests, docs, semantic-layer basics, command usage, migration, and generic dbt metadata/operations already have public coverage. The proposed new skills should instead orchestrate existing skills and add external-context guidance:
 
 | Group | Initial coverage |
 |---|---|
-| Core analytics engineering | Understand a project, discover sources and models, plan/build/refactor models, assess impact, and debug dbt failures |
-| Quality and documentation | Add generic/data-informed/unit tests, maintain model/column docs, and validate changes at an explicit risk/cost level |
-| Semantic analytics | Build semantic models and answer business questions using the available semantic layer or Genie tools |
-| Operations and metadata | Run dbt commands safely, query dbt Information Schema where supported, and configure/use dbt MCP |
-| Mesh and migration | Handle breaking changes and model versions; migrate/upgrade projects with version-aware steps |
+| Catalog-grounded dbt discovery | Use a catalog MCP to discover tables/columns/definitions/declared relationships; map relevant physical assets to dbt sources/models; then invoke upstream dbt development and impact workflows |
+| Genie Ontology grounding | Select and interpret Genie Space context; use instructions, joins, measures, synonyms, and examples as semantic evidence; use Genie One MCP for delegated business Q&A only when connected |
+| Cross-context modeling and change planning | Reconcile warehouse catalog, dbt graph/artifacts, and semantic ontology; surface mismatches and uncertainty before suggesting source YAML, model, or semantic-layer changes |
+| Catalog MCP connection and tool selection | Configure a backend and either MCP transport; select metadata vs dbt vs Genie tools; report unavailable permissions or stale/incomplete metadata honestly |
 
 Use explicit dbt-version and tool-availability branches. For example, dbt Information Schema is a dbt v2 capability; v1 projects need artifact- or MCP-based alternatives. A skill must not claim that a metadata or execution tool is available unless the host exposes it.
+
+Initially these can be three focused skills plus one small routing profile; do not create a skill for every provider or individual table operation. Keep authoritative upstream task instructions upstream, and make our additions work alongside them.
 
 ### 2. Generic data-catalog MCP
 
@@ -72,7 +87,7 @@ Prefer connecting to the existing Genie One MCP over reimplementing its Q&A/runt
 
 ### 4. Thin agent profiles and host configuration
 
-Start with one general dbt analytics-engineering profile and, if useful, a separate data-catalog/Genie analyst profile. Profiles should select skills and explain when to use the dbt MCP, catalog MCP, or Genie One MCP; they should not encode duplicate task content.
+Do not build another all-purpose dbt coding agent. Start with a thin **catalog-grounded dbt assistant** profile that composes upstream dbt skills with this project's catalog and Genie skills. It should select among dbt MCP (project/build metadata and dbt operations), catalog MCP (physical table/column metadata and declared keys), and Genie One MCP (business questions answered using Genie ontology). Add a separate analyst profile only if evaluations demonstrate distinct tool permissions or user journeys.
 
 Keep portable instructions in `AGENTS.md` where supported. Add client-specific agent definitions or instructions (for example, Copilot custom-agent files) only as small adapters with their own tool permissions and validation notes. Approval gates, diff review, shell/warehouse permissions, and remote hosting remain host responsibilities.
 
@@ -89,27 +104,27 @@ Keep portable instructions in `AGENTS.md` where supported. Add client-specific a
 
 ### Phase 0 — Foundation and compatibility
 
-Document intended users and supported dbt versions; audit upstream skills and licensing; establish repository layout, naming, provenance, and a lightweight skill validator/evaluation approach. Define the common metadata contract and MCP configuration/security requirements before adding backends.
+Document intended users and supported dbt versions; pin the reviewed upstream catalog snapshot and classify covered vs additive scenarios; establish attribution/provenance, package/install strategy, and scenario evaluation criteria. Prototype the catalog/Genie tool contracts and validate the highest-value integration workflows before broad skill authoring.
 
-### Phase 1 — Core skill parity
+### Phase 1 — Integration skills and thin routing
 
-Adapt or curate the high-frequency analytics engineering, project understanding, modeling, impact, tests, documentation, validation, command, and troubleshooting workflows. Then include semantic-layer, Mesh, migration, and dbt Information Schema guidance with explicit tool/version prerequisites. Avoid duplicating built-in Wizard skills unless intentionally improving or replacing them.
+Add the catalog-grounded discovery, Genie Ontology grounding, and cross-context modeling/change-planning skills plus a thin profile. Include connection and tool-routing instructions. Reuse the upstream package for generic dbt workflows; don't mirror its general catalog.
 
 ### Phase 2 — Catalog MCP v1
 
-Implement the backend-neutral, read-only metadata tools and Databricks Unity Catalog adapter. Deliver STDIO and Streamable HTTP transports, startup backend configuration, least-privilege auth guidance, explicit errors, bounded/paginated responses, and adapter/transport tests. Return PK/FK declarations as metadata, not guaranteed constraints.
+Implement the backend-neutral, read-only metadata tools and Databricks Unity Catalog adapter. Deliver STDIO and Streamable HTTP transports, startup backend configuration, least-privilege auth guidance, explicit errors, bounded/paginated responses, and adapter/transport tests. Return PK/FK declarations as metadata, not guaranteed constraints. Validate that the integration adds value beyond dbt's existing artifacts and MCP tools.
 
 ### Phase 3 — Genie ontology context
 
-Add authorized Genie Space configuration ingestion and normalization as an optional grounding source. Document permission requirements, data handling, refresh behavior, and safe treatment of imported instructions. Separately document/use the existing Genie One MCP for natural-language questions; do not make it a required dependency of the catalog server.
+Add authorized Genie Space configuration ingestion and normalization as an optional grounding source. Document permission requirements, data handling, refresh behavior, and safe treatment of imported instructions. Separately document/use the existing Genie One MCP for natural-language questions; do not make it a required dependency of the catalog server. Keep either integration optional for users without Databricks.
 
 ### Phase 4 — Agent adapters and release maturity
 
-Add minimal client-specific agent profiles where they improve tool routing, complete installer/dbt-package guidance, publish evaluations and compatibility results, and add a process for upstream synchronization and Databricks/dbt API changes.
+Add minimal client-specific agent profiles where they improve tool routing, complete installer/dbt-package guidance, publish evaluations and compatibility results, and add a process for upstream synchronization and Databricks/dbt API changes. Upstream dbt skill updates should be consumed by users as a dependency, not routinely copied into this repository.
 
 ## Boundaries and open design work
 
-This roadmap does not promise parity with Wizard's native metadata engine, built-in tool orchestration, product UI, hosted governance, billing, session management, or review/audit workflow. Those require product/runtime and host capabilities beyond a repository of instructions and an MCP server.
+This roadmap does not promise parity with Wizard's private or native metadata engine, built-in tool orchestration, product UI, hosted governance, billing, session management, or review/audit workflow. Nor does public-skill absence prove product absence. Focus on a complementary open implementation whose useful behavior can be validated with public APIs and reproducible scenarios.
 
 Implementation planning should still settle the concrete server language/runtime, Databricks authentication flows for local and remote transports, configuration schema and backend selection syntax, Genie Space refresh/cache behavior, supported non-Databricks backends after Unity Catalog, and which client-specific profiles justify maintenance.
 
@@ -123,6 +138,7 @@ Implementation planning should still settle the concrete server language/runtime
 - [dbt MCP server overview](https://docs.getdbt.com/docs/dbt-ai/about-mcp)
 - [dbt package skills](https://docs.getdbt.com/docs/dbt-ai/package-skills)
 - [dbt Agent Skills repository](https://github.com/dbt-labs/dbt-agent-skills)
+- [Reviewed upstream skills snapshot](https://github.com/dbt-labs/dbt-agent-skills/tree/b8facde20b7a92c40ce3e6b86b71c4b92aa44040/skills/dbt/skills)
 - [Databricks Unity Catalog Table API](https://docs.databricks.com/api/workspace/tables/get)
 - [Databricks Genie Space API](https://docs.databricks.com/api/workspace/genie/getspace)
 - [Databricks Genie One MCP](https://docs.databricks.com/aws/en/agents/mcp-tools/genie-mcp)
