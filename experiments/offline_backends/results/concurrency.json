@@ -1,0 +1,25 @@
+[
+  {
+    "engine": "sqlite",
+    "child_exit": 0,
+    "result": {
+      "second_writer": "succeeded"
+    }
+  },
+  {
+    "engine": "duckdb",
+    "child_exit": 0,
+    "result": {
+      "second_writer": "rejected",
+      "exception_type": "IOException"
+    }
+  },
+  {
+    "engine": "ladybug",
+    "child_exit": 0,
+    "result": {
+      "second_writer": "rejected",
+      "exception_type": "RuntimeError"
+    }
+  }
+]

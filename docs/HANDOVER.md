@@ -32,6 +32,15 @@ revocation without exposing raw data. Live-provider validation remains outstandi
 Issue #39 remains open for the documented follow-ups. Issue #60 records optional
 OpenMetadata companion evaluation; lightweight standalone/offline use is retained.
 
+## Offline backend spike — first measured pass
+
+Issue #62 now has disposable experiments under
+`experiments/offline_backends/README.md`, including 18 direct-engine runs,
+a model-free Cognee adapter probe, FTS reproducers and process-lock checks.
+Interim recommendation: retain SQLCipher default; evaluate Cognee's graph-only
+pipeline before choosing an integration. This is not a completed backend selection
+or permission/encryption parity claim. No production persistence refactor was made.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.
