@@ -170,6 +170,18 @@ def _names(loaded, request):
     return result
 
 
+def render_projection(request, source, model_name):
+    sql = 'select\n    ' + ',\n    '.join("{{ adapter.quote('" + c + "') }}" for c in request['columns']) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
+    columns = []
+    for name in request['columns']:
+        column = {'name': name, 'quote': True}
+        if name in request['grain']:
+            column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
+        columns.append(column)
+    properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
+    return sql, properties
+
+
 def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None):
     """Create no files. Caller-supplied intent/grain are assertions, never approval."""
     allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope'}
@@ -231,14 +243,7 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     available = {c['name'] for c in facts['selected']['columns']['value']}
     if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
-    sql = 'select\n    ' + ',\n    '.join("{{ adapter.quote('" + c + "') }}" for c in request['columns']) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
-    columns = []
-    for name in request['columns']:
-        column = {'name': name, 'quote': True}
-        if name in request['grain']:
-            column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
-        columns.append(column)
-    properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
+    sql, properties = render_projection(request, source, model_name)
     files = [{'path': path, 'content': content, 'operation': 'create', 'diff': ''.join(difflib.unified_diff([], content.splitlines(keepends=True), fromfile='/dev/null', tofile=path))}
              for path, content in zip(names, (sql, properties))]
     inputs = [project_input, {'path': manifest['path'], 'sha256': manifest['sha256']},

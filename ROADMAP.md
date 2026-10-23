@@ -179,6 +179,10 @@ The local prototype now has a provider-neutral indexed store, JSON/manifest/ODS 
 
 Add minimal client-specific agent profiles where they improve tool routing, complete installer/dbt-package guidance, publish evaluations and compatibility results, and add a process for upstream synchronization and Databricks/dbt API changes. Upstream dbt skill updates should be consumed by users as a dependency, not routinely copied into this repository.
 
+## Applied source-projection validation
+
+The local creation workflow now includes fixed-status integrity checks and an explicit operator-only `dbt parse` runner with discarded subprocess output. MCP validates only server-retained draft IDs and cannot execute dbt. CI includes an isolated dbt/DuckDB smoke test with no source rows. Warehouse-backed value-safe validation, live Copilot verification, broader model design and existing-file changes remain follow-ups; see [workflow boundaries](docs/MODEL_DRAFTS.md).
+
 ## Boundaries and open design work
 
 This roadmap aims to provide an open-source alternative for the core local dbt agent workflow, not to reproduce dbt Wizard's proprietary implementation or every hosted product surface. Public-skill absence does not prove product absence. Focus on independently implemented, inspectable capabilities that work with public APIs, open protocols, local artifacts, and user-configured providers. Hosted UI, managed billing, and private dbt platform features may remain integrations rather than requirements.

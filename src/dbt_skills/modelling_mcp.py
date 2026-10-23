@@ -1,6 +1,7 @@
 """Thin local stdio adapter for the read-only modelling workflow."""
 
 import argparse
+from copy import deepcopy
 import asyncio
 from pathlib import Path
 import re
@@ -18,6 +19,7 @@ from .convention_discovery import infer_conventions
 from .decision_proposals import prepare_decision
 from .modelling_policy import PolicyError, load_document, resolve_policy_name
 from .model_drafts import DraftError, prepare_model
+from .model_validation import validate_applied
 from .policy_comparison import compare_model_names
 from .project import ProjectError, discover_project
 from .project_artifacts import inspect_artifacts
@@ -47,7 +49,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
         snapshot = inspect_artifacts(project)
         replacement = {"context_id": uuid4().hex, "snapshot": snapshot,
                        "inference": infer_conventions(project, snapshot),
-                       "policy": policy, "proposals": proposals, "catalog": catalog}
+                       "policy": policy, "proposals": proposals, "catalog": catalog, "drafts": {}}
         state.clear()
         state.update(replacement)
 
@@ -168,8 +170,20 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                 if result["status"] == "pending_review":
                     if result["policy"]["provenance"]["sha256"] != expected:
                         raise PolicyError("Selected policy changed; refresh context before drafting")
+                    drafts = state["drafts"]
+                    drafts[result["draft_id"]] = deepcopy(result)
+                    while len(drafts) > 4:
+                        del drafts[next(iter(drafts))]
                     return result
                 return {**result, "context_id": context_id}
+            return call(context_id, run, require_policy=True)
+
+        @server.tool(annotations=_READ, description="Check applied files and evidence for one of the last four server-generated drafts. Fixed status codes only; never runs dbt or queries data. Refresh invalidates retained drafts.")
+        def model_validate(context_id: str, draft_id: str) -> dict[str, object]:
+            def run():
+                if draft_id not in state["drafts"]:
+                    raise DraftError("Draft is not retained in this context; prepare and review again")
+                return {**validate_applied(project, state["drafts"][draft_id]), "context_id": context_id}
             return call(context_id, run, require_policy=True)
 
     return server
