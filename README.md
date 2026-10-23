@@ -4,6 +4,8 @@ Try the read-only [modelling policy CLI](docs/MODELLING_POLICY.md) to validate
 standards, resolve team-defined naming templates and locate existing policy files.
 Use [convention discovery](docs/CONVENTION_DISCOVERY.md) to propose naming layouts
 from a validated manifest with evidence, counterexamples and clarification questions.
+[Compare filenames with a selected policy](docs/POLICY_COMPARISON.md) to identify
+structural matches, mismatches and unresolved rule scope.
 
 > **2026-10-23 direction:** See the [agreed architecture](docs/ARCHITECTURE.md) for the current workflow and delivery order: Copilot in VS Code first, shared project/catalog context, optional UOL, and modelling policy before a standalone agent runtime. Earlier sequencing below is historical.
 
