@@ -27,3 +27,5 @@ Local Copilot integration: [VS Code modelling MCP setup](docs/COPILOT_VSCODE.md)
 Structured metadata: [catalog providers and ordered resolution](docs/CATALOG.md), with a [local customer model-design walkthrough](examples/catalog-workflow/README.md).
 
 Create a reviewed source projection: [model drafts and operator application](docs/MODEL_DRAFTS.md).
+
+Applied source-projection drafts can now be checked through read-only MCP validation or the [validation CLI](docs/MODEL_DRAFTS.md#validate-applied-files). An explicit operator-only `dbt parse` runner discards subprocess output and returns fixed statuses; warehouse validation and live Copilot verification remain outstanding.
