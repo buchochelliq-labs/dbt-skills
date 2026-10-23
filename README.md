@@ -25,3 +25,5 @@ The local Unified Ontology Layer cache, manifest/ODS sources, stdio MCP tools, e
 Local Copilot integration: [VS Code modelling MCP setup](docs/COPILOT_VSCODE.md).
 
 Structured metadata: [catalog providers and ordered resolution](docs/CATALOG.md), with a [local customer model-design walkthrough](examples/catalog-workflow/README.md).
+
+Create a reviewed source projection: [model drafts and operator application](docs/MODEL_DRAFTS.md).
