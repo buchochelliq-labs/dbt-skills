@@ -2,8 +2,9 @@
 
 This first generation workflow turns explicit model intent, a matched dbt source,
 catalog metadata and naming policy into a reviewable SQL model and properties YAML.
-It supports a new **source-row projection only**. It does not design joins, aggregate,
-deduplicate, implement SCD history, alter existing files or prove 3NF/4NF.
+It supports new **source-row projections and explicitly ordered current-row models**.
+It does not design joins, aggregate, implement SCD history, alter existing files or
+prove 3NF/4NF. See [current-row models](#current-row-models) for the selection contract.
 
 `prepare_model` is shared by the CLI and the read-only MCP `model_draft` tool. The
 MCP tool appears only when both policy and catalog configuration are selected. It
@@ -123,7 +124,7 @@ claim and sets the configured relation alias to `stage_xyz_customer_projection`.
 
 See [model-request.json](../examples/catalog-workflow/model-request.json). Requests
 include business intent, an explicit catalog asset ID, current-project manifest source
-ID, projection columns, grain columns, history=`source_rows`, model/properties naming
+ID, projection columns, grain columns, history=`source_rows` (or `current` with its explicit rule), model/properties naming
 rule IDs, arbitrary configured token values and any extra rule-scope dimensions.
 Missing design inputs, tokens, unknown scopes, overlapping rules, unavailable catalog
 facts and source mapping disagreements return clarification without output files.
@@ -254,3 +255,41 @@ validation remain follow-ups. An applicable unsupported naming target blocks
 this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness
 and local catalog export timestamps do not prove current warehouse state.
+
+## Current-row models
+
+Set `history` to `current` and provide an explicit `current_row` rule:
+
+```json
+{
+  "order_by": [
+    {"column": "updated_at", "direction": "desc", "nulls": "last"},
+    {"column": "event_id", "direction": "desc", "nulls": "last"}
+  ],
+  "ties": "assert_unique",
+  "deletions": "retain_latest",
+  "rationale": "Latest event per business key; event ID uniquely breaks timestamp ties. Retain deletion markers."
+}
+```
+
+`grain` is the business key used to partition rows. The tool renders a nested
+`row_number()` window and keeps rank 1. Sort columns must exist in catalog metadata,
+with explicit direction and null placement; they need not be projected into output.
+Naming rules, literal warehouse aliases and output-column mappings work as before.
+The helper rank column never appears in the output and avoids projected-name collisions.
+
+`assert_unique` is the caller's assertion that the complete ordering distinguishes
+rows within each business key. It is not a warehouse check: if ties remain, selection
+can be nondeterministic. Confirm a stable final tie-break column before adoption.
+`retain_latest` keeps the winning row even if it is a deletion marker. It never filters
+deletions or resurrects an older row. Projects needing active-only output must use a
+separately reviewed transform; other deletion/tie policies currently ask for clarification.
+Null business keys group together and require the proposed not-null tests to be run.
+The generated uniqueness test on a single output key does not test input ordering ties.
+
+The complete rule and rationale are recorded as unverified caller assertions in
+`design.current_row`. Applied validation recomputes the rule and rendered files;
+operator-only dbt parse remains available. Parsing does not execute the SQL or prove
+warehouse semantics. This supports a single-source current-row model, not incremental
+merge, SCD2 history, joins or existing-model edits. `source_rows` requests cannot carry
+a current-row rule. Existing source-row projections retain their previous rendering.
