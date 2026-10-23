@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 
 from .catalog import _document
+from .current_rows import current_row_design
 from .model_drafts import (_bounded, _config, _digest, _file_hash,
                            _model_inventory, _relative, _names, column_mapping, warehouse_alias, render_projection)
 from .project import discover_project
@@ -71,7 +72,13 @@ def validate_applied(project, draft):
 
         def projection():
             request = draft['request']
-            if request['history'] != 'source_rows':
+            available = {c['name'] for c in draft['catalog']['selected']['columns']['value']}
+            temporal = current_row_design(request, available)
+            if temporal is not None and temporal.get('status') == 'needs_clarification':
+                return False
+            if (temporal is not None or 'current_row' in draft['design']) and draft['design'].get('current_row') != temporal:
+                return False
+            if draft['design'].get('history') != request['history']:
                 return False
             for key in ('columns', 'grain'):
                 values = request[key]

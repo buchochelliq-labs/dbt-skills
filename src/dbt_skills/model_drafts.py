@@ -1,4 +1,4 @@
-"""Review-only source projections and an operator-only create-file command."""
+"""Review-only source projections/current-row models and an operator-only create-file command."""
 import argparse
 from copy import deepcopy
 import difflib
@@ -12,6 +12,7 @@ import sys
 
 import yaml
 
+from .current_rows import current_row_design, render_current
 from .catalog import CatalogError, FIELDS, _document, _raw, load_catalog
 from .modelling_naming import NamingError, NamingRule, resolve_name
 from .modelling_policy import PolicyError, _Loader, load_document
@@ -305,6 +306,8 @@ def render_projection(request, source, model_name, mapping=None, alias=None):
             column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
         columns.append(column)
     sql = 'select\n    ' + ',\n    '.join(expressions) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
+    if request['history'] == 'current':
+        sql = render_current(request, source, mapping)
     if alias is not None:
         sql = "{{ config(alias='" + alias['value'] + "') }}\n\n" + sql
     properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
@@ -313,10 +316,10 @@ def render_projection(request, source, model_name, mapping=None, alias=None):
 
 def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None):
     """Create no files. Caller-supplied intent/grain are assertions, never approval."""
-    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context'}
+    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context', 'current_row'}
     if not isinstance(request, dict) or set(request) - allowed or len(json.dumps(request)) > 16384:
         raise DraftError('Invalid or oversized model request')
-    required = allowed - {'scope', 'column_context'}
+    required = allowed - {'scope', 'column_context', 'current_row'}
     if any(k not in request or request[k] in ('', [], None) for k in required):
         return _questions('Specify intent, asset/source, both naming rules, token values, projection columns, grain and history')
     for key in ('intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'history'):
@@ -330,8 +333,9 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
         values = request[key]
         if not isinstance(values, list) or not 1 <= len(values) <= 256 or any(not isinstance(v, str) or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', v) is None for v in values) or len(set(values)) != len(values):
             raise DraftError('Select distinct portable column identifiers')
-    if request['history'] != 'source_rows':
-        return _questions('Only source-row projection is supported; joins, deduplication and history require a different design')
+    temporal = current_row_design(request)
+    if temporal is not None and temporal.get('status') == 'needs_clarification':
+        return temporal
     loaded = load_document(policy_path)
     if loaded['document']['kind'] != 'policy':
         raise DraftError('Select a declared modelling policy')
@@ -375,6 +379,9 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     available = {c['name'] for c in facts['selected']['columns']['value']}
     if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
+    temporal = current_row_design(request, available)
+    if temporal is not None and temporal.get('status') == 'needs_clarification':
+        return temporal
     alias = warehouse_alias(loaded, request, names[0], manifest, inventory)
     if alias is not None and alias['status'] != 'resolved':
         return alias
@@ -399,10 +406,12 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
              'context_id': context_id, 'model_inventory': {'sha256': _digest(inventory), 'count': len(inventory)}, 'request': deepcopy(request), 'files': files, 'preconditions': inputs,
              'policy': loaded, 'catalog': facts,
              'source': {k: manifest.get(k) for k in ('path', 'sha256', 'generated_at', 'observed_at', 'freshness')},
-             'design': {'warehouse_alias': alias, 'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
+             'design': {'warehouse_alias': alias, 'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': request['history'],
                         'normal_form_status': 'unverified', 'standards': loaded['document']['modelling']},
              'validation': {'executed': [], 'proposed': ['Review source mapping, grain, modelling principles and inherited dbt configuration', 'Validate with dbt only through a separately authorized output-safe runner'],
                             'limitations': ['No SQL/database execution or proof of key/normal form', 'Composite grain uniqueness test is not generated', 'No existing properties/model files are modified', 'Effective warehouse alias, schema/database and custom naming macros require operator review; known-name checks do not prove uniqueness', 'Manifest/source freshness is evidence, not live warehouse verification']}}
+    if temporal is not None:
+        draft['design']['current_row'] = temporal
     draft['draft_id'] = _digest(draft)
     _bounded(draft)
     return draft

@@ -157,3 +157,15 @@ and replacement test patches support external review/save. Missing metadata/colu
 conflicting catalogs and denied access prevent proposals. Remaining semantic questions
 stay visible. No writes, authenticated approval, normal-form proof or automatic
 plan-to-draft conversion. See MODEL_PLANNING.md for the full workflow.
+
+## Richer modelling: current-row selection — 2026-10-23
+
+User prioritised richer models, design memory, remote catalogs, cache/TTL and release
+work before live Copilot verification. The first richer-model slice adds `history=current`
+with explicit sort/null placement, unique-ordering assertion, retain-latest deletion
+handling and rationale. Shared generation uses a nested row-number window, existing
+naming/alias rules and create-only apply; validation recomputes SQL/design. Synthetic
+SQL tests cover selection and dbt parse stays output-safe. No warehouse reads occur.
+Ties remain an unverified human assertion; deletion markers are kept, not filtered.
+Next richer-model gaps: active-only deletion handling, joins, full history and reviewed
+existing-file changes. Live Copilot UI validation remains deferred by user direction.
