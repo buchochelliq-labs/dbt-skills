@@ -81,3 +81,59 @@ Once the human has selected a supported source-row projection, use the existing
 [prepare/review/apply/validate workflow](MODEL_DRAFTS.md). Joins, current/history transforms,
 changes to existing files and automatic conversion of design answers remain follow-ups.
 There is no automatic plan-to-apply shortcut and no warehouse execution.
+
+## Reuse reviewed grain and history decisions
+
+After discussing the questions, a human can save choices in an explicitly selected
+`design-decisions.json`. Add `--design-decisions design-decisions.json` to the CLI
+command above or to the MCP server launch arguments (policy and catalogs are required).
+No file is auto-discovered or written by these tools. The host can prepare the file
+for normal human review; the human controls whether the reviewed file is selected.
+
+Copy an entity's complete `decision_context` object from the current report into
+`records`, then add `id`, `grain`, `history`, `rationale`, `recorded_by` and
+`recorded_at`. The enclosing document is:
+
+```json
+{"schema_version": 1, "kind": "design_decisions", "records": []}
+```
+
+For each copied context, the added fields could be:
+
+```json
+{
+  "id": "customer_source_rows",
+  "grain": ["customer_id"],
+  "history": "source_rows",
+  "rationale": "One source customer per row; preserve all received rows.",
+  "recorded_by": "project_owner",
+  "recorded_at": "2026-10-23T12:00:00Z"
+}
+```
+
+The two objects must be combined into one record: retain the returned `intent`,
+`asset_id`, `scope` and `evidence` fields verbatim. Do not invent hashes. Files use
+strict JSON, unique record IDs, at most 128 records and a 1 MiB limit; unsupported
+fields, duplicate keys, invalid timestamps and unsupported choices are rejected.
+An empty records list is valid. This is separate from policy exception/standard-change
+records, which retain their own review process.
+
+A record is reused only for the exact intent, asset and scope, with matching policy,
+manifest, catalog configuration and resolved-fact fingerprints. Hashes include source
+revisions and provenance; retrieval/verification clocks alone do not invalidate reuse.
+Even whitespace changes to source files change their revision. Moving source files
+can also require reconfirmation because provenance locations are part of the context.
+Multiple matching records, stale evidence or an explicit conflicting request produce
+questions; no part of a conflicting record is silently applied. Replace obsolete
+records deliberately after review rather than accumulating competing records.
+
+The entity returns the record and its file/hash/JSON locator as provenance. Attribution
+and timestamp are assertions in a local file, **not authenticated approval**. Reused
+grain is labelled `recorded_design_decision` and remains unverified. Column existence,
+current/history transformation rules, relationship meaning and normal-form dependency
+questions still apply. A saved choice never promotes a standard or proves a key.
+
+MCP pins the selected decisions file alongside project context. If it changes,
+`model_plan` requires `modelling_refresh`; old context IDs then become invalid.
+The planner does not persist arbitrary semantic answers yet, and drafting still
+requires an explicit reviewed request. There is no automatic plan-to-apply shortcut.
