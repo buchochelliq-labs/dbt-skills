@@ -3,7 +3,8 @@
 This first generation workflow turns explicit model intent, a matched dbt source,
 catalog metadata and naming policy into a reviewable SQL model and properties YAML.
 It supports new **source-row projections and explicitly ordered current-row models**.
-It does not design joins, aggregate, implement SCD history, alter existing files or
+It also supports one explicitly specified lookup join. It does not aggregate,
+implement SCD history, alter existing files or
 prove 3NF/4NF. See [current-row models](#current-row-models) for the selection contract.
 
 `prepare_model` is shared by the CLI and the read-only MCP `model_draft` tool. The
@@ -320,3 +321,49 @@ is retained in the unverified design record and recomputed during applied valida
 This does not infer hard deletions from missing source rows or implement incremental
 deletes. Correctness depends on the selected source retaining the required events
 and the human confirming ordering and marker semantics. No source data is queried.
+
+## One explicit lookup join
+
+A `source_rows` request can add one `lookup` object:
+
+```json
+{
+  "asset_id": "urn:demo:xyz:customer_segments",
+  "source_id": "source.my_project.xyz.customer_segments",
+  "type": "left",
+  "on": [{"left": "customer_id", "right": "customer_id"}],
+  "columns": ["segment"],
+  "cardinality": "many_to_one",
+  "nulls": "never_match",
+  "rationale": "One reviewed segment record per customer key."
+}
+```
+
+Replace IDs with explicitly selected catalog and current-project dbt source IDs.
+The lookup relation must exactly match its manifest source mapping. Right-side join
+keys must match a declared primary key; both sides need matching known normalized
+key types. A conflicting FK declaration for the selected base-key tuple requires
+clarification. Matching FK declarations retain provenance; missing FK declarations
+leave relationship meaning as a human assertion. No relationship targets are fetched
+unless selected in the request.
+
+`left` retains unmatched base rows with null lookup attributes. `inner` drops unmatched
+rows. Equality never matches null keys. The lookup primary key and `many_to_one`
+statement are declarations/assertions, **not uniqueness proof**: duplicate lookup
+keys can multiply rows and invalidate the asserted base grain. The generated base-grain
+tests do not verify lookup uniqueness before execution. Review cardinality, optionality
+and the business meaning of the join before adopting it.
+
+Base `columns` and `grain` retain their meaning. Lookup `columns` are appended; grain
+must remain in the base projection. Optional `lookup.column_context` uses the same
+values/scope structure as base `column_context` and the same declared naming rules.
+Output names must be unique across both projections; collisions ask for clarification.
+There are no implicit prefixes, suffixes or inferred aliases. Both catalog reports,
+source mapping, lookup key, relationship provenance and complete join rationale remain
+in the sealed draft. Consulted provider revisions from both resolutions are pinned.
+
+This creates a new model from two distinct dbt sources. It does not yet accept model
+`ref()` inputs, self-joins, multiple lookups, current-row/temporal joins, expressions,
+implicit casts, arbitrary predicates or existing-model edits. Denial/error on the
+lookup withholds collected join context. MCP remains read-only; the same explicit
+operator apply and output-safe parse workflow is used. No warehouse queries occur.
