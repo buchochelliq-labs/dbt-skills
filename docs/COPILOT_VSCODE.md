@@ -48,3 +48,7 @@ Configuration references (checked 2026-10-23): [MCP servers](https://code.visual
 ### Validate an applied draft
 
 After operator application, call `model_validate(context_id, draft_id)` for a draft returned by this server. Only the last four drafts are retained; context refresh invalidates them. The tool checks local integrity and the restricted projection contract, returning fixed statuses. It does not run dbt. For an explicitly approved local parse, follow the [operator CLI instructions](MODEL_DRAFTS.md#optional-operator-only-dbt-parse). A local or parse pass is not proof of warehouse correctness or normal form.
+
+### Plan the data model before SQL
+
+With policy and catalogs configured, call `model_plan(context_id, request)` to ground the design in selected assets, scoped standards, declared keys/relationships and existing resource lineage. Discuss the returned questions with the human before choosing grain/history or generating files. See the [request and walkthrough](MODEL_PLANNING.md). The tool returns design hypotheses and provenance, never writes or executes SQL.

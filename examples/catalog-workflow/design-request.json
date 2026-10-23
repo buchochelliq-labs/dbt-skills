@@ -1,0 +1,9 @@
+{
+  "intent": "Design the customer entity and identify existing models to reuse before generating a new model",
+  "assets": [
+    {
+      "asset_id": "urn:demo:xyz:customers",
+      "scope": {"directory": "models/staging"}
+    }
+  ]
+}
