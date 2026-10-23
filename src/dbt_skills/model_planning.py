@@ -5,6 +5,7 @@ import json
 import re
 
 from .catalog import CatalogError, FIELDS, _document, load_catalog
+from .design_decisions import decision_context, select_decision, validate_decisions, load_design_decisions
 from .model_drafts import DraftError, _bounded
 from .modelling_policy import load_document, validate_document
 from .project import discover_project
@@ -48,9 +49,11 @@ def _request(request):
         raise PlanningError('Use bounded intent and one to eight distinct assets with supported design assertions') from None
 
 
-def plan_model(project, policy, catalog, request, *, snapshot=None):
+def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=None):
     """Host agent interprets intent; this core assembles evidence and review questions."""
     _request(request)
+    if decisions is not None:
+        validate_decisions(decisions['document'])
     validate_document(policy['document'])
     if policy['document']['kind'] != 'policy':
         raise PlanningError('Select a declared modelling policy')
@@ -101,6 +104,17 @@ def plan_model(project, policy, catalog, request, *, snapshot=None):
     entities = {}
     for asset in request['assets']:
         identifier = asset['asset_id']
+        context = decision_context(request['intent'], asset, policy, manifest, result['evidence'][identifier], catalog.config)
+        decision = select_decision(decisions, context, asset)
+        messages = {'stale': 'Review the saved design choice against changed evidence before reusing it.',
+                    'conflict': 'Resolve the difference between the new request and the saved design choice.',
+                    'ambiguous': 'Select one reviewed design record; multiple records match this intent, asset and scope.'}
+        codes = {'stale': 'stale_design_decision', 'conflict': 'design_decision_conflict', 'ambiguous': 'ambiguous_design_decision'}
+        if decision['status'] in messages:
+            question(codes[decision['status']], messages[decision['status']], identifier)
+        saved_grain = decision['status'] == 'matched' and 'grain' not in asset
+        if decision['status'] == 'matched':
+            asset = {**decision['record'], **asset}
         selected = result['evidence'][identifier]['selected']
         columns = {c['name'] for c in selected.get('columns', {}).get('value', [])}
         relation = selected.get('relation', {}).get('value')
@@ -143,6 +157,8 @@ def plan_model(project, policy, catalog, request, *, snapshot=None):
             question('grain_columns_missing', 'Select grain columns present in the catalog or resolve schema drift.', identifier)
         elif valid_key and set(asset['grain']) != set(valid_key):
             question('grain_key_difference', 'Explain why the intended grain differs from the declared source key.', identifier)
+        if saved_grain:
+            grain.update(basis='recorded_design_decision', provenance=deepcopy(decision['provenance']))
         history = asset.get('history')
         if history is None:
             question('choose_history', 'Should the model preserve source rows, represent current state, or retain historical versions?', identifier)
@@ -164,6 +180,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None):
         if existing:
             suggestion('review_existing_models', 'Review these existing descendants for reuse or a scoped change before adding another model.', asset_id=identifier, model_ids=existing[:100])
         entity = {'asset_id': identifier, 'status': 'candidate', 'grain': grain, 'history': history,
+                  'decision_context': context, 'decision': decision,
                   'standards': standards, 'normal_form_status': 'unverified', 'source_candidates': source_ids[:100],
                   'source_candidates_truncated': len(source_ids) > 100, 'existing_models': existing[:100], 'existing_models_truncated': len(existing) > 100}
         result['entities'].append(entity)
@@ -211,11 +228,13 @@ def main(argv=None):
     parser.add_argument('--policy', required=True)
     parser.add_argument('--catalog-config', required=True)
     parser.add_argument('--target-path')
+    parser.add_argument('--design-decisions')
     args = parser.parse_args(argv)
     try:
         project = discover_project(args.project_dir, target_path=args.target_path)
         request, _ = _document(project.root / args.request)
-        result = plan_model(project, load_document(project.root / args.policy), load_catalog(project.root / args.catalog_config), request)
+        result = plan_model(project, load_document(project.root / args.policy), load_catalog(project.root / args.catalog_config), request,
+                            decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None)
         print(json.dumps(result, indent=2))
         return {'pending_review': 0, 'needs_clarification': 2, 'blocked': 1}[result['status']]
     except (ValueError, OSError, TypeError, KeyError, RuntimeError):

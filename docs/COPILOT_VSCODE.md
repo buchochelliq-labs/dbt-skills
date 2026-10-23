@@ -52,3 +52,10 @@ After operator application, call `model_validate(context_id, draft_id)` for a dr
 ### Plan the data model before SQL
 
 With policy and catalogs configured, call `model_plan(context_id, request)` to ground the design in selected assets, scoped standards, declared keys/relationships and existing resource lineage. Discuss the returned questions with the human before choosing grain/history or generating files. See the [request and walkthrough](MODEL_PLANNING.md). The tool returns design hypotheses and provenance, never writes or executes SQL.
+
+To reuse reviewed grain/history choices, add `--design-decisions design-decisions.json`
+to the server arguments alongside policy and catalogs. Copy each entity's
+`decision_context` into a human-reviewed record as described in
+[design planning](MODEL_PLANNING.md#reuse-reviewed-grain-and-history-decisions).
+After changing the file, call `modelling_refresh` and use its new context ID. Saved
+attribution is not authenticated approval; dependency questions still require review.

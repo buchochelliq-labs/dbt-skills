@@ -16,8 +16,10 @@ Keep the core useful without dbt Wizard, mandatory hosted services, or OpenDataS
 
 As of 2026-10-23, merged #47/#48 provide source-projection prepare/review/apply,
 read-only applied validation and an operator-only output-safe dbt parse runner.
-The new design-planning slice adds metadata-grounded entity/relationship hypotheses
-and targeted standards/grain/history questions before SQL generation. See the progress
+Merged #49 adds metadata-grounded entity/relationship hypotheses and targeted
+standards/grain/history questions before SQL generation; #50 completes supported
+naming targets during source-projection drafting. The next slice reuses explicitly
+selected human-owned grain/history decisions with evidence fingerprints. See the progress
 sections below for exact boundaries. Live Copilot UI verification and broader modelling
 remain outstanding; protocol tests do not establish live host behavior.
 
@@ -129,3 +131,17 @@ collisions, unsafe identifiers and ambiguous naming context clarify. Alias prove
 is recorded and applied validation recomputes it. Custom alias macros, target schema/
 database and live relation uniqueness still need review; no warehouse checks occur.
 This supersedes earlier unsupported-alias notes.
+
+## Saved design decisions progress — 2026-10-23
+
+The planner accepts an operator-selected `--design-decisions` JSON file in CLI and
+MCP. Exact intent/asset/scope and evidence fingerprints govern grain/history reuse.
+Stale, conflicting or ambiguous records require clarification; rationale, attribution
+and file/hash/locator provenance remain visible. Attribution is not authentication.
+The MCP checks for file changes and requires explicit refresh. No automatic writes,
+standards promotion, semantic proof or plan-to-apply path was added. See
+[design planning](MODEL_PLANNING.md) for the copy/review/save workflow.
+
+Next priorities remain richer semantic decision handling, joins/history generation,
+existing-model edits, live Copilot VS Code verification, remote catalog adapters and
+provenance-aware cache/TTL work. Do not merge or release on the user's behalf.

@@ -226,4 +226,4 @@ The initial source-tree runtime now uses Python 3.11+, `argparse`, standard-libr
 
 ## Model design planning progress
 
-The shared read-only planner now grounds entity, grain and relationship discussion in selected catalog facts, scoped standards and the validated resource graph. It asks for missing functional/multivalued dependency evidence and identifies existing models for reuse review. Automatic decomposition, semantic answer persistence, joins/history generation and existing-file changes remain follow-ups. See [design planning](docs/MODEL_PLANNING.md).
+The shared read-only planner now grounds entity, grain and relationship discussion in selected catalog facts, scoped standards and the validated resource graph. It asks for missing functional/multivalued dependency evidence and identifies existing models for reuse review. Explicitly selected human-owned grain/history records can now be reused against matching evidence fingerprints, with rationale and provenance. Automatic decomposition, broader semantic answer persistence, joins/history generation and existing-file changes remain follow-ups. See [design planning](docs/MODEL_PLANNING.md).
