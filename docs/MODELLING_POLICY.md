@@ -87,6 +87,7 @@ this local read-only contract. Nothing here grants filesystem write permission.
 ## Remaining work
 
 #37 still needs host-level authority checks, scoped rule selection/conflict handling
-and reviewable policy/decision updates. #38 adds evidence-backed inference,
-counterexamples and interactive onboarding. Neither is implied by a successful
-schema validation. Copilot integration will consume these same APIs.
+and reviewable policy/decision updates. The [infer command](CONVENTION_DISCOVERY.md)
+now provides evidence-backed filename-layout hypotheses and counterexamples. #38
+still needs explicit YAML/decision adapters and interactive onboarding. None of
+these capabilities is implied by schema validation. Copilot integration remains separate.

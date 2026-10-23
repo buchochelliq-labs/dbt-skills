@@ -5,20 +5,26 @@ import json
 import sys
 
 from .modelling_policy import PolicyError, discover_policy_files, load_document, resolve_policy_name
+from .project import ProjectError, discover_project
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "discover", "render"):
+    for name in ("validate", "discover", "render", "infer"):
         command = commands.add_parser(name)
         command.add_argument("path")
+        if name == "infer":
+            command.add_argument("--target-path")
         if name == "render":
             command.add_argument("--rule", required=True)
             command.add_argument("--value", action="append", default=[], metavar="TOKEN=VALUE")
     args = parser.parse_args(argv)
     try:
-        if args.command == "discover":
+        if args.command == "infer":
+            from .convention_discovery import infer_conventions
+            result = infer_conventions(discover_project(args.path, target_path=args.target_path))
+        elif args.command == "discover":
             result = discover_policy_files(args.path)
         elif args.command == "validate":
             loaded = load_document(args.path)
@@ -35,6 +41,9 @@ def main(argv=None):
         return 0
     except PolicyError as error:
         print(json.dumps({"status": "error", "message": str(error)}), file=sys.stderr)
+        return 2
+    except ProjectError:
+        print(json.dumps({"status": "error", "message": "Cannot inspect the selected dbt project"}), file=sys.stderr)
         return 2
 
 
