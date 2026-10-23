@@ -8,7 +8,8 @@ No product source or dependency requirements changed. No real source data used.
 graph-only pipeline, permission checks, source deletion and branching graphs.
 Further reports: [policy/encryption fit](POLICY_FIT.md) and
 [generation recovery](RECOVERY.md), and [real index activation](PROJECTION.md).
-The observations below describe the initial pass.
+The observations below describe the initial pass. See [selection options](SELECTION.md)
+for the consolidated recommendation, drawbacks and final retrieval sanity check.
 
 ## Interim decision
 

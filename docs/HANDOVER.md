@@ -62,6 +62,12 @@ live revocation, concurrent snapshot capture and reader-safe GC remain unverifie
 Keep a single encrypted store as the simpler default; separate projections must earn
 their extra lifecycle cost. Next selection work: bounded evidence retrieval/relevance
 and an ADR, not a production backend framework.
+`experiments/offline_backends/SELECTION.md` now presents five selection options and
+recommends retaining SQLCipher with SQLite lexical/edge retrieval as the baseline.
+The final small retrieval probe passes eight lexical cases (including documented
+typo/paraphrase misses) and three evidence-path/budget checks. It is not a real-user
+relevance benchmark. Selection is proposed for the maintainer, not an accepted ADR;
+do not implement every optional backend. No production changes were made.
 
 ## Purpose and guardrails
 
