@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "providers": [
+    {
+      "id": "physical",
+      "type": "file",
+      "path": "physical.json",
+      "scope": "demo"
+    },
+    {
+      "id": "curated",
+      "type": "file",
+      "path": "curated.json",
+      "scope": "demo"
+    }
+  ]
+}

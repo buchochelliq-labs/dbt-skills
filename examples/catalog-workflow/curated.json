@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-23T08:00:00Z",
+  "assets": [
+    {
+      "id": "urn:demo:xyz:customers",
+      "native_id": "customer_register",
+      "facts": {
+        "primary_key": {
+          "columns": [
+            "customer_id"
+          ],
+          "enforcement": "not_enforced",
+          "rely": false
+        }
+      }
+    }
+  ]
+}

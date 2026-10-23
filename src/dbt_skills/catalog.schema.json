@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 64
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}$",
+            "maxLength": 256
+          },
+          "native_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}$",
+            "maxLength": 256
+          },
+          "facts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "relation": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "catalog": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                    "maxLength": 128
+                  },
+                  "schema": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                    "maxLength": 128
+                  },
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "catalog",
+                  "schema",
+                  "name"
+                ]
+              },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                      "maxLength": 128
+                    },
+                    "type": {
+                      "enum": [
+                        "string",
+                        "int64",
+                        "float64",
+                        "decimal",
+                        "boolean",
+                        "date",
+                        "timestamp",
+                        "binary",
+                        "array",
+                        "map",
+                        "struct",
+                        "unknown"
+                      ]
+                    },
+                    "nullable": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "type",
+                    "nullable"
+                  ]
+                },
+                "maxItems": 256
+              },
+              "primary_key": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "columns": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                          "maxLength": 128
+                        },
+                        "maxItems": 32,
+                        "minItems": 1,
+                        "uniqueItems": true
+                      },
+                      "enforcement": {
+                        "enum": [
+                          "unknown",
+                          "not_enforced",
+                          "enforced"
+                        ]
+                      },
+                      "rely": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "columns",
+                      "enforcement",
+                      "rely"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "foreign_keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                        "maxLength": 128
+                      },
+                      "maxItems": 32,
+                      "minItems": 1,
+                      "uniqueItems": true
+                    },
+                    "enforcement": {
+                      "enum": [
+                        "unknown",
+                        "not_enforced",
+                        "enforced"
+                      ]
+                    },
+                    "rely": {
+                      "type": "boolean"
+                    },
+                    "target_asset": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}$",
+                      "maxLength": 256
+                    },
+                    "target_columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+                        "maxLength": 128
+                      },
+                      "maxItems": 32,
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "columns",
+                    "enforcement",
+                    "rely",
+                    "target_asset",
+                    "target_columns"
+                  ]
+                },
+                "maxItems": 32
+              }
+            },
+            "required": []
+          }
+        },
+        "required": [
+          "id",
+          "native_id",
+          "facts"
+        ]
+      },
+      "maxItems": 100
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "assets"
+  ]
+}

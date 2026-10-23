@@ -1,6 +1,6 @@
 # Copilot in VS Code: local modelling tools
 
-This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. It does **not** yet generate model SQL/YAML, apply decisions, prove normal forms or access catalogs/warehouses. UOL is optional and is not imported by this adapter.
+This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. It does **not** yet generate model SQL/YAML, apply decisions, prove normal forms or access warehouses. UOL is optional and is not imported by this adapter.
 
 ## Setup
 
@@ -18,6 +18,8 @@ Replace all absolute path placeholders with paths on the machine running the ser
 `--policy` and optional `--proposals` paths are relative to the selected project unless absolute. The proposals file must already exist and have kind `proposals`; it is never created or changed by the server. Use `--target-path` when artifacts are not in the project's configured target directory. Paths are operator-selected startup settings, never tool arguments.
 
 Start/trust the configured server using the host's MCP controls, inspect its discovered tools, and enable only this server's tools for this workflow. For the Local harness, copy [dbt-modelling.agent.md](../.github/agents/dbt-modelling.agent.md) into the project's `.github/agents/` directory and select it. Its server wildcard allowlist targets Local; check harness-specific support before reuse. Host permissions and other enabled tools remain the operator's responsibility: annotations and prose are not a sandbox.
+
+Optional structured catalog metadata: add `--catalog-config catalogs.json` to server arguments. This registers three additional read-only tools; see [catalog contract](CATALOG.md) and the [customer walkthrough](../examples/catalog-workflow/README.md).
 
 ## Workflow
 

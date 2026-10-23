@@ -1,0 +1,16 @@
+version: 2
+sources:
+  - name: xyz
+    database: demo
+    schema: xyz
+    tables:
+      - name: customers
+models:
+  - name: stg_xyz_customer
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_name
+      - name: updated_at
