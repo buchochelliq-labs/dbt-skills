@@ -120,7 +120,7 @@ class OntologySourceTests(unittest.TestCase):
         custom.write_bytes(self.manifest_path.read_bytes())
         provider = ManifestSnapshotProvider(self.root, custom)
         page = asyncio.run(provider.fetch_page(cursor=None, page_size=100, full_refresh=True))
-        self.assertEqual(page.claims[0].evidence["artifact"], str(custom))
+        self.assertEqual(page.claims[0].evidence["artifact"], str(custom.resolve()))
 
     def test_manifest_pagination_reuses_projection_and_rejects_changed_artifact(self):
         provider = ManifestSnapshotProvider(self.root)

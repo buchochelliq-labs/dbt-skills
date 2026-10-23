@@ -15,7 +15,7 @@ class ProjectArtifactTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         (self.root / 'dbt_project.yml').write_text('name: shop\nversion: 1.0\n')
         self.target = self.root / 'target'
         self.target.mkdir()
