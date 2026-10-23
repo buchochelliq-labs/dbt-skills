@@ -21,6 +21,17 @@ are outside this product boundary and have been removed. SCD implementation is
 not a deferred requirement. Describing temporal semantics in metadata remains
 valid context. Use the host agent and existing dbt tooling for implementation.
 
+## Latest cache increment
+
+Project-scoped Unity Catalog context now has bounded memory caching and optional
+SQLCipher/keyring persistence, metadata TTL (including no expiry), independent
+permission lifetime, LRU limits and review-only TTL suggestions. See
+[configuration and limits](CATALOG_CACHE.md). Full refresh bypasses stored facts;
+delta sync also refreshes expired/evicted observations. Tests cover restart and
+revocation without exposing raw data. Live-provider validation remains outstanding.
+Issue #39 remains open for the documented follow-ups. Issue #60 records optional
+OpenMetadata companion evaluation; lightweight standalone/offline use is retained.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.

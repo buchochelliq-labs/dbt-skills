@@ -113,6 +113,10 @@ class ProjectCatalog(CatalogResolver):
             provider.allowed = provider.allowed - self.blocked
         super().__init__(providers)
         self.config = deepcopy(catalog.config)
+        for provider in self.providers:
+            binder = getattr(provider.original, 'bind_project', None)
+            if binder:
+                binder(snapshot.get('manifest', {}).get('path'), {a: self.fingerprints[a] for a in provider.allowed})
         self.manifest = {k: snapshot.get('manifest', {}).get(k) for k in ('sha256', 'status', 'identity')}
         if previous is not None:
             prior = {p.id: p.original for p in previous.providers}
@@ -127,6 +131,7 @@ class ProjectCatalog(CatalogResolver):
         result['project_scope'] = {'manifest': deepcopy(self.manifest),
                                    'active_count': len(self.allowed - self.blocked),
                                    'quarantined_count': len(self.blocked)}
+        result['cache'] = [p.original.cache_report() for p in self.providers if hasattr(p.original, 'cache_report')]
         return result
 
     def quarantine(self, *, offset=0, limit=20):
@@ -155,12 +160,14 @@ class ProjectCatalog(CatalogResolver):
         added = sorted(set(self.fingerprints) - set(old))
         removed = sorted(set(old) - set(self.fingerprints))
         changed = sorted(a for a in set(old) & set(self.fingerprints) if old[a] != self.fingerprints[a])
+        expired = sorted(a for a in self.allowed - self.blocked if any(
+            a in p.allowed and getattr(p.original, 'needs_refresh', lambda _: False)(a) for p in self.providers))
         # Fetch only delta assets; the ordinary ordered resolver still governs
         # provider priority, denial and missing facts. No relationship expansion.
-        results = {a: self.resolve(a, list(FIELDS))['status'] for a in added + changed if a not in self.blocked}
+        results = {a: self.resolve(a, list(FIELDS))['status'] for a in sorted(set(added + changed + expired)) if a not in self.blocked}
         return {'added': added, 'changed': changed, 'removed': removed,
                 'unchanged_count': len(set(old) & set(self.fingerprints)) - len(changed),
-                'results': results, 'quarantined': sorted(self.blocked), 'manifest': deepcopy(self.manifest)}
+                'expired': expired, 'results': results, 'quarantined': sorted(self.blocked), 'manifest': deepcopy(self.manifest)}
 
 
 def scope_catalog(catalog, snapshot, *, previous=None):

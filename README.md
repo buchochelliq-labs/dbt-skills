@@ -34,3 +34,5 @@ The shared [design planner](docs/MODEL_PLANNING.md) assembles entity/key/relatio
 Before physical assets exist, provide [business concepts and relationships](docs/BUSINESS_CONTEXT.md)
 through a human-owned context file. The agent can use definitions, rationale and
 provenance to reason about the complete data model without requiring UOL or a catalog.
+
+Catalog context supports [bounded local caching](docs/CATALOG_CACHE.md), including optional encrypted persistence and no metadata TTL.
