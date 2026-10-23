@@ -369,9 +369,16 @@ def load_catalog(path: Path) -> CatalogResolver:
         raise CatalogError('Invalid catalog configuration')
     providers = []
     for entry in doc['providers']:
-        if not isinstance(entry, dict) or set(entry) != {'id', 'type', 'path', 'scope'} or entry['type'] != 'file' or not isinstance(entry['path'], str) or not 1 <= len(entry['path']) <= 4096:
+        if not isinstance(entry, dict):
+            raise CatalogError('Invalid catalog provider configuration')
+        if entry.get('type') == 'unity_catalog':
+            from .unity_catalog import UnityCatalogProvider
+            providers.append(UnityCatalogProvider(entry))
+        elif (set(entry) == {'id', 'type', 'path', 'scope'} and entry['type'] == 'file'
+              and isinstance(entry['path'], str) and 1 <= len(entry['path']) <= 4096):
+            providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
+        else:
             raise CatalogError('Invalid or unsupported catalog provider configuration')
-        providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
     resolver = CatalogResolver(providers)
     resolver.config = {'document': str(path), 'revision': revision}
     return resolver

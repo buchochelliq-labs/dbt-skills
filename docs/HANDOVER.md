@@ -47,7 +47,7 @@ The repository now has:
 - A local stdio MCP bridge exposing UOL reads and separately controlled sync/cache/purge tools.
 - A portable dbt context-routing skill and a thin Copilot CLI profile.
 
-Important gaps remain: no remote ontology/catalog provider is implemented; no generic catalog MCP or Unity Catalog adapter exists; Copilot CLI discovery/approval has not been smoke-tested; and the repository's distribution license and dependency/license automation are unresolved. The cache is encrypted at rest, but this does not protect against a compromised user account or an authorized process. Losing the OS-stored cache key makes that cache unrecoverable.
+Unity Catalog now supplies bounded relation/column metadata through the shared catalog interface; see [setup and limits](UNITY_CATALOG.md). Important gaps remain: remote catalog discovery and additional providers are not implemented; no generic catalog MCP or Unity Catalog adapter exists; Copilot CLI discovery/approval has not been smoke-tested; and the repository's distribution license and dependency/license automation are unresolved. The cache is encrypted at rest, but this does not protect against a compromised user account or an authorized process. Losing the OS-stored cache key makes that cache unrecoverable.
 
 ## Recommended implementation sequence
 

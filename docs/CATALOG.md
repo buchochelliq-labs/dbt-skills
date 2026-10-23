@@ -1,4 +1,4 @@
-# Metadata catalog contract and file provider
+# Metadata catalog providers
 
 The first catalog implementation supplies structured metadata to the local modelling
 workflow without UOL, warehouse access or a custom agent runtime. Python consumers
@@ -25,8 +25,9 @@ available and catalog tools are not registered.
 Order is priority. IDs must be unique; one to eight providers are supported. `scope`
 is the environment/data-visibility scope asserted by the operator, not a verified
 remote permission grant. Facts from different scopes cannot be combined. There is
-no dynamic module loading; only `file` is configured in this release. Other providers
-implement the protocol and require a reviewed registration and authorization design.
+no dynamic module loading; `file` and `unity_catalog` are configured explicitly.
+See [Unity Catalog setup](UNITY_CATALOG.md) for remote metadata, authentication,
+explicit asset mappings and refresh semantics.
 
 Use [catalog.schema.json](../src/dbt_skills/catalog.schema.json) and the
 [two-provider example](../examples/catalog-workflow/README.md) to prepare files.
