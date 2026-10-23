@@ -193,7 +193,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                 return {**result, "context_id": context_id}
             return call(context_id, run, require_policy=True)
 
-        @server.tool(annotations=_READ, description="Prepare a review-only source projection or explicit current-row SQL/YAML draft, or ask for missing design/naming evidence. Requires explicit grain and source mapping. Never approves, writes, executes SQL or proves normalisation.")
+        @server.tool(annotations=_READ, description="Prepare a review-only source projection, explicit current-row or single lookup-join SQL/YAML draft, or ask for missing design/naming evidence. Requires explicit grain and source mapping. Never approves, writes, executes SQL or proves normalisation.")
         def model_draft(context_id: str, request: dict[str, object]) -> dict[str, object]:
             def run():
                 expected = state["policy"]["provenance"]["sha256"]

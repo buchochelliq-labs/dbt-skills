@@ -179,3 +179,17 @@ Markers can remain internal or follow normal output naming when projected. Exist
 retain_latest rules remain compatible; applied validation recomputes the new rule.
 Synthetic SQL, MCP and real dbt parse cover the workflow without warehouse data.
 Next richer-model priorities: joins, full history and reviewed existing-file edits.
+
+## Single lookup joins — 2026-10-23
+
+The first join slice accepts one explicit left/inner equality lookup between distinct
+dbt sources in a new source-row model. Metadata checks require exact relation mapping,
+matching known key types and a declared lookup PK matching right keys. Contradictory
+FKs and output naming collisions clarify. Human-confirmed many-to-one/null behavior
+and rationale remain unverified. Both catalog reports and consulted provider revisions
+are preserved; denial withholds joined context. Applied validation reconstructs SQL
+and design. No warehouse reads or existing-file edits.
+
+Remaining richer-model work includes model-ref inputs, multi/temporal joins, full
+history and safe existing-file changes. Broader memory/catalog/cache/release priorities
+remain next; live Copilot verification stays deferred by user direction.

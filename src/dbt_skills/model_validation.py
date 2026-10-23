@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 
 from .catalog import _document
+from .lookup_joins import lookup_request, lookup_column_request, lookup_design
 from .current_rows import current_row_design
 from .model_drafts import (_bounded, _config, _digest, _file_hash,
                            _model_inventory, _relative, _names, column_mapping, warehouse_alias, render_projection)
@@ -109,7 +110,19 @@ def validate_applied(project, draft):
             if alias is not None or 'warehouse_alias' in draft['design']:
                 if draft['design'].get('warehouse_alias') != alias:
                     return False
-            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem, mapping, alias)
+            joined = None
+            if lookup_request(request):
+                return False
+            if 'lookup' in request:
+                added = column_mapping(draft['policy'], lookup_column_request(request), entries[0]['path'])
+                if isinstance(added, dict):
+                    return False
+                joined = lookup_design(project, manifest, request, draft['catalog'], draft['lookup_catalog'], mapping, added)
+                if joined.get('status') == 'needs_clarification' or draft['design'].get('lookup') != joined:
+                    return False
+            elif 'lookup' in draft['design'] or 'lookup_catalog' in draft:
+                return False
+            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem, mapping, alias, joined)
             return [f['content'] for f in entries] == list(expected)
         check('projection_contract', projection)
     return {'status': 'passed' if all(c['status'] == 'passed' for c in checks) else 'failed',
