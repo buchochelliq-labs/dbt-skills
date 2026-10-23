@@ -157,3 +157,53 @@ and replacement test patches support external review/save. Missing metadata/colu
 conflicting catalogs and denied access prevent proposals. Remaining semantic questions
 stay visible. No writes, authenticated approval, normal-form proof or automatic
 plan-to-draft conversion. See MODEL_PLANNING.md for the full workflow.
+
+## Richer modelling: current-row selection — 2026-10-23
+
+User prioritised richer models, design memory, remote catalogs, cache/TTL and release
+work before live Copilot verification. The first richer-model slice adds `history=current`
+with explicit sort/null placement, unique-ordering assertion, retain-latest deletion
+handling and rationale. Shared generation uses a nested row-number window, existing
+naming/alias rules and create-only apply; validation recomputes SQL/design. Synthetic
+SQL tests cover selection and dbt parse stays output-safe. No warehouse reads occur.
+Ties remain an unverified human assertion; deletion markers are kept, not filtered.
+Next richer-model gaps: active-only deletion handling, joins, full history and reviewed
+existing-file changes. Live Copilot UI validation remains deferred by user direction.
+
+## Current-row deletion filtering — 2026-10-23
+
+Current-row drafts now accept explicit `exclude_marked` deletion policy with a
+catalog-declared boolean marker and required null retain/exclude choice. Ranking
+precedes filtering, so a winning tombstone cannot resurrect an older active row.
+Markers can remain internal or follow normal output naming when projected. Existing
+retain_latest rules remain compatible; applied validation recomputes the new rule.
+Synthetic SQL, MCP and real dbt parse cover the workflow without warehouse data.
+Next richer-model priorities: joins, full history and reviewed existing-file edits.
+
+## Single lookup joins — 2026-10-23
+
+The first join slice accepts one explicit left/inner equality lookup between distinct
+dbt sources in a new source-row model. Metadata checks require exact relation mapping,
+matching known key types and a declared lookup PK matching right keys. Contradictory
+FKs and output naming collisions clarify. Human-confirmed many-to-one/null behavior
+and rationale remain unverified. Both catalog reports and consulted provider revisions
+are preserved; denial withholds joined context. Applied validation reconstructs SQL
+and design. No warehouse reads or existing-file edits.
+
+Remaining richer-model work includes model-ref inputs, multi/temporal joins, full
+history and safe existing-file changes. Broader memory/catalog/cache/release priorities
+remain next; live Copilot verification stays deferred by user direction.
+
+## Event-history intervals and branch integration — 2026-10-23
+
+Historical drafts now derive half-open validity intervals from complete retained
+source events. Require date/timestamp effective time, explicit unique/non-null and
+complete-event assertions, deletion-event retention, table/view materialization and
+rationale. Generated interval fields follow column conventions. Output grain includes
+validity start; business key alone no longer gets a uniqueness test. No source reads,
+snapshot capture, history compression or incremental merge is claimed.
+
+Repository check found #53–#55 merged into their stacked feature branches rather than
+main. The next PR targets main and carries the reviewed current-row/deletion/lookup
+changes plus event history. No automatic merge/release. Remaining richer-model gaps:
+stateful snapshots/SCD2, model refs, temporal/multiple joins and safe existing-file edits.

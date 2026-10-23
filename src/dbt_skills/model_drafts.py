@@ -1,4 +1,4 @@
-"""Review-only source projections and an operator-only create-file command."""
+"""Review-only source projections/current-row models and an operator-only create-file command."""
 import argparse
 from copy import deepcopy
 import difflib
@@ -12,6 +12,9 @@ import sys
 
 import yaml
 
+from .event_history import history_request, history_column_request, history_design, render_history
+from .lookup_joins import lookup_request, lookup_column_request, lookup_design, render_lookup
+from .current_rows import current_row_design, render_current
 from .catalog import CatalogError, FIELDS, _document, _raw, load_catalog
 from .modelling_naming import NamingError, NamingRule, resolve_name
 from .modelling_policy import PolicyError, _Loader, load_document
@@ -291,7 +294,7 @@ def warehouse_alias(loaded, request, model_path, manifest, inventory=()):
     return {'status': 'resolved', 'value': value, 'rule_id': rule['id'], 'provenance': provenance}
 
 
-def render_projection(request, source, model_name, mapping=None, alias=None):
+def render_projection(request, source, model_name, mapping=None, alias=None, lookup=None, historical=None):
     mapping = mapping if mapping is not None else [{'source': c, 'output': c} for c in request['columns']]
     expressions, columns = [], []
     for item in mapping:
@@ -302,9 +305,21 @@ def render_projection(request, source, model_name, mapping=None, alias=None):
         expressions.append(expression)
         column = {'name': output, 'quote': True}
         if source_column in request['grain']:
-            column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
+            column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 and request['history'] != 'historical' else [])
         columns.append(column)
     sql = 'select\n    ' + ',\n    '.join(expressions) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
+    if request['history'] == 'current':
+        sql = render_current(request, source, mapping)
+    if lookup is not None:
+        sql = render_lookup(request, source, mapping, lookup)
+        columns.extend({'name': m['output'], 'quote': True} for m in lookup['column_mapping'])
+    if historical is not None:
+        sql = render_history(request, source, mapping, historical)
+        for item in historical['column_mapping']:
+            column = {'name': item['output'], 'quote': True}
+            if item['source'] == 'valid_from':
+                column['data_tests'] = ['not_null']
+            columns.append(column)
     if alias is not None:
         sql = "{{ config(alias='" + alias['value'] + "') }}\n\n" + sql
     properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
@@ -313,10 +328,10 @@ def render_projection(request, source, model_name, mapping=None, alias=None):
 
 def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None):
     """Create no files. Caller-supplied intent/grain are assertions, never approval."""
-    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context'}
+    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context', 'current_row', 'lookup', 'history_rule'}
     if not isinstance(request, dict) or set(request) - allowed or len(json.dumps(request)) > 16384:
         raise DraftError('Invalid or oversized model request')
-    required = allowed - {'scope', 'column_context'}
+    required = allowed - {'scope', 'column_context', 'current_row', 'lookup', 'history_rule'}
     if any(k not in request or request[k] in ('', [], None) for k in required):
         return _questions('Specify intent, asset/source, both naming rules, token values, projection columns, grain and history')
     for key in ('intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'history'):
@@ -330,8 +345,15 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
         values = request[key]
         if not isinstance(values, list) or not 1 <= len(values) <= 256 or any(not isinstance(v, str) or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', v) is None for v in values) or len(set(values)) != len(values):
             raise DraftError('Select distinct portable column identifiers')
-    if request['history'] != 'source_rows':
-        return _questions('Only source-row projection is supported; joins, deduplication and history require a different design')
+    invalid_history = history_request(request)
+    if invalid_history:
+        return invalid_history
+    invalid_lookup = lookup_request(request)
+    if invalid_lookup:
+        return invalid_lookup
+    temporal = current_row_design(request)
+    if temporal is not None and temporal.get('status') == 'needs_clarification':
+        return temporal
     loaded = load_document(policy_path)
     if loaded['document']['kind'] != 'policy':
         raise DraftError('Select a declared modelling policy')
@@ -367,18 +389,49 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     if any(not isinstance(source.get(k), str) or re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', source[k]) is None for k in ('source_name', 'name')):
         return _questions('Source names are missing or unsupported; refresh the manifest or select another source')
     facts = catalog.resolve(request['asset_id'], list(FIELDS))
+    lookup_facts = None
+    if 'lookup' in request:
+        if facts['status'] in ('denied', 'error'):
+            return _questions('Resolve catalog access before drafting the join')
+        lookup_facts = catalog.resolve(request['lookup']['asset_id'], list(FIELDS))
+        if lookup_facts['status'] in ('denied', 'error'):
+            return _questions('Resolve lookup catalog access before drafting')
     if facts['status'] in ('denied', 'error', 'conflict') or any(k in facts['missing'] for k in ('relation', 'columns')):
         return _questions('Resolve required catalog facts, errors or conflicts before drafting', catalog=facts)
     relation = facts['selected']['relation']['value']
     if relation != {'catalog': source.get('database'), 'schema': source.get('schema'), 'name': source.get('identifier', source.get('name'))}:
         return _questions('Catalog asset and selected dbt source physical relation do not match', catalog=facts)
-    available = {c['name'] for c in facts['selected']['columns']['value']}
-    if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
+    available = {c['name']: c for c in facts['selected']['columns']['value']}
+    if not set(request['columns']) <= set(available) or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
+    temporal = current_row_design(request, available)
+    if temporal is not None and temporal.get('status') == 'needs_clarification':
+        return temporal
     alias = warehouse_alias(loaded, request, names[0], manifest, inventory)
     if alias is not None and alias['status'] != 'resolved':
         return alias
-    sql, properties = render_projection(request, source, model_name, mapping, alias)
+    joined = None
+    if 'lookup' in request:
+        added = column_mapping(loaded, lookup_column_request(request), names[0])
+        if isinstance(added, dict):
+            return added
+        joined = lookup_design(project, manifest, request, facts, lookup_facts, mapping, added)
+        if joined.get('status') == 'needs_clarification':
+            return joined
+    historical = None
+    invalid_history = history_request(request, available)
+    if invalid_history:
+        return invalid_history
+    if request['history'] == 'historical':
+        generated = column_mapping(loaded, history_column_request(request), names[0])
+        if isinstance(generated, dict):
+            return generated
+        historical = history_design(request, mapping, generated, {
+            'column': available[request['history_rule']['effective_at']],
+            'provenance': facts['selected']['columns']['provenance']})
+        if historical.get('status') == 'needs_clarification':
+            return historical
+    sql, properties = render_projection(request, source, model_name, mapping, alias, joined, historical)
     files = [{'path': path, 'content': content, 'operation': 'create', 'diff': ''.join(difflib.unified_diff([], content.splitlines(keepends=True), fromfile='/dev/null', tofile=path))}
              for path, content in zip(names, (sql, properties))]
     inputs = [project_input, {'path': manifest['path'], 'sha256': manifest['sha256']},
@@ -388,6 +441,8 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     # Negative evidence affects the decision too: pin every consulted provider,
     # not only providers that contributed positive claims.
     consulted = {attempt['provider'] for attempt in facts['attempts']}
+    if lookup_facts is not None:
+        consulted.update(attempt['provider'] for attempt in lookup_facts['attempts'])
     for provider in catalog.describe()['providers']:
         if provider['id'] in consulted:
             if provider['status'] != 'available':
@@ -399,10 +454,18 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
              'context_id': context_id, 'model_inventory': {'sha256': _digest(inventory), 'count': len(inventory)}, 'request': deepcopy(request), 'files': files, 'preconditions': inputs,
              'policy': loaded, 'catalog': facts,
              'source': {k: manifest.get(k) for k in ('path', 'sha256', 'generated_at', 'observed_at', 'freshness')},
-             'design': {'warehouse_alias': alias, 'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
+             'design': {'warehouse_alias': alias, 'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': request['history'],
                         'normal_form_status': 'unverified', 'standards': loaded['document']['modelling']},
              'validation': {'executed': [], 'proposed': ['Review source mapping, grain, modelling principles and inherited dbt configuration', 'Validate with dbt only through a separately authorized output-safe runner'],
                             'limitations': ['No SQL/database execution or proof of key/normal form', 'Composite grain uniqueness test is not generated', 'No existing properties/model files are modified', 'Effective warehouse alias, schema/database and custom naming macros require operator review; known-name checks do not prove uniqueness', 'Manifest/source freshness is evidence, not live warehouse verification']}}
+    if historical is not None:
+        draft['design']['event_history'] = historical
+        draft['design']['output_grain'].append(next(m['output'] for m in historical['column_mapping'] if m['source'] == 'valid_from'))
+    if joined is not None:
+        draft['design']['lookup'] = joined
+        draft['lookup_catalog'] = lookup_facts
+    if temporal is not None:
+        draft['design']['current_row'] = temporal
     draft['draft_id'] = _digest(draft)
     _bounded(draft)
     return draft

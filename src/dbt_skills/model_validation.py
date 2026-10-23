@@ -9,6 +9,9 @@ import subprocess
 import tempfile
 
 from .catalog import _document
+from .event_history import history_request, history_column_request, history_design
+from .lookup_joins import lookup_request, lookup_column_request, lookup_design
+from .current_rows import current_row_design
 from .model_drafts import (_bounded, _config, _digest, _file_hash,
                            _model_inventory, _relative, _names, column_mapping, warehouse_alias, render_projection)
 from .project import discover_project
@@ -71,7 +74,13 @@ def validate_applied(project, draft):
 
         def projection():
             request = draft['request']
-            if request['history'] != 'source_rows':
+            available = {c['name']: c for c in draft['catalog']['selected']['columns']['value']}
+            temporal = current_row_design(request, available)
+            if temporal is not None and temporal.get('status') == 'needs_clarification':
+                return False
+            if (temporal is not None or 'current_row' in draft['design']) and draft['design'].get('current_row') != temporal:
+                return False
+            if draft['design'].get('history') != request['history']:
                 return False
             for key in ('columns', 'grain'):
                 values = request[key]
@@ -91,8 +100,24 @@ def validate_applied(project, draft):
             mapping = column_mapping(draft['policy'], request, entries[0]['path'])
             if isinstance(mapping, dict):
                 return False
-            if 'column_mapping' in draft['design'] or 'column_context' in request:
+            historical = None
+            if history_request(request, available):
+                return False
+            if request['history'] == 'historical':
+                generated = column_mapping(draft['policy'], history_column_request(request), entries[0]['path'])
+                if isinstance(generated, dict):
+                    return False
+                historical = history_design(request, mapping, generated, {
+                    'column': available[request['history_rule']['effective_at']],
+                    'provenance': draft['catalog']['selected']['columns']['provenance']})
+                if historical.get('status') == 'needs_clarification' or draft['design'].get('event_history') != historical:
+                    return False
+            elif 'event_history' in draft['design']:
+                return False
+            if historical is not None or 'column_mapping' in draft['design'] or 'column_context' in request:
                 output_grain = [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']]
+                if historical is not None:
+                    output_grain.append(next(m['output'] for m in historical['column_mapping'] if m['source'] == 'valid_from'))
                 if draft['design'].get('column_mapping') != mapping or draft['design'].get('output_grain') != output_grain:
                     return False
             model_paths, _ = _config(project)
@@ -102,7 +127,19 @@ def validate_applied(project, draft):
             if alias is not None or 'warehouse_alias' in draft['design']:
                 if draft['design'].get('warehouse_alias') != alias:
                     return False
-            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem, mapping, alias)
+            joined = None
+            if lookup_request(request):
+                return False
+            if 'lookup' in request:
+                added = column_mapping(draft['policy'], lookup_column_request(request), entries[0]['path'])
+                if isinstance(added, dict):
+                    return False
+                joined = lookup_design(project, manifest, request, draft['catalog'], draft['lookup_catalog'], mapping, added)
+                if joined.get('status') == 'needs_clarification' or draft['design'].get('lookup') != joined:
+                    return False
+            elif 'lookup' in draft['design'] or 'lookup_catalog' in draft:
+                return False
+            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem, mapping, alias, joined, historical)
             return [f['content'] for f in entries] == list(expected)
         check('projection_contract', projection)
     return {'status': 'passed' if all(c['status'] == 'passed' for c in checks) else 'failed',

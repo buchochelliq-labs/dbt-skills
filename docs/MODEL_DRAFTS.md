@@ -2,8 +2,10 @@
 
 This first generation workflow turns explicit model intent, a matched dbt source,
 catalog metadata and naming policy into a reviewable SQL model and properties YAML.
-It supports a new **source-row projection only**. It does not design joins, aggregate,
-deduplicate, implement SCD history, alter existing files or prove 3NF/4NF.
+It supports new **source-row projections and explicitly ordered current-row models**.
+It also supports one explicitly specified lookup join and event-history intervals. It does not aggregate,
+capture stateful SCD snapshots, alter existing files or
+prove 3NF/4NF. See [current-row models](#current-row-models) for the selection contract.
 
 `prepare_model` is shared by the CLI and the read-only MCP `model_draft` tool. The
 MCP tool appears only when both policy and catalog configuration are selected. It
@@ -123,7 +125,7 @@ claim and sets the configured relation alias to `stage_xyz_customer_projection`.
 
 See [model-request.json](../examples/catalog-workflow/model-request.json). Requests
 include business intent, an explicit catalog asset ID, current-project manifest source
-ID, projection columns, grain columns, history=`source_rows`, model/properties naming
+ID, projection columns, grain columns, history=`source_rows` (or `current` with its explicit rule), model/properties naming
 rule IDs, arbitrary configured token values and any extra rule-scope dimensions.
 Missing design inputs, tokens, unknown scopes, overlapping rules, unavailable catalog
 facts and source mapping disagreements return clarification without output files.
@@ -254,3 +256,160 @@ validation remain follow-ups. An applicable unsupported naming target blocks
 this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness
 and local catalog export timestamps do not prove current warehouse state.
+
+## Current-row models
+
+Set `history` to `current` and provide an explicit `current_row` rule:
+
+```json
+{
+  "order_by": [
+    {"column": "updated_at", "direction": "desc", "nulls": "last"},
+    {"column": "event_id", "direction": "desc", "nulls": "last"}
+  ],
+  "ties": "assert_unique",
+  "deletions": "retain_latest",
+  "rationale": "Latest event per business key; event ID uniquely breaks timestamp ties. Retain deletion markers."
+}
+```
+
+`grain` is the business key used to partition rows. The tool renders a nested
+`row_number()` window and keeps rank 1. Sort columns must exist in catalog metadata,
+with explicit direction and null placement; they need not be projected into output.
+Naming rules, literal warehouse aliases and output-column mappings work as before.
+The helper rank column never appears in the output and avoids projected-name collisions.
+
+`assert_unique` is the caller's assertion that the complete ordering distinguishes
+rows within each business key. It is not a warehouse check: if ties remain, selection
+can be nondeterministic. Confirm a stable final tie-break column before adoption.
+`retain_latest` keeps the winning row even if it is a deletion marker. It never filters
+deletions or resurrects an older row. For active-only output, use the explicit boolean-marker policy below; other deletion/tie
+policies ask for clarification.
+Null business keys group together and require the proposed not-null tests to be run.
+The generated uniqueness test on a single output key does not test input ordering ties.
+
+The complete rule and rationale are recorded as unverified caller assertions in
+`design.current_row`. Applied validation recomputes the rule and rendered files;
+operator-only dbt parse remains available. Parsing does not execute the SQL or prove
+warehouse semantics. This supports a single-source current-row model, not incremental
+merge, SCD2 history, joins or existing-model edits. `source_rows` requests cannot carry
+a current-row rule. Existing source-row projections retain their previous rendering.
+
+### Exclude latest deletion markers
+
+Replace `deletions: "retain_latest"` with:
+
+```json
+{"mode": "exclude_marked", "column": "is_deleted", "nulls": "retain"}
+```
+
+The marker must exist in catalog metadata with normalized type `boolean`. Choose
+`nulls: "retain"` to keep unknown flags or `nulls: "exclude"` to exclude them. This
+choice is required even if metadata declares the column non-null. `true` marks a
+deletion and `false` an active row; these meanings are caller assertions, not facts
+inferred from a column name. String codes, numeric flags and arbitrary SQL predicates
+are unsupported and require clarification.
+
+Selection ranks **all** source rows before filtering the winner. If the latest row
+is marked deleted, the entity is absent; an older active row is never restored. A
+later active event can restore an entity. The marker need not be in `columns`; when
+omitted, it is used internally and does not appear in SQL output or generated YAML.
+If projected, normal column naming still applies. Marker/source identifiers that differ
+only by case require clarification to avoid ambiguous inner columns across adapters. The complete deletion/null policy
+is retained in the unverified design record and recomputed during applied validation.
+
+This does not infer hard deletions from missing source rows or implement incremental
+deletes. Correctness depends on the selected source retaining the required events
+and the human confirming ordering and marker semantics. No source data is queried.
+
+## One explicit lookup join
+
+A `source_rows` request can add one `lookup` object:
+
+```json
+{
+  "asset_id": "urn:demo:xyz:customer_segments",
+  "source_id": "source.my_project.xyz.customer_segments",
+  "type": "left",
+  "on": [{"left": "customer_id", "right": "customer_id"}],
+  "columns": ["segment"],
+  "cardinality": "many_to_one",
+  "nulls": "never_match",
+  "rationale": "One reviewed segment record per customer key."
+}
+```
+
+Replace IDs with explicitly selected catalog and current-project dbt source IDs.
+The lookup relation must exactly match its manifest source mapping. Right-side join
+keys must match a declared primary key; both sides need matching known normalized
+key types. A conflicting FK declaration for the selected base-key tuple requires
+clarification. Matching FK declarations retain provenance; missing FK declarations
+leave relationship meaning as a human assertion. No relationship targets are fetched
+unless selected in the request.
+
+`left` retains unmatched base rows with null lookup attributes. `inner` drops unmatched
+rows. Equality never matches null keys. The lookup primary key and `many_to_one`
+statement are declarations/assertions, **not uniqueness proof**: duplicate lookup
+keys can multiply rows and invalidate the asserted base grain. The generated base-grain
+tests do not verify lookup uniqueness before execution. Review cardinality, optionality
+and the business meaning of the join before adopting it.
+
+Base `columns` and `grain` retain their meaning. Lookup `columns` are appended; grain
+must remain in the base projection. Optional `lookup.column_context` uses the same
+values/scope structure as base `column_context` and the same declared naming rules.
+Output names must be unique across both projections; collisions ask for clarification.
+There are no implicit prefixes, suffixes or inferred aliases. Both catalog reports,
+source mapping, lookup key, relationship provenance and complete join rationale remain
+in the sealed draft. Consulted provider revisions from both resolutions are pinned.
+
+This creates a new model from two distinct dbt sources. It does not yet accept model
+`ref()` inputs, self-joins, multiple lookups, current-row/temporal joins, expressions,
+implicit casts, arbitrary predicates or existing-model edits. Denial/error on the
+lookup withholds collected join context. MCP remains read-only; the same explicit
+operator apply and output-safe parse workflow is used. No warehouse queries occur.
+
+## Event-history validity intervals
+
+For a source that already retains complete historical events, use `history: historical`
+and an explicit `history_rule`:
+
+```json
+{
+  "effective_at": "updated_at",
+  "events": "assert_complete",
+  "ordering": "assert_unique_non_null",
+  "deletions": "retain_events",
+  "materialization": "table",
+  "rationale": "Source retains every event; effective time uniquely identifies a version per customer."
+}
+```
+
+The effective column must be catalog-declared `date` or `timestamp`, and cannot be
+part of the business `grain`. The human must confirm it is non-null and unique within
+each business key, and that the source contains all required events. These assertions
+are recorded with column provenance, not verified against warehouse data. Duplicate
+effective times can create zero-length/ambiguous intervals; null times invalidate the
+design. No arbitrary ordering expression or automatic tie-break is inferred.
+
+The generated model retains every event and uses `lead(effective_at)` within each
+business key to produce half-open `[valid_from, valid_to)` intervals. The latest known
+event has null `valid_to`. Deletion events stay in the output; an open-ended latest
+interval does not imply the entity is active. Project a source deletion marker when
+consumers need it. Unchanged payloads are not compressed into fewer versions.
+
+Generated `valid_from` and `valid_to` fields use the same declared column conventions
+as source projections. Set `history_rule.column_context` with entries keyed by those
+two logical fields and the usual `values`/`scope` mappings. Without applicable column
+rules they retain those names. Any output-name collision requires clarification.
+The proposed output grain is the mapped business key plus mapped validity start.
+Business keys and validity start get not-null tests; single-business-key uniqueness
+is not generated for history. Composite event-key uniqueness remains a separate check.
+
+Choose `materialization: table` or `view` explicitly; generated config overrides
+inherited incremental materialization. This rebuilds/reads intervals from the full
+available event source. A late event changes adjacent intervals on recomputation,
+and source retention loss removes history. It is **not** dbt snapshot capture or a
+stateful SCD2 merge that preserves overwritten/disappearing source rows. Temporal
+joins, incremental history maintenance, hard-delete inference and existing-file edits
+remain separate workflows. Current-row/lookup settings cannot be combined with this
+history rule. The same review/apply/validate and operator-only parse path is used.
