@@ -4,6 +4,10 @@
 Measured 2026-10-23 on Linux x86-64 / Python 3.12.14 in a shared container.
 No product source or dependency requirements changed. No real source data used.
 
+**Update:** [Second-pass evidence](SECOND_PASS.md) now exercises the real Cognee
+graph-only pipeline, permission checks, source deletion and branching graphs.
+The observations below describe the initial pass.
+
 ## Interim decision
 
 Keep the current SQLCipher-based persistence default. These measurements do not

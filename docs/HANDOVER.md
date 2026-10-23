@@ -37,8 +37,12 @@ OpenMetadata companion evaluation; lightweight standalone/offline use is retaine
 Issue #62 now has disposable experiments under
 `experiments/offline_backends/README.md`, including 18 direct-engine runs,
 a model-free Cognee adapter probe, FTS reproducers and process-lock checks.
-Interim recommendation: retain SQLCipher default; evaluate Cognee's graph-only
-pipeline before choosing an integration. This is not a completed backend selection
+The second pass in `experiments/offline_backends/SECOND_PASS.md` verifies Cognee's
+graph-only pipeline, explicit dataset permission checks and source-owner deletion
+with pre-staged tokenizer files; a cold-cache delete reproduces a blocked download.
+Branching graph results include an independent oracle and deduplicated SQL.
+Interim recommendation: retain SQLCipher default; evaluate Cognee policy/encryption
+fit before choosing an integration. This is not a completed backend selection
 or permission/encryption parity claim. No production persistence refactor was made.
 
 ## Purpose and guardrails
