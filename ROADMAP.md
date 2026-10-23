@@ -223,3 +223,7 @@ The initial source-tree runtime now uses Python 3.11+, `argparse`, standard-libr
 - [Ontos MCP](https://github.com/databrickslabs/ontos/blob/development/docs/handbook/mcp-and-ask-ontos.md)
 - [OntoBricks MCP](https://github.com/databrickslabs/ontobricks/blob/master/docs/mcp.md)
 - [Databricks-provided MCPs](https://docs.databricks.com/aws/en/agents/mcp-tools/built-in-mcp-services)
+
+## Model design planning progress
+
+The shared read-only planner now grounds entity, grain and relationship discussion in selected catalog facts, scoped standards and the validated resource graph. It asks for missing functional/multivalued dependency evidence and identifies existing models for reuse review. Automatic decomposition, semantic answer persistence, joins/history generation and existing-file changes remain follow-ups. See [design planning](docs/MODEL_PLANNING.md).

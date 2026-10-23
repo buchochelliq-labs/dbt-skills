@@ -12,7 +12,16 @@ This repository is building an open-source, local-first alternative to dbt Wizar
 
 Keep the core useful without dbt Wizard, mandatory hosted services, or OpenDataSuite (ODS). Reuse existing dbt tools and public protocols where they fit; make optional integrations replaceable and preserve provenance, freshness, permissions, and uncertainty. Never treat missing or opaque column-lineage evidence as proof that impact is zero.
 
-## Current baseline
+## Current workflow baseline
+
+As of 2026-10-23, merged #47/#48 provide source-projection prepare/review/apply,
+read-only applied validation and an operator-only output-safe dbt parse runner.
+The new design-planning slice adds metadata-grounded entity/relationship hypotheses
+and targeted standards/grain/history questions before SQL generation. See the progress
+sections below for exact boundaries. Live Copilot UI verification and broader modelling
+remain outstanding; protocol tests do not establish live host behavior.
+
+## Earlier infrastructure baseline
 
 PR [#34](https://github.com/buchochelliq-labs/dbt-skills/pull/34) merged on 2026-10-22. It added SQLCipher-backed UOL storage, keys in supported OS credential stores, fail-closed platform access controls, an explicit plaintext-cache migration, third-party notices, and a Windows/macOS/Linux × Python 3.11/3.14 test matrix. The Windows ACL owner issue was fixed before merge. The local 42-test suite and the cross-platform matrix passed.
 
@@ -90,3 +99,7 @@ Shared prepare API, CLI and optional model_draft MCP tool now generate reviewabl
 ## Applied draft validation (2026-10-23)
 
 Read-only local validation checks envelope/input revisions, exact applied bytes, filename inventory and the restricted renderer. MCP accepts retained draft IDs only (four per context; refresh clears them). Separate operator-only CLI runs dbt parse with reviewed digest, explicit executable/profiles, timeout and suppressed/discarded output. Real dbt-core 1.11.7 + duckdb 1.10.0 smoke coverage uses no source rows. See [validation workflow](MODEL_DRAFTS.md#validate-applied-files). This supersedes the pending parse-runner notes above; warehouse validation, live Copilot verification, joins/history and changes to existing files remain open.
+
+## Catalog-grounded design planning (2026-10-23)
+
+Shared read-only planner, CLI and optional MCP model_plan now assemble selected entity/key/relationship hypotheses, scoped standards, dependency/history questions and existing-model reuse candidates. Uses the same validated snapshot; preserves catalog provenance/conflicts and blocks on provider denial/error. See [design planning](MODEL_PLANNING.md). Semantic reasoning and human decisions remain necessary: no normalisation proof, automatic decomposition, joins/history SQL or existing-file edits.
