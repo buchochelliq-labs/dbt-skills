@@ -49,6 +49,11 @@ and verifies grant/revoke across fresh read contexts. Synthetic plaintext is rea
 in input, relational and graph files in the tested Cognee configuration. Keep the
 encrypted canonical store; assess Cognee as an optional derived retrieval projection
 only after encryption and generation-consistency gates. No production adapter exists.
+The fourth slice, `experiments/offline_backends/RECOVERY.md`, verifies six abrupt
+process-exit cases against the real SQLCipher generation writer: full/incremental
+sync retain a complete old or new generation, resume, and reopen consistently.
+Its 54 projection-gate checks are a prototype contract only. Actual derived-index
+interruption/activation and in-flight permission revision checks remain unverified.
 
 ## Purpose and guardrails
 
