@@ -1,0 +1,106 @@
+"""Prepare review-only saved design choices; never write or approve a record."""
+from copy import deepcopy
+
+from .design_decisions import DesignDecisionError, validate_decisions
+from .model_drafts import DraftError, _bounded
+from .model_planning import PlanningError, _request, plan_model
+
+
+def prepare_design_decision(project, policy, catalog, request, *, decisions=None, snapshot=None):
+    """Derive evidence from the selected context, never from caller-supplied hashes."""
+    try:
+        _bounded(request)
+        if not isinstance(request, dict) or set(request) - {'plan', 'record', 'replace_record_id'}:
+            raise ValueError
+        plan_request = request['plan']
+        _request(plan_request)
+        if len(plan_request['assets']) != 1 or not {'grain', 'history'} <= set(plan_request['assets'][0]):
+            raise ValueError
+        metadata = request['record']
+        if not isinstance(metadata, dict) or set(metadata) != {'id', 'rationale', 'recorded_by', 'recorded_at'}:
+            raise ValueError
+        replacement = request.get('replace_record_id')
+        if 'replace_record_id' in request and (not isinstance(replacement, str) or not replacement.strip() or len(replacement) > 128):
+            raise ValueError
+    except (ValueError, TypeError, KeyError, DraftError, PlanningError):
+        raise DesignDecisionError('Supply one explicit grain/history choice, record attribution and optional replacement ID') from None
+    if decisions is not None:
+        validate_decisions(decisions['document'])
+    # Do not let existing records supply choices: a new proposal must be explicit.
+    planning = plan_model(project, policy, catalog, plan_request, snapshot=snapshot)
+    result = {'status': 'needs_clarification', 'planning': planning, 'questions': [],
+              'proposed_document': None, 'decisions_patch': [],
+              'decisions_base': deepcopy(decisions['provenance']) if decisions else None,
+              'review_requirements': ['Review the complete record and unresolved planning questions before saving',
+                                      'Verify the decisions base digest and source evidence have not changed before saving',
+                                      'Attribution is caller-supplied, not authenticated approval; saving does not prove grain or normal form'],
+              'limitations': ['No files or standards are changed; this proposal is not an approved decision',
+                              'Only explicit grain/history choices are recorded; semantic questions remain open']}
+    if planning['status'] == 'blocked':
+        result['status'] = 'blocked'
+        return result
+    blocking = {'required_metadata', 'catalog_conflict', 'project_snapshot', 'grain_columns_missing'}
+    if not planning['entities'] or any(q['code'] in blocking for q in planning['questions']):
+        return result
+    context = planning['entities'][0]['decision_context']
+    asset = plan_request['assets'][0]
+    record = {**deepcopy(context), **deepcopy(metadata), 'grain': deepcopy(asset['grain']), 'history': asset['history']}
+    validate_decisions({'schema_version': 1, 'kind': 'design_decisions', 'records': [record]})
+    document = deepcopy(decisions['document']) if decisions else {'schema_version': 1, 'kind': 'design_decisions', 'records': []}
+    records = document['records']
+    matches = [(i, r) for i, r in enumerate(records) if all(r[k] == context[k] for k in ('intent', 'asset_id', 'scope'))]
+    selected = [(i, r) for i, r in matches if r['id'] == replacement]
+    # An explicit replacement must name the sole record in this exact context.
+    if (replacement is not None and (len(matches) != 1 or len(selected) != 1)) or (replacement is None and matches):
+        result['questions'].append({'code': 'select_design_record', 'message': 'Explicitly select the sole matching record for replacement, or reconcile competing records in the file.'})
+        return result
+    index = selected[0][0] if selected else None
+    if any(r['id'] == record['id'] and i != index for i, r in enumerate(records)):
+        result['questions'].append({'code': 'design_record_id_collision', 'message': 'Choose a record ID not used by another decision.'})
+        return result
+    if index is None:
+        records.append(record)
+        patch = [{'op': 'add', 'path': '/records/-', 'value': record}]
+    else:
+        patch = [{'op': 'test', 'path': f'/records/{index}', 'value': deepcopy(records[index])},
+                 {'op': 'replace', 'path': f'/records/{index}', 'value': record}]
+        records[index] = record
+    validate_decisions(document)
+    result.update(status='pending_review', proposed_document=document,
+                  decisions_patch=patch if decisions else [{'op': 'add', 'path': '', 'value': document}])
+    try:
+        _bounded(result)
+    except DraftError:
+        raise DesignDecisionError('Design proposal exceeds response limits; select a smaller decisions file or narrower policy') from None
+    return result
+
+
+def main(argv=None):
+    import argparse
+    import json
+    from .catalog import _document, load_catalog
+    from .design_decisions import load_design_decisions
+    from .modelling_policy import load_document
+    from .project import discover_project
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--project-dir', required=True)
+    parser.add_argument('--request', required=True)
+    parser.add_argument('--policy', required=True)
+    parser.add_argument('--catalog-config', required=True)
+    parser.add_argument('--design-decisions')
+    parser.add_argument('--target-path')
+    args = parser.parse_args(argv)
+    try:
+        project = discover_project(args.project_dir, target_path=args.target_path)
+        request, _ = _document(project.root / args.request)
+        result = prepare_design_decision(project, load_document(project.root / args.policy), load_catalog(project.root / args.catalog_config), request,
+                                         decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None)
+        print(json.dumps(result, indent=2))
+        return {'pending_review': 0, 'needs_clarification': 2, 'blocked': 1}[result['status']]
+    except (ValueError, OSError, TypeError, KeyError, RuntimeError):
+        print(json.dumps({'status': 'error', 'code': 'invalid_design_proposal_context'}))
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

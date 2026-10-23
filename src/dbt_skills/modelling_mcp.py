@@ -17,6 +17,7 @@ from mcp.types import ToolAnnotations
 from .catalog import CatalogError, load_catalog
 from .design_decisions import DesignDecisionError, load_design_decisions
 from .convention_discovery import infer_conventions
+from .design_decision_proposals import prepare_design_decision
 from .decision_proposals import prepare_decision
 from .modelling_policy import PolicyError, load_document, resolve_policy_name
 from .model_drafts import DraftError, prepare_model
@@ -166,16 +167,28 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
             return call(context_id, lambda: {**state["catalog"].resolve(asset_id, fields), "context_id": state["context_id"]})
 
     if catalog_path is not None and policy_path is not None:
+        def check_planning_files():
+            expected = state["policy"]["provenance"]["sha256"]
+            if load_document(policy_path)["provenance"]["sha256"] != expected:
+                raise PolicyError("Selected policy changed; refresh context before planning")
+            if design_decisions_path is not None:
+                current = load_design_decisions(design_decisions_path)
+                if current['provenance'] != state['design_decisions']['provenance']:
+                    raise DesignDecisionError("Selected design decisions changed; refresh context before planning")
+
+        @server.tool(annotations=_READ, description="Prepare a pending grain/history decision document and review patch from explicit choices and pinned evidence. Requires rationale and attribution; no writes or approval. Existing matching records require an explicit replacement ID.")
+        def model_propose_decision(context_id: str, request: dict[str, object]) -> dict[str, object]:
+            def run():
+                check_planning_files()
+                result = prepare_design_decision(project, state["policy"], state["catalog"], request,
+                                                 decisions=state["design_decisions"], snapshot=state["snapshot"])
+                return {**result, "context_id": context_id}
+            return call(context_id, run, require_policy=True)
+
         @server.tool(annotations=_READ, description="Assemble review-only entity/key/relationship hypotheses and targeted design questions for selected catalog assets. Uses pinned project context and declared scoped standards; no data, SQL generation, approval or execution. Keys do not prove grain or normal form.")
         def model_plan(context_id: str, request: dict[str, object]) -> dict[str, object]:
             def run():
-                expected = state["policy"]["provenance"]["sha256"]
-                if load_document(policy_path)["provenance"]["sha256"] != expected:
-                    raise PolicyError("Selected policy changed; refresh context before planning")
-                if design_decisions_path is not None:
-                    current = load_design_decisions(design_decisions_path)
-                    if current['provenance'] != state['design_decisions']['provenance']:
-                        raise DesignDecisionError("Selected design decisions changed; refresh context before planning")
+                check_planning_files()
                 result = plan_model(project, state["policy"], state["catalog"], request, snapshot=state["snapshot"], decisions=state["design_decisions"])
                 return {**result, "context_id": context_id}
             return call(context_id, run, require_policy=True)

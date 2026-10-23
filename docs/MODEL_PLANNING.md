@@ -137,3 +137,60 @@ MCP pins the selected decisions file alongside project context. If it changes,
 `model_plan` requires `modelling_refresh`; old context IDs then become invalid.
 The planner does not persist arbitrary semantic answers yet, and drafting still
 requires an explicit reviewed request. There is no automatic plan-to-apply shortcut.
+
+## Prepare a decision for review
+
+To avoid assembling evidence hashes by hand, call
+`model_propose_decision(context_id, request)` with policy and catalogs configured.
+The equivalent CLI is:
+
+```sh
+PYTHONPATH=src python -m dbt_skills.design_decision_proposals \
+  --project-dir examples/catalog-workflow --target-path artifacts \
+  --policy modelling.yml --catalog-config catalogs.json \
+  --request decision-request.json
+```
+
+A request contains exactly one asset and explicit grain/history choices:
+
+```json
+{
+  "plan": {
+    "intent": "Model customers and their orders",
+    "assets": [{
+      "asset_id": "urn:demo:xyz:customers",
+      "grain": ["customer_id"],
+      "history": "source_rows"
+    }]
+  },
+  "record": {
+    "id": "customer_design",
+    "rationale": "Preserve each source customer row.",
+    "recorded_by": "project_owner",
+    "recorded_at": "2026-10-23T16:00:00Z"
+  }
+}
+```
+
+The operation derives fingerprints from the same planner context and returns
+`proposed_document`, `decisions_patch`, `decisions_base` and the full `planning`
+report. Review the proposed document, choices, attribution and remaining questions.
+If adopting it, verify the source evidence and base file digest are still current,
+then save **only `proposed_document`** through your normal reviewed file workflow.
+The tool does not save, approve or authenticate anything. `pending_review` means a
+record is ready for review, even when semantic/dependency questions remain open.
+Missing grain columns, missing relation/column metadata, conflicting catalogs or
+unavailable project evidence prevent a proposal; denied catalogs block it entirely.
+
+When updating an existing file, select it using `--design-decisions` at CLI/server
+startup. Unrelated records are preserved. A matching intent/asset/scope requires an
+explicit top-level `replace_record_id`; replacement emits a test of the previous
+record followed by its replacement. Competing matching records require manual
+reconciliation. IDs cannot overwrite another decision, and replacement cannot change
+the record's intent/asset/scope. The full base digest must be checked before saving
+both additions and replacements; the patch alone is not a concurrent-write guard.
+
+MCP takes no file path in the tool call. Changes to selected policy or decisions
+require refresh, just as for `model_plan`. After saving an adopted proposal, refresh
+and plan again to see the reused decision and its provenance. Draft generation still
+requires an explicit reviewed request.
