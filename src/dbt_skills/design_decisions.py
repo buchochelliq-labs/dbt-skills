@@ -12,6 +12,32 @@ class DesignDecisionError(ValueError):
     """Bounded static diagnostic; never echoes document contents."""
 
 
+ANSWER_CODES = frozenset({
+    'functional_dependencies', 'multivalued_dependencies', 'join_dependencies',
+    'review_principles', 'relationships_unknown', 'grain_key_difference',
+    'current_row_rule', 'history_rule',
+})
+
+
+def validate_answers(answers):
+    try:
+        if not isinstance(answers, list) or len(answers) > 16:
+            raise ValueError
+        seen = set()
+        for answer in answers:
+            if not isinstance(answer, dict) or set(answer) != {'question_code', 'answer', 'rationale'}:
+                raise ValueError
+            code = answer['question_code']
+            if not isinstance(code, str) or code not in ANSWER_CODES or code in seen:
+                raise ValueError
+            seen.add(code)
+            for key, limit in [('answer', 2048), ('rationale', 4096)]:
+                if not isinstance(answer[key], str) or not answer[key].strip() or len(answer[key]) > limit:
+                    raise ValueError
+    except (ValueError, TypeError, KeyError):
+        raise DesignDecisionError('Use bounded unique semantic answers with supported question codes and rationale') from None
+
+
 def validate_decisions(document):
     try:
         if not isinstance(document, dict) or set(document) != {'schema_version', 'kind', 'records'}:
@@ -23,8 +49,10 @@ def validate_decisions(document):
             raise ValueError
         ids = set()
         for record in records:
-            if not isinstance(record, dict) or set(record) != {'id', 'intent', 'asset_id', 'scope', 'grain', 'history', 'rationale', 'recorded_by', 'recorded_at', 'evidence'}:
+            if not isinstance(record, dict) or set(record) - {'answers'} != {'id', 'intent', 'asset_id', 'scope', 'grain', 'history', 'rationale', 'recorded_by', 'recorded_at', 'evidence'}:
                 raise ValueError
+            if 'answers' in record:
+                validate_answers(record['answers'])
             for key, limit in [('id', 128), ('intent', 2048), ('rationale', 4096), ('recorded_by', 256)]:
                 if not isinstance(record[key], str) or not record[key].strip() or len(record[key]) > limit:
                     raise ValueError

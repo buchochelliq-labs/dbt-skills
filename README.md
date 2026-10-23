@@ -26,8 +26,7 @@ Local Copilot integration: [VS Code modelling MCP setup](docs/COPILOT_VSCODE.md)
 
 Structured metadata: [catalog providers and ordered resolution](docs/CATALOG.md), with a [local customer model-design walkthrough](examples/catalog-workflow/README.md).
 
-Create a reviewed source projection: [model drafts and operator application](docs/MODEL_DRAFTS.md).
+The agent creates or revises a data-model design across entities and relationships.
+This repository supplies its grounding context; it does not generate or apply dbt SQL.
 
-Applied source-projection drafts can now be checked through read-only MCP validation or the [validation CLI](docs/MODEL_DRAFTS.md#validate-applied-files). An explicit operator-only `dbt parse` runner discards subprocess output and returns fixed statuses; warehouse validation and live Copilot verification remain outstanding.
-
-Before drafting SQL, the shared [design planner](docs/MODEL_PLANNING.md) assembles entity/key/relationship candidates, applicable modelling standards and targeted questions from selected catalog assets and the same project snapshot. It identifies existing models for reuse review; no normal-form proof or automatic semantic design is claimed.
+The shared [design planner](docs/MODEL_PLANNING.md) assembles entity/key/relationship candidates, applicable modelling standards and targeted questions from selected catalog assets and the same project snapshot. It identifies existing models for reuse review; no normal-form proof or automatic semantic design is claimed.

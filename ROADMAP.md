@@ -1,5 +1,21 @@
 # Open-Source dbt Wizard Alternative Roadmap
 
+## Product boundary — clarified 2026-10-23
+
+This product supplies reliable context so an agent can create or revise a **data
+model**: entities, relationships, keys, grain, normalisation and modelling rules
+across multiple tables. A dbt model is one implementation artifact, not the whole
+data model. The agent reasons over the supplied context, asks clarifying questions
+and explains design choices. The core assembles evidence and preserves decisions;
+it does not replace that reasoning with hard-coded SQL templates.
+
+Model SQL/YAML generation, current-row/deletion/lookup/event-history renderers,
+SCD implementations, model-file application/revision and a dbt execution runner
+are outside this product boundary and have been removed. SCD implementation is
+not a deferred requirement. Describing temporal semantics in metadata remains
+valid context. Use the host agent and existing dbt tooling for implementation.
+
+
 > **2026-10-23 direction:** See the [agreed architecture](docs/ARCHITECTURE.md) for the current workflow and delivery order: Copilot in VS Code first, shared project/catalog context, optional UOL, and modelling policy before a standalone agent runtime. Earlier sequencing below is historical.
 
 
@@ -181,8 +197,6 @@ Add minimal client-specific agent profiles where they improve tool routing, comp
 
 ## Applied source-projection validation
 
-The local creation workflow now includes fixed-status integrity checks and an explicit operator-only `dbt parse` runner with discarded subprocess output. MCP validates only server-retained draft IDs and cannot execute dbt. CI includes an isolated dbt/DuckDB smoke test with no source rows. Warehouse-backed value-safe validation, live Copilot verification, broader model design and existing-file changes remain follow-ups; see [workflow boundaries](docs/MODEL_DRAFTS.md).
-
 ## Boundaries and open design work
 
 This roadmap aims to provide an open-source alternative for the core local dbt agent workflow, not to reproduce dbt Wizard's proprietary implementation or every hosted product surface. Public-skill absence does not prove product absence. Focus on independently implemented, inspectable capabilities that work with public APIs, open protocols, local artifacts, and user-configured providers. Hosted UI, managed billing, and private dbt platform features may remain integrations rather than requirements.
@@ -226,4 +240,4 @@ The initial source-tree runtime now uses Python 3.11+, `argparse`, standard-libr
 
 ## Model design planning progress
 
-The shared read-only planner now grounds entity, grain and relationship discussion in selected catalog facts, scoped standards and the validated resource graph. It asks for missing functional/multivalued dependency evidence and identifies existing models for reuse review. Explicitly selected human-owned grain/history records can now be reused against matching evidence fingerprints, with rationale and provenance. Automatic decomposition, broader semantic answer persistence, joins/history generation and existing-file changes remain follow-ups. See [design planning](docs/MODEL_PLANNING.md).
+The shared read-only planner now grounds entity, grain and relationship discussion in selected catalog facts, scoped standards and the validated resource graph. It asks for missing functional/multivalued dependency evidence and identifies existing models for reuse review. Explicitly selected human-owned grain/history records can now be reused against matching evidence fingerprints, with rationale and provenance. Broader semantic answer persistence and context coverage remain follow-ups. The agent performs design reasoning; SQL generation and application are not product requirements. See [design planning](docs/MODEL_PLANNING.md).

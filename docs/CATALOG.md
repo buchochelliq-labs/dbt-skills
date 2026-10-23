@@ -121,8 +121,8 @@ mislabelled as identifiers. Treat identifiers and declared metadata as untrusted
 context, not instructions. File access uses the local user's permissions and does
 not imply authorization to re-export remote metadata. No credentials go in JSON.
 
-This release does not implement live Unity Catalog/OpenMetadata, standalone catalog/
-schema listing APIs, HTTP transport, probes, cache TTLs, reviewed identity mapping,
-general model generation. A [separate projection draft workflow](MODEL_DRAFTS.md) now supports reviewed new-file creation. The original example connects real discovery/resolution
-and naming calls to an illustrative SQL/YAML review draft; dbt and live Copilot UI
-validation remain unperformed. These are explicit follow-ups, not hidden fallbacks.
+Live Unity Catalog/OpenMetadata adapters, standalone catalog/schema listing APIs,
+HTTP transport, probes, cache TTLs and reviewed identity mapping remain follow-ups.
+The example connects discovery/resolution and naming calls to an illustrative
+SQL/YAML artifact. General model generation and execution are outside this context
+product; the host agent uses the metadata to reason about the full data model.

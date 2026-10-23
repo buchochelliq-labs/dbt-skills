@@ -6,7 +6,7 @@ import re
 
 from .catalog import CatalogError, FIELDS, _document, load_catalog
 from .design_decisions import decision_context, select_decision, validate_decisions, load_design_decisions
-from .model_drafts import DraftError, _bounded
+from .context_limits import ContextLimitError, check_bounds
 from .modelling_policy import load_document, validate_document
 from .project import discover_project
 from .project_artifacts import inspect_artifacts
@@ -18,7 +18,7 @@ class PlanningError(ValueError):
 
 def _request(request):
     try:
-        _bounded(request)
+        check_bounds(request)
         if not isinstance(request, dict) or set(request) != {'intent', 'assets'}:
             raise ValueError
         if not isinstance(request['intent'], str) or not request['intent'].strip() or len(request['intent']) > 2048:
@@ -209,6 +209,20 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
                 question('confirm_relationship', 'Confirm relationship meaning, cardinality, optionality and temporal alignment before joining.', identifier, target_asset=target)
                 if identifier != target:
                     suggestion('review_separate_entities', 'Consider retaining separate entity models linked by this declared relationship; confirm business boundaries and dependencies before combining or decomposing.', asset_id=identifier, target_asset=target)
+    # Narrative memory supplies context for review, never proof or executable rules.
+    for entity in result['entities']:
+        decision = entity['decision']
+        if decision['status'] != 'matched':
+            continue
+        for index, answer in enumerate(decision['record'].get('answers', [])):
+            for item in result['questions']:
+                if item.get('asset_id') == entity['asset_id'] and item['code'] == answer['question_code']:
+                    item['recorded_answer'] = {
+                        **deepcopy(answer), 'verified': False,
+                        'provenance': {**decision['provenance'],
+                                       'locator': decision['provenance']['locator'] + f'/answers/{index}'},
+                    }
+                    item['review_required'] = True
     result['status'] = 'needs_clarification' if result['questions'] else 'pending_review'
     _limit(result)
     return result
@@ -216,8 +230,8 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
 
 def _limit(result):
     try:
-        _bounded(result)
-    except DraftError:
+        check_bounds(result)
+    except ContextLimitError:
         raise PlanningError('Design evidence exceeds the response limit; select fewer assets or narrower policy') from None
 
 

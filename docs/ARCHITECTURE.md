@@ -4,12 +4,28 @@ Agreed direction, 2026-10-23. This supersedes runtime-first sequencing in the
 earlier roadmap and handover. This document describes the target; it does not
 claim that the adapters or workflow below are implemented.
 
+## Product boundary — clarified 2026-10-23
+
+This product supplies reliable context so an agent can create or revise a **data
+model**: entities, relationships, keys, grain, normalisation and modelling rules
+across multiple tables. A dbt model is one implementation artifact, not the whole
+data model. The agent reasons over the supplied context, asks clarifying questions
+and explains design choices. The core assembles evidence and preserves decisions;
+it does not replace that reasoning with hard-coded SQL templates.
+
+Model SQL/YAML generation, current-row/deletion/lookup/event-history renderers,
+SCD implementations, model-file application/revision and a dbt execution runner
+are outside this product boundary and have been removed. SCD implementation is
+not a deferred requirement. Describing temporal semantics in metadata remains
+valid context. Use the host agent and existing dbt tooling for implementation.
+
 ## First complete workflow
 
 An individual using Copilot in VS Code supplies a business requirement. Shared
 tools inspect a validated project snapshot and configured catalogs. The agent
 clarifies intent and standards, proposes grain, entities, keys, relationships and
-history, then produces reviewable dbt SQL/YAML changes and validation evidence.
+temporal semantics. The agent creates a reviewable data-model design using this
+context; implementation and execution belong to the host and existing dbt tooling.
 The result can be a new model or a change to an existing design. Copilot CLI and
 a standalone client follow through thin adapters to the same tools. Building a
 second agent runtime is not a prerequisite. Complement upstream dbt skills.

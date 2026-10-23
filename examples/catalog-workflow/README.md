@@ -39,8 +39,8 @@ if existing-model inference/comparison is needed; do not fabricate lineage.
    current row per customer is intended and the source mapping is correct. The model
    is a projection, with proposed unique/not-null checks; it does not deduplicate or
    resolve history. If the human needs history or a different grain, redesign it.
-8. The 3NF target remains unproved. Reviewed creation is available through the separate draft workflow below; running
-   dbt checks still needs a later output-safe validation runner. No passing tests or approval are
+8. The 3NF target remains unproved. Implementation and dbt checks belong to the
+   host agent and existing dbt tooling. No passing tests or approval are
    implied by these files. Any warehouse validation must respect the no-raw-data
    boundary; ordinary test failure output may expose values and is not a safe tool.
 
@@ -48,11 +48,3 @@ Try removing primary_key from curated.json and refresh: that fact becomes missin
 Try conflicting column declarations while another field is still unresolved: both
 claims are retained and resolution reports conflict. Providers below an already
 sufficient result are unqueried, not verified as agreeing.
-
-## Executable draft workflow
-
-The new [model draft workflow](../../docs/MODEL_DRAFTS.md) can generate a separate
-`customer_projection` model from this project's request and synthetic manifest fixture.
-Copy this directory to a disposable location, then follow prepare/review/apply there.
-The original `stg_xyz_customer.sql` remains an illustrative draft. The synthetic
-`artifacts/manifest.json` is metadata-only test evidence, not live dbt compilation.

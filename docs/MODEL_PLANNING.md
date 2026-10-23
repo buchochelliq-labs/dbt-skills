@@ -77,10 +77,9 @@ other semantic answers still require human/host reasoning and a reviewed decisio
 This tool does not persist answers, promote learned standards, apply exceptions or mark
 dependency evidence as proved. It does not parse arbitrary business prose into SQL.
 
-Once the human has selected a supported source-row projection, use the existing
-[prepare/review/apply/validate workflow](MODEL_DRAFTS.md). Joins, current/history transforms,
-changes to existing files and automatic conversion of design answers remain follow-ups.
-There is no automatic plan-to-apply shortcut and no warehouse execution.
+The host agent uses this evidence to propose a data-model design across entities
+and relationships. SQL generation, file application and dbt execution are not
+provided by this context layer.
 
 ## Reuse reviewed grain and history decisions
 
@@ -135,8 +134,8 @@ questions still apply. A saved choice never promotes a standard or proves a key.
 
 MCP pins the selected decisions file alongside project context. If it changes,
 `model_plan` requires `modelling_refresh`; old context IDs then become invalid.
-The planner does not persist arbitrary semantic answers yet, and drafting still
-requires an explicit reviewed request. There is no automatic plan-to-apply shortcut.
+The planner reuses the bounded semantic answers described below. The agent uses
+these records as context when discussing and revising the complete data-model design.
 
 ## Prepare a decision for review
 
@@ -192,5 +191,44 @@ both additions and replacements; the patch alone is not a concurrent-write guard
 
 MCP takes no file path in the tool call. Changes to selected policy or decisions
 require refresh, just as for `model_plan`. After saving an adopted proposal, refresh
-and plan again to see the reused decision and its provenance. Draft generation still
-requires an explicit reviewed request.
+and plan again to see the reused decision and its provenance. The agent remains responsible for reasoning about the complete data-model design.
+
+## Retain semantic answers as design context
+
+A design record may include `answers`, and `model_propose_decision` accepts the
+same optional field inside `record`. Each answer has a stable `question_code`, an
+`answer` and a `rationale`, for example:
+
+```json
+{
+  "question_code": "functional_dependencies",
+  "answer": "Customer ID determines the customer attributes within this source.",
+  "rationale": "Reviewed business definition; physical uniqueness remains unverified."
+}
+```
+
+Supported codes are `functional_dependencies`, `multivalued_dependencies`,
+`join_dependencies`, `review_principles`, `relationships_unknown`,
+`grain_key_difference`, `current_row_rule` and `history_rule`. These describe
+semantic understanding, including temporal intent; they do not implement SCD or
+other transformations. Proposals accept answers only for questions raised by the
+selected plan. Up to 16 unique entries are allowed; answer text is bounded to 2048
+characters and rationale to 4096. Do not put source rows or example values in these
+metadata records. Old records without answers remain supported.
+
+Review and save the proposed document using the existing human-owned file workflow.
+The tool never saves it automatically. After refresh, an exact matching record
+(intent, asset, scope and evidence) supplies `recorded_answer` on the relevant
+planner question. This includes `verified: false` and document/hash/JSON-location
+provenance; record-level attribution and evidence remain on the entity decision.
+The host should acknowledge the prior answer and assess remaining gaps instead of
+asking the user to repeat it. `review_required: true` keeps the question visible;
+normal-form compliance remains unverified. Narrative memory is context, never a
+catalog declaration, instruction, approved standard or executable SQL rule.
+
+Stale, conflicting and ambiguous records never supply active answers. Their review
+questions remain explicit. Replacing an answer requires the existing explicit
+`replace_record_id` workflow and preserves the previous record in the review patch.
+This first slice records answers within an existing single-asset grain/history
+record. Cross-entity design records and arbitrary business-concept notes are not
+implemented; the host agent still reasons about the complete data model.
