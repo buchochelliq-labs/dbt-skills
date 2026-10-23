@@ -66,9 +66,35 @@ def load_document(path: str | Path) -> dict:
         raise
     except (OSError, UnicodeError, yaml.YAMLError, RecursionError, ValueError, KeyError, TypeError, OverflowError):
         raise PolicyError("Cannot read a valid YAML document") from None
+    validate_document(document)
+    provenance = {"document": str(path.resolve()), "sha256": hashlib.sha256(raw).hexdigest()}
+    return {"document": document, "provenance": provenance}
+
+
+def validate_document(document: dict) -> None:
+    """Validate an in-memory document with the same contract as file loading."""
+    pending, nodes = [(document, 1)], 0
+    while pending:
+        value, depth = pending.pop()
+        nodes += 1
+        if depth > 32 or nodes > 20000:
+            raise PolicyError("Document exceeds structural limits")
+        if isinstance(value, dict):
+            if len(value) > 20000:
+                raise PolicyError("Document exceeds structural limits")
+            pending.extend((item, depth + 1) for pair in value.items() for item in pair)
+        elif isinstance(value, list):
+            if len(value) > 20000:
+                raise PolicyError("Document exceeds structural limits")
+            pending.extend((item, depth + 1) for item in value)
+    try:
+        serialized = json.dumps(document, indent=2, allow_nan=False).encode("utf-8")
+    except (ValueError, TypeError, UnicodeError):
+        raise PolicyError("Document must contain JSON-compatible values") from None
+    if len(serialized) > _MAX_BYTES:
+        raise PolicyError("Canonical document exceeds 1 MiB")
     if not _VALIDATOR.is_valid(document):
         raise PolicyError("Document does not match modelling schema version 1")
-    provenance = {"document": str(path.resolve()), "sha256": hashlib.sha256(raw).hexdigest()}
     records = document.get("naming", []) + document.get("modelling", []) + document.get("records", [])
     ids = [record["id"] for record in records]
     if len(ids) != len(set(ids)):
@@ -85,10 +111,13 @@ def load_document(path: str | Path) -> dict:
     if document["kind"] == "policy":
         for index, record in enumerate(document["naming"]):
             try:
-                resolve_name(_rule(document, record, provenance, index), {})
+                resolve_name(_rule(document, record, {"document": "in-memory"}, index), {})
             except NamingError as error:
                 raise PolicyError(str(error)) from None
-    return {"document": document, "provenance": provenance}
+    if document["kind"] == "proposals":
+        for record in records:
+            if record["decision"] == "exception" and record["models"] != [record["trigger_model"]]:
+                raise PolicyError("An exception proposal must apply only to its trigger model")
 
 
 def _rule(document, record, provenance, index):

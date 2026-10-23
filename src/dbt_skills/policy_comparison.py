@@ -52,10 +52,12 @@ def compare_model_names(project, policy_path, snapshot=None, *, model_id=None, c
     context = {} if context is None else context
     if context and not model_id:
         raise PolicyError("Explicit scope context requires one selected model")
-    if (not isinstance(context, dict) or len(context) > 32 or any(
+    if (not isinstance(context, dict) or len(context) > 256 or any(
             not isinstance(k, str) or not isinstance(v, str) or not k.strip() or not v.strip()
-            or len(k) > 256 or len(v) > 4096 for k, v in context.items())):
+            or len(k) > 1048576 or len(v) > 4096 for k, v in context.items())):
         raise PolicyError("Scope context requires bounded non-empty string fields")
+    if sum(len(k) + len(v) for k, v in context.items()) > 1048576:
+        raise PolicyError("Scope context exceeds the document size limit")
     loaded = load_document(policy_path)
     policy = loaded["document"]
     if policy["kind"] != "policy":

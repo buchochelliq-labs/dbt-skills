@@ -61,6 +61,15 @@ class ComparisonTests(unittest.TestCase):
         result = compare_model_names(self.project, self.policy, self.snapshot(), model_id="model.example.customer", context={"layer": "staging"})
         self.assertEqual(result["models"][0]["status"], "matches")
 
+    def test_schema_valid_large_scope_can_be_supplied(self):
+        scope = {f"dimension_{i}": "value" for i in range(255)}
+        scope["x" * 300] = "value"
+        self.rules[0]["scope"] = scope
+        self.write()
+        result = compare_model_names(self.project, self.policy, self.snapshot(),
+                                     model_id="model.example.customer", context=scope)
+        self.assertEqual(result["models"][0]["status"], "matches")
+
     def test_overlapping_rules_have_no_hidden_precedence(self):
         self.rules.append({**self.rules[0], "id": "other"})
         self.write()

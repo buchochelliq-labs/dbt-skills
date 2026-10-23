@@ -11,11 +11,19 @@ from .project import ProjectError, discover_project
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "discover", "render", "infer", "compare"):
+    for name in ("validate", "discover", "render", "infer", "compare", "propose"):
         command = commands.add_parser(name)
         command.add_argument("path")
-        if name in ("infer", "compare"):
+        if name in ("infer", "compare", "propose"):
             command.add_argument("--target-path")
+        if name == "propose":
+            command.add_argument("--policy", required=True)
+            command.add_argument("--rule", required=True)
+            command.add_argument("--model", required=True)
+            command.add_argument("--rationale", required=True)
+            command.add_argument("--decision", choices=("exception", "standard_change"), default="exception")
+            command.add_argument("--template")
+            command.add_argument("--proposals")
         if name == "compare":
             command.add_argument("--policy", required=True)
             command.add_argument("--model")
@@ -25,7 +33,12 @@ def main(argv=None):
             command.add_argument("--value", action="append", default=[], metavar="TOKEN=VALUE")
     args = parser.parse_args(argv)
     try:
-        if args.command == "compare":
+        if args.command == "propose":
+            from .decision_proposals import prepare_decision
+            result = prepare_decision(discover_project(args.path, target_path=args.target_path), args.policy,
+                                      args.rule, args.model, args.rationale, decision=args.decision,
+                                      template=args.template, proposals_path=args.proposals)
+        elif args.command == "compare":
             from .policy_comparison import compare_model_names
             context = {}
             for item in args.context:

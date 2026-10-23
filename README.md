@@ -6,6 +6,8 @@ Use [convention discovery](docs/CONVENTION_DISCOVERY.md) to propose naming layou
 from a validated manifest with evidence, counterexamples and clarification questions.
 [Compare filenames with a selected policy](docs/POLICY_COMPARISON.md) to identify
 structural matches, mismatches and unresolved rule scope.
+[Prepare pending decision proposals](docs/DECISION_PROPOSALS.md) for a model exception
+or an explicit template change, with evidence and reviewable patches.
 
 > **2026-10-23 direction:** See the [agreed architecture](docs/ARCHITECTURE.md) for the current workflow and delivery order: Copilot in VS Code first, shared project/catalog context, optional UOL, and modelling policy before a standalone agent runtime. Earlier sequencing below is historical.
 

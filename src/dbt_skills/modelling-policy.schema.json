@@ -421,6 +421,196 @@
         "records"
       ],
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "proposals"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "rule_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "decision": {
+                "enum": [
+                  "exception",
+                  "standard_change"
+                ]
+              },
+              "models": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "\\S"
+                },
+                "maxItems": 256
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    },
+                    "locator": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    },
+                    "generated_at": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    },
+                    "observed_at": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": [
+                    "document",
+                    "revision",
+                    "locator"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 256,
+                "minItems": 1
+              },
+              "trigger_model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "observed_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "previous_template": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "proposed_template": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "\\S"
+              },
+              "rule_scope": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "\\S"
+                },
+                "maxProperties": 256,
+                "propertyNames": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "rule_id",
+              "decision",
+              "models",
+              "rationale",
+              "evidence",
+              "trigger_model",
+              "observed_path",
+              "previous_template",
+              "rule_scope"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "decision": {
+                      "const": "exception"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "models": {
+                      "minItems": 1,
+                      "maxItems": 1
+                    }
+                  },
+                  "not": {
+                    "required": [
+                      "proposed_template"
+                    ]
+                  }
+                },
+                "else": {
+                  "required": [
+                    "proposed_template"
+                  ],
+                  "properties": {
+                    "models": {
+                      "maxItems": 0
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "records"
+      ],
+      "additionalProperties": false
     }
   ]
 }

@@ -1,7 +1,7 @@
 # Modelling documents v1
 
 The read-only policy API and CLI validate declared standards, inferred observations
-and reviewed decisions. They do not modify models, choose which policy is authoritative,
+and reviewed decisions, plus separate pending proposals. They do not modify models, choose which policy is authoritative,
 prove normalisation, or automatically apply observations or exceptions.
 
 From the repository root after installing requirements:
@@ -26,6 +26,7 @@ All documents declare `schema_version: 1` and one `kind`:
 | --- | --- | --- |
 | `policy` | `tokens`, `naming`, `modelling` | Declared team standards |
 | `observations` | `records` with statement, confidence and evidence | Inferred conventions; never automatically active |
+| `proposals` | Pending records with trigger model, rationale, scope and evidence | Review only; no approval fields |
 | `decisions` | `records` with rule, decision, models, rationale, approver, time and evidence | Recorded approval; never automatically applied |
 
 See [complete examples](../examples/modelling/). Evidence requires a document,
@@ -80,6 +81,9 @@ seen before truncation depends on directory enumeration order.
 
 Explicit document reads accept regular files up to 1 MiB, 32 YAML nesting levels
 and 20,000 nodes. Duplicate/non-string keys, aliases and custom tags are rejected.
+Both loaded and generated documents must also fit 1 MiB when serialized as JSON
+with two-space indentation and ASCII escaping; the same depth/node budgets apply
+in memory. Extra whitespace in a user-saved file can still exceed the raw file limit.
 Collections are bounded by the schema. Explicit paths may refer through symlinks;
 discovery does not follow them. Concurrent hostile filesystem replacement is outside
 this local read-only contract. Nothing here grants filesystem write permission.
@@ -91,3 +95,5 @@ and reviewable policy/decision updates. The [infer command](CONVENTION_DISCOVERY
 now provides evidence-backed filename-layout hypotheses and counterexamples. #38
 still needs explicit YAML/decision adapters and interactive onboarding. None of
 these capabilities is implied by schema validation. Copilot integration remains separate.
+
+See [decision proposals](DECISION_PROPOSALS.md) for review-only patches and single-model exception defaults.
