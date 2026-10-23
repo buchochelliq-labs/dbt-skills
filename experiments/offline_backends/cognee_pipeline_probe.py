@@ -125,6 +125,40 @@ async def main(result):
     assert result['outsider_list_exception']=='PermissionDeniedError'
     assert result['outsider_context_exception']=='PermissionDeniedError'
     assert result['outsider_delete_exception']=='UnauthorizedDataAccessError'
+    if '--policy-fit' in sys.argv:
+        from cognee.modules.users.permissions.methods import authorized_give_permission_on_datasets
+        from cognee.modules.users.permissions.methods.authorized_revoke_permission_on_datasets import authorized_revoke_permission_on_datasets
+        await authorized_give_permission_on_datasets(outsider.id,p.id,'read',owner.id)
+        async with set_database_global_context_variables(p.id,outsider.id,permission_type='read'):
+            graph=await get_graph_engine()
+            assert (await graph.get_node(str(claims[0].id)))['value']=='customer'
+        await authorized_revoke_permission_on_datasets(outsider.id,p.id,'read',owner.id)
+        try:
+            async with set_database_global_context_variables(p.id,outsider.id,permission_type='read'):
+                raise AssertionError('revoked context allowed')
+        except AssertionError: raise
+        except Exception as exc:
+            assert type(exc).__name__=='PermissionDeniedError'
+        result['grant_then_revoke_blocks_fresh_context']=True
+        # Positive plaintext evidence only: absence of a marker proves nothing.
+        markers={'input_document':b'Synthetic catalog declaration: customer grain.',
+                 'claim_value':b'customer-account'}
+        inspected=[]
+        for path in sorted(Path(ROOT.name).rglob('*')):
+            if not path.is_file(): continue
+            size=path.stat().st_size
+            if size>64*1024*1024:
+                inspected.append({'path':str(path.relative_to(ROOT.name)),'skipped':'over 64 MiB'})
+                continue
+            raw=path.read_bytes()
+            found=[name for name,marker in markers.items() if marker in raw]
+            header=raw.startswith(b'SQLite format 3\x00')
+            if found or header:
+                inspected.append({'path':str(path.relative_to(ROOT.name)),
+                                  'bytes':size,'plaintext_markers':found,'sqlite_header':header})
+        assert any('input_document' in row.get('plaintext_markers',[]) for row in inspected)
+        result['at_rest_positive_evidence']=inspected
+        result['at_rest_scope']='temporary application roots before deletion; live files; no negative encryption claim'
     result['stage']='source deletion with shared ownership'
     try:
         await cognee.datasets.delete_data(p.id,docs[0].id,user=owner)

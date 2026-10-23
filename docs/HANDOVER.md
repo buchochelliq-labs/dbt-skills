@@ -44,6 +44,11 @@ Branching graph results include an independent oracle and deduplicated SQL.
 Interim recommendation: retain SQLCipher default; evaluate Cognee policy/encryption
 fit before choosing an integration. This is not a completed backend selection
 or permission/encryption parity claim. No production persistence refactor was made.
+The third pass, `experiments/offline_backends/POLICY_FIT.md`, maps the policy boundary
+and verifies grant/revoke across fresh read contexts. Synthetic plaintext is readable
+in input, relational and graph files in the tested Cognee configuration. Keep the
+encrypted canonical store; assess Cognee as an optional derived retrieval projection
+only after encryption and generation-consistency gates. No production adapter exists.
 
 ## Purpose and guardrails
 

@@ -1,5 +1,8 @@
 # Second pass: Cognee pipeline lifecycle and branching graphs
 
+Follow-up: [policy and encrypted persistence fit](POLICY_FIT.md), including grant/revoke
+and positive plaintext-file evidence for the tested configuration.
+
 **2026-10-23. Exploratory evidence, not a production integration or final ADR.**
 Continues [the initial report](README.md) and issue #62. Uses the same pinned Linux
 Python environments. No product dependencies or persistence behavior changed.
