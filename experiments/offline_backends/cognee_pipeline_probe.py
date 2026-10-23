@@ -68,6 +68,9 @@ async def main(result):
     outsider=await create_user('outsider@example.test',password=None)
     result['stage']='ingest synthetic metadata documents'
     await cognee.add('Synthetic catalog declaration: customer grain.',dataset_name='project_p',user=owner,skip_connection_test=True)
+    initial_datasets=await cognee.datasets.list_datasets(user=owner)
+    initial_p=next(d for d in initial_datasets if d.name=='project_p')
+    catalog_document_id=(await cognee.datasets.list_data(initial_p.id,user=owner))[0].id
     await cognee.add('Synthetic human declaration: customer-account grain.',dataset_name='project_p',user=owner,skip_connection_test=True)
     await cognee.add('Synthetic other-project declaration.',dataset_name='project_q',user=owner,skip_connection_test=True)
     datasets=await cognee.datasets.list_datasets(user=owner)
@@ -76,6 +79,8 @@ async def main(result):
     docs=await cognee.datasets.list_data(p.id,user=owner)
     qdocs=await cognee.datasets.list_data(q.id,user=owner)
     assert len(docs)==2 and len(qdocs)==1
+    # Listing order is not claim provenance: bind the catalog claim to its actual document.
+    docs.sort(key=lambda d:d.id!=catalog_document_id)
     claims=[evidence('p/catalog','p','customer'),evidence('p/human','p','customer-account')]
     foreign=evidence('q/catalog','q','foreign')
     shared=evidence('p/shared','p','shared concept')
