@@ -13,6 +13,8 @@ PowerShell users can set `$env:PYTHONPATH = "src"` before running the same Pytho
 
 `init` and `ask` also accept `--target-path` for projects whose artifact directory needs an explicit resolved value. This override is per invocation and is not persisted by `init`. Existing ontology `--manifest` and ODS target-directory overrides remain authoritative; UOL manifest evidence records the actual resolved file path.
 
+The UOL MCP server accepts `--project-dir PROJECT --target-path PATH` as well. Artifact inspection rejects non-regular files before opening them; concurrent hostile filesystem replacement is outside this read-only inspector's current contract.
+
 The ordinary project JSON is unchanged. With `--artifacts`, an `artifacts` object is added:
 
 | Entry | Supported inspection |

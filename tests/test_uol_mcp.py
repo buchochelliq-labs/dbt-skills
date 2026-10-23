@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch, AsyncMock
 from pathlib import Path
 
 from mcp import Client, MCPError, StdioServerParameters
@@ -18,6 +19,19 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class UOLMCPTests(unittest.TestCase):
+    def test_startup_accepts_resolved_target_with_selected_project(self):
+        from dbt_skills.uol_mcp import main
+        (self.project_dir / 'dbt_project.yml').write_text(
+            'name: mcp_fixture\ntarget-path: "{{ env_var(\'BUILD\') }}"\n', encoding='utf-8')
+        async def serve():
+            pass
+        with patch('dbt_skills.uol_mcp.LocalOntologyStore'), patch('dbt_skills.uol_mcp.create_server') as create:
+            create.return_value.run_stdio_async = AsyncMock(side_effect=serve)
+            self.assertEqual(main(['--project-dir', str(self.project_dir), '--target-path', 'build']), 0)
+            selected = create.call_args.kwargs['selected_project']
+            self.assertEqual(selected.root, self.project_dir.resolve())
+            self.assertEqual(selected.manifest_path, self.project_dir.resolve() / 'build/manifest.json')
+
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
