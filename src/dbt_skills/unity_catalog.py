@@ -82,6 +82,25 @@ class UnityCatalogProvider:
             self._results = {a: deepcopy(result) for a, result in previous._results.items()
                              if a in allowed and self._assets.get(a) == previous._assets.get(a)}
 
+    def cache_identity(self):
+        # The credential is an in-memory isolation key only; never returned or persisted.
+        return (self.id, self.host, self.scope, self._token_env, self._token)
+
+    def cache_access(self):
+        return self._access()
+
+    def fetch_fresh(self, asset_id, fields):
+        _identifier(asset_id, asset=True)
+        _fields(fields)
+        if asset_id not in self._assets:
+            return ProviderResult('not_found')
+        if not set(fields).intersection(self.capabilities):
+            return ProviderResult('unsupported')
+        if self._access() != 'available':
+            return ProviderResult('denied')
+        result = self._retrieve(asset_id)
+        return ProviderResult(result.status, tuple(c for c in result.claims if c.field in fields))
+
     def _access(self):
         token = os.environ.get(self._token_env)
         if not token or token != self._token or len(token) > 8192 or not token.isascii() or any(ord(c) <= 32 or ord(c) == 127 for c in token):

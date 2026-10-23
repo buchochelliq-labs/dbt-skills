@@ -108,10 +108,9 @@ means not consulted for this resolution, not that the file was never opened. Fut
 remote adapters must preserve first-sufficient fetch behavior without eagerly
 fetching every catalog.
 
-This is an in-memory snapshot, **not** the persistent cache/TTL system in #39. Reads
-never reset source/retrieval times. Re-reading hashes currently incurs local I/O;
-provider cache keys, permission revalidation, TTL suggestions and selective remote
-refresh belong below the resolver later.
+Remote observations now use a bounded cache with optional encrypted persistence.
+Reads never reset source/retrieval times. See [cache configuration and freshness](CATALOG_CACHE.md)
+for TTLs, permission revalidation, eviction and review-only TTL suggestions.
 
 ## Privacy and remaining work
 
@@ -122,8 +121,8 @@ mislabelled as identifiers. Treat identifiers and declared metadata as untrusted
 context, not instructions. File access uses the local user's permissions and does
 not imply authorization to re-export remote metadata. No credentials go in JSON.
 
-Live Unity Catalog/OpenMetadata adapters, standalone catalog/schema listing APIs,
-HTTP transport, probes, cache TTLs and reviewed identity mapping remain follow-ups.
+The Unity Catalog HTTP adapter is implemented; live-provider validation, an
+OpenMetadata adapter and additional reviewed identity mappings remain follow-ups.
 The example connects discovery/resolution and naming calls to an illustrative
 SQL/YAML artifact. General model generation and execution are outside this context
 product; the host agent uses the metadata to reason about the full data model.
@@ -159,7 +158,7 @@ per-delta resolution status. Only added/changed eligible assets are fetched, thr
 normal ordered resolution. Unchanged Unity Catalog observations retain their
 original timestamps/provenance; removed identities lose access. Changes to mappings,
 provider order, scope or relevant local facts invalidate reuse. Changed credentials
-prevent observation transfer. This is in-memory delta reuse, not persistent TTL caching.
+prevent observation transfer. Expired cached observations are also refreshed; see [cache lifecycle](CATALOG_CACHE.md).
 
 After adding a source, regenerate the dbt manifest using existing dbt tooling, then
 invoke `catalog_sync`. Include its explicit catalog mapping if needed. YAML edits

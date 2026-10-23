@@ -378,15 +378,21 @@ def load_catalog(path: Path) -> CatalogResolver:
     """Operator-selected config; JSON paths are relative to that config file."""
     path = Path(path).resolve()
     doc, revision = _document(path)
-    if not isinstance(doc, dict) or set(doc) != {'schema_version', 'providers'} or type(doc['schema_version']) is not int or doc['schema_version'] != 1 or not isinstance(doc['providers'], list) or not 1 <= len(doc['providers']) <= 8:
+    if not isinstance(doc, dict) or not {'schema_version', 'providers'} <= set(doc) or set(doc) - {'schema_version', 'providers', 'cache'} or type(doc['schema_version']) is not int or doc['schema_version'] != 1 or not isinstance(doc['providers'], list) or not 1 <= len(doc['providers']) <= 8:
         raise CatalogError('Invalid catalog configuration')
+    from .catalog_cache import cache_options, CachedProvider
+    defaults = cache_options(doc.get('cache', {}))
     providers = []
     for entry in doc['providers']:
         if not isinstance(entry, dict):
             raise CatalogError('Invalid catalog provider configuration')
+        entry = dict(entry)
+        options = cache_options({**defaults, **entry.pop('cache', {})}) if isinstance(entry.get('cache', {}), dict) else None
+        if options is None:
+            raise CatalogError('Invalid provider cache configuration')
         if entry.get('type') == 'unity_catalog':
             from .unity_catalog import UnityCatalogProvider
-            providers.append(UnityCatalogProvider(entry))
+            providers.append(CachedProvider(UnityCatalogProvider(entry), options, disk_path=path.parent / '.dbt-skills-catalog-cache' / (entry['id'] + '.db')))
         elif (set(entry) == {'id', 'type', 'path', 'scope'} and entry['type'] == 'file'
               and isinstance(entry['path'], str) and 1 <= len(entry['path']) <= 4096):
             providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
