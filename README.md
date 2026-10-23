@@ -30,3 +30,7 @@ The agent creates or revises a data-model design across entities and relationshi
 This repository supplies its grounding context; it does not generate or apply dbt SQL.
 
 The shared [design planner](docs/MODEL_PLANNING.md) assembles entity/key/relationship candidates, applicable modelling standards and targeted questions from selected catalog assets and the same project snapshot. It identifies existing models for reuse review; no normal-form proof or automatic semantic design is claimed.
+
+Before physical assets exist, provide [business concepts and relationships](docs/BUSINESS_CONTEXT.md)
+through a human-owned context file. The agent can use definitions, rationale and
+provenance to reason about the complete data model without requiring UOL or a catalog.

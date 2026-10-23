@@ -107,7 +107,7 @@ def validate_decisions(document):
             if record['history'] not in ('source_rows', 'current', 'historical') or not _timestamp(record['recorded_at']) or len(record['recorded_at']) > 64:
                 raise ValueError
             evidence = record['evidence']
-            if not isinstance(evidence, dict) or set(evidence) != {'policy_sha256', 'manifest_sha256', 'catalog_config_sha256', 'catalog_facts_sha256'}:
+            if not isinstance(evidence, dict) or set(evidence) - {'business_context_sha256'} != {'policy_sha256', 'manifest_sha256', 'catalog_config_sha256', 'catalog_facts_sha256'}:
                 raise ValueError
             for key, value in evidence.items():
                 if key == 'catalog_config_sha256' and value is None:
@@ -130,7 +130,7 @@ def load_design_decisions(path):
         raise DesignDecisionError('Cannot read a valid design-decisions document') from None
 
 
-def decision_context(intent, asset, policy, manifest, facts, config):
+def decision_context(intent, asset, policy, manifest, facts, config, business=None):
     # Only observation-clock fields are excluded. Source revisions, scopes,
     # values and derivation remain binding, including negative lookup results.
     normalized = deepcopy(facts)
@@ -140,7 +140,8 @@ def decision_context(intent, asset, policy, manifest, facts, config):
     digest = hashlib.sha256(json.dumps(normalized, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
     return {'intent': intent, 'asset_id': asset['asset_id'], 'scope': deepcopy(asset.get('scope', {})),
             'evidence': {'policy_sha256': policy['provenance']['sha256'], 'manifest_sha256': manifest['sha256'],
-                         'catalog_config_sha256': config['revision'] if config else None, 'catalog_facts_sha256': digest}}
+                         'catalog_config_sha256': config['revision'] if config else None, 'catalog_facts_sha256': digest,
+                         **({'business_context_sha256': business['provenance']['sha256']} if business else {})}}
 
 
 def select_decision(decisions, context, asset, contexts=None, assets=None):

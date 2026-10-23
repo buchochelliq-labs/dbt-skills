@@ -163,3 +163,12 @@ related evidence/scope and conflicting saved assertions prevent active reuse.
 Denial withholds context; no implicit fetch, SQL generation or writes. This extends
 semantic answers to declared cross-entity relationships; it is not yet a general
 concept/relationship creation format. The host agent performs data-model reasoning.
+
+## Prephysical business context (2026-10-23)
+
+Optional human-owned business-context JSON exposes concepts and arbitrary named
+relationships before physical assets exist. Shared bounded loader/read API, CLI and
+MCP pages preserve attribution, proposed/reviewed status and file/hash/locator
+provenance; every statement remains unverified. No UOL dependency, inferred mapping,
+SQL, file writes or catalog reads. Selection is pinned until refresh and included
+in design-decision evidence; changed definitions require review. See BUSINESS_CONTEXT.md.

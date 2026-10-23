@@ -230,8 +230,8 @@ Stale, conflicting and ambiguous records never supply active answers. Their revi
 questions remain explicit. Replacing an answer requires the existing explicit
 `replace_record_id` workflow and preserves the previous record in the review patch.
 Answers belong to an anchored design record. Related-entity dependencies and
-relationship answers are described below; arbitrary business-concept notes are not
-yet implemented. The host agent reasons about the complete data model.
+relationship answers are described below; independent business definitions can be
+supplied through [business context](BUSINESS_CONTEXT.md). The host agent reasons about the complete data model.
 
 ## Decisions involving related entities
 
@@ -261,8 +261,8 @@ relationship question for the anchor. Different foreign keys to the same target
 have separate identities. Column lists are ordered mappings, bounded to 32 unique
 identifiers of equal length. For other answer codes, relationship fields are not
 accepted. This stores reviewed meaning; it does not prove cardinality or modify
-catalog relationships. Undeclared relationships and arbitrary new business
-concepts still need a broader context-record design.
+catalog relationships. Conceptual relationships and new business concepts can be supplied separately
+through [business context](BUSINESS_CONTEXT.md), without implying a physical FK.
 
 Every related dependency is checked before reuse. A missing selection produces
 `incomplete_design_decision`; changed scope/evidence is stale, and an explicit

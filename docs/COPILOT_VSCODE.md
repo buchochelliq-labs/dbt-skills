@@ -61,3 +61,11 @@ and review patch from explicit choices, rationale and attribution. It derives ev
 hashes from the pinned context. Review and save the returned `proposed_document` through
 your normal file workflow, then refresh; the tool never saves or approves it. See the
 [proposal request](MODEL_PLANNING.md#prepare-a-decision-for-review).
+
+### Business concepts without catalog assets
+
+Select optional `--business-context business.json` to expose the read-only
+`business_context` tool. It pages concepts and explicit conceptual relationships
+with per-record rationale, supplied review status and provenance. No policy or
+catalog is required. Read [business context](BUSINESS_CONTEXT.md) for the format,
+pinning/refresh rules and evidence binding to saved design decisions.
