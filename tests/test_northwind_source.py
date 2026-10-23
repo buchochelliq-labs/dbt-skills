@@ -1,4 +1,5 @@
 import importlib.util
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
@@ -21,7 +22,7 @@ class NorthwindSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'fixture'
             path = builder.build(root, 'demo_catalog', 'northwind_demo')
-            with sqlite3.connect(path) as db:
+            with closing(sqlite3.connect(path)) as db:
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
                 self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(), [])
                 self.assertEqual(db.execute('SELECT count(*) FROM orders').fetchone()[0], 100)
