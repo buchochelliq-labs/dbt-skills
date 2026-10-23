@@ -1,0 +1,11 @@
+schema_version: 1
+kind: observations
+records:
+  - id: observed-source-prefix
+    statement: Some staging files use the source system as a naming token.
+    confidence: low
+    evidence:
+      - document: models/stg/xyz/stg_xyz_customer.sql
+        revision: example-only-not-a-real-revision
+        locator: filename
+    counterexamples: []

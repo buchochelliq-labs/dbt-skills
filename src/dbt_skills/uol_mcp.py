@@ -259,11 +259,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional selected dbt project directory for source identity checks",
     )
+    parser.add_argument('--target-path', help='Resolved artifact directory for the selected project')
     return parser
 
 
 async def _run(args: argparse.Namespace) -> None:
-    project = discover_project(args.project_dir) if args.project_dir else None
+    if args.target_path and not args.project_dir:
+        raise ValueError('--target-path requires --project-dir')
+    project = discover_project(args.project_dir, target_path=args.target_path) if args.project_dir else None
     store = LocalOntologyStore(args.db or default_store_path())
     server = create_server(store, selected_project=project)
     await server.run_stdio_async()

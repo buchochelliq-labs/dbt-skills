@@ -1,0 +1,39 @@
+schema_version: 1
+kind: policy
+tokens:
+  layer: Which modelling layer?
+  source: Which source system supplies this object?
+  concept: Which business object or concept?
+  domain: Which business domain?
+naming:
+  - id: staging-file
+    target: model_file
+    scope:
+      layer: staging
+    template: models/{layer}/{source}/{layer}_{source}_{concept}.sql
+    bindings:
+      layer: stg
+  - id: domain-model
+    target: model_id
+    scope:
+      layer: core
+    template: '{domain}__{concept}'
+modelling:
+  - id: core-design
+    scope:
+      layer: core
+    style: relational
+    normal_form: 4NF
+    principles:
+      - State the grain and keys before proposing SQL.
+      - Record functional and multivalued dependency evidence and assumptions.
+  - id: reporting-design
+    scope:
+      layer: reporting
+    style: dimensional
+    normal_form: none
+    principles:
+      - State the fact grain and dimension history requirements.
+references:
+  - .sqlfluff
+  - docs/modelling-decisions.md

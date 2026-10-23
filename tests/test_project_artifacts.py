@@ -1,5 +1,8 @@
 import io
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -12,6 +15,16 @@ from dbt_skills.project import ProjectError, discover_project
 
 
 class ProjectArtifactTests(unittest.TestCase):
+    @unittest.skipUnless(hasattr(os, 'mkfifo'), 'POSIX FIFO required')
+    def test_fifo_artifact_returns_without_waiting_for_writer(self):
+        os.mkfifo(self.target / 'manifest.json')
+        result = subprocess.run(
+            [sys.executable, '-m', 'dbt_skills.cli', 'inspect', '--project-dir',
+             str(self.root), '--artifacts'], capture_output=True, text=True, timeout=5,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['artifacts']['manifest']['status'], 'inaccessible')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
