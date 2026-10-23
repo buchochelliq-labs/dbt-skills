@@ -153,3 +153,13 @@ verified false and review required. Stale/conflicting/ambiguous decisions do not
 supply active answers. No policy promotion, SQL rules or automatic writes. CLI and
 MCP share the same core; old records remain supported. This is single-asset answer
 memory, not yet cross-entity design records or a generic concept notebook.
+
+## Related-entity decision context (2026-10-23)
+
+Proposals now support an anchor plus up to seven explicit related assets, storing
+scope/evidence and supplied assertions for each dependency. Relationship answers
+bind to target asset and exact source/target columns. Missing selections, changed
+related evidence/scope and conflicting saved assertions prevent active reuse.
+Denial withholds context; no implicit fetch, SQL generation or writes. This extends
+semantic answers to declared cross-entity relationships; it is not yet a general
+concept/relationship creation format. The host agent performs data-model reasoning.

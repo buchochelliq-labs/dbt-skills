@@ -15,8 +15,13 @@ class DesignDecisionError(ValueError):
 ANSWER_CODES = frozenset({
     'functional_dependencies', 'multivalued_dependencies', 'join_dependencies',
     'review_principles', 'relationships_unknown', 'grain_key_difference',
-    'current_row_rule', 'history_rule',
+    'current_row_rule', 'history_rule', 'confirm_relationship',
 })
+
+
+def answer_identity(answer):
+    return (answer.get('question_code', answer.get('code')), answer.get('target_asset'),
+            tuple(answer.get('columns', [])), tuple(answer.get('target_columns', [])))
 
 
 def validate_answers(answers):
@@ -25,12 +30,26 @@ def validate_answers(answers):
             raise ValueError
         seen = set()
         for answer in answers:
-            if not isinstance(answer, dict) or set(answer) != {'question_code', 'answer', 'rationale'}:
+            if not isinstance(answer, dict) or set(answer) - {'target_asset', 'columns', 'target_columns'} != {'question_code', 'answer', 'rationale'}:
                 raise ValueError
             code = answer['question_code']
-            if not isinstance(code, str) or code not in ANSWER_CODES or code in seen:
+            if not isinstance(code, str) or code not in ANSWER_CODES:
                 raise ValueError
-            seen.add(code)
+            if code == 'confirm_relationship':
+                if not isinstance(answer.get('target_asset'), str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}', answer['target_asset']):
+                    raise ValueError
+                for key in ('columns', 'target_columns'):
+                    columns = answer.get(key)
+                    if not isinstance(columns, list) or not 1 <= len(columns) <= 32 or any(not isinstance(c, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', c) for c in columns) or len(set(columns)) != len(columns):
+                        raise ValueError
+                if len(answer['columns']) != len(answer['target_columns']):
+                    raise ValueError
+            elif {'target_asset', 'columns', 'target_columns'} & set(answer):
+                raise ValueError
+            identity = answer_identity(answer)
+            if identity in seen:
+                raise ValueError
+            seen.add(identity)
             for key, limit in [('answer', 2048), ('rationale', 4096)]:
                 if not isinstance(answer[key], str) or not answer[key].strip() or len(answer[key]) > limit:
                     raise ValueError
@@ -49,10 +68,28 @@ def validate_decisions(document):
             raise ValueError
         ids = set()
         for record in records:
-            if not isinstance(record, dict) or set(record) - {'answers'} != {'id', 'intent', 'asset_id', 'scope', 'grain', 'history', 'rationale', 'recorded_by', 'recorded_at', 'evidence'}:
+            if not isinstance(record, dict) or set(record) - {'answers', 'related_contexts'} != {'id', 'intent', 'asset_id', 'scope', 'grain', 'history', 'rationale', 'recorded_by', 'recorded_at', 'evidence'}:
                 raise ValueError
             if 'answers' in record:
                 validate_answers(record['answers'])
+            related = record.get('related_contexts', [])
+            if not isinstance(related, list) or len(related) > 7:
+                raise ValueError
+            related_ids = {record['asset_id']}
+            for context in related:
+                if not isinstance(context, dict) or set(context) - {'grain', 'history'} != {'asset_id', 'scope', 'evidence'}:
+                    raise ValueError
+                if not isinstance(context['asset_id'], str) or context['asset_id'] in related_ids:
+                    raise ValueError
+                related_ids.add(context['asset_id'])
+                # Reuse the same scope/assertion/fingerprint validation without
+                # recursing into related contexts or duplicating its contract.
+                candidate = {k: v for k, v in record.items() if k not in ('answers', 'related_contexts')}
+                candidate.update(context)
+                validate_decisions({'schema_version': 1, 'kind': 'design_decisions', 'records': [candidate]})
+            if any(a.get('target_asset', record['asset_id']) not in related_ids for a in record.get('answers', [])):
+                raise ValueError
+
             for key, limit in [('id', 128), ('intent', 2048), ('rationale', 4096), ('recorded_by', 256)]:
                 if not isinstance(record[key], str) or not record[key].strip() or len(record[key]) > limit:
                     raise ValueError
@@ -106,7 +143,7 @@ def decision_context(intent, asset, policy, manifest, facts, config):
                          'catalog_config_sha256': config['revision'] if config else None, 'catalog_facts_sha256': digest}}
 
 
-def select_decision(decisions, context, asset):
+def select_decision(decisions, context, asset, contexts=None, assets=None):
     if decisions is None:
         return {'status': 'none'}
     matches = [(i, r) for i, r in enumerate(decisions['document']['records'])
@@ -121,5 +158,18 @@ def select_decision(decisions, context, asset):
         status = 'stale'
     elif any(k in asset and asset[k] != record[k] for k in ('grain', 'history')):
         status = 'conflict'
+    if status == 'matched':
+        for related in record.get('related_contexts', []):
+            current = (contexts or {}).get(related['asset_id'])
+            if current is None:
+                status = 'incomplete'
+                break
+            if any(current[k] != related[k] for k in ('scope', 'evidence')):
+                status = 'stale'
+                break
+            supplied = (assets or {}).get(related['asset_id'], {})
+            if any(k in supplied and k in related and supplied[k] != related[k] for k in ('grain', 'history')):
+                status = 'conflict'
+                break
     return {'status': status, 'record': deepcopy(record),
             'provenance': {**decisions['provenance'], 'locator': f'/records/{index}'}}
