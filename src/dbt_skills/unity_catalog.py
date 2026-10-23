@@ -68,6 +68,20 @@ class UnityCatalogProvider:
         self.retrieved_at = datetime.now(timezone.utc).isoformat()
         self._results, self._lock = {}, RLock()
 
+    def project_bindings(self):
+        return {asset_id: {'relation': dict(zip(('catalog', 'schema', 'name'), native.split('.'))),
+                           'signature': {'host': self.host, 'scope': self.scope, 'token_env': self._token_env}}
+                for asset_id, native in self._assets.items()}
+
+    def carry_observations(self, previous, allowed):
+        if not isinstance(previous, UnityCatalogProvider):
+            return
+        if (self.host, self.scope, self._token_env, self._token) != (previous.host, previous.scope, previous._token_env, previous._token):
+            return
+        with previous._lock:
+            self._results = {a: deepcopy(result) for a, result in previous._results.items()
+                             if a in allowed and self._assets.get(a) == previous._assets.get(a)}
+
     def _access(self):
         token = os.environ.get(self._token_env)
         if not token or token != self._token or len(token) > 8192 or not token.isascii() or any(ord(c) <= 32 or ord(c) == 127 for c in token):

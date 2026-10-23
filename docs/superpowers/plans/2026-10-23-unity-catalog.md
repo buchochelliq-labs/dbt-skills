@@ -9,4 +9,4 @@ in this slice; persistent TTL cache is separate work. See UNITY_CATALOG.md for l
 - [x] Tests for configuration, projection, provenance, missing/denied/error outcomes.
 - [x] Provider and config registration without host-specific planner logic.
 - [x] MCP refresh integration and independent review; fix inapplicable-provider auth.
-- [ ] Full suite and cross-platform CI; publish focused PR without merging.
+- [x] Full local suite; publish PR #59 without merging. CI is tracked on the PR.

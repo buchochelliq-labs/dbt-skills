@@ -103,7 +103,9 @@ class RelatedDesignContextTests(unittest.TestCase):
         provider = load_catalog(self.f.root / 'catalogs.json').providers[0]
         target = self.customer
         class Denied:
-            id = 'denied'
+            id = provider.id
+            def project_bindings(self):
+                return provider.project_bindings()
             def fetch(self, asset_id, fields):
                 return ProviderResult('denied') if asset_id == target else provider.fetch(asset_id, fields)
         result = self.f.propose(catalog=CatalogResolver([Denied()]))

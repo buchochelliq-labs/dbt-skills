@@ -14,6 +14,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
 from .catalog import CatalogError, load_catalog
+from .project_catalog import scope_catalog
 from .business_context import BusinessContextError, load_business_context, read_business_context
 from .design_decisions import DesignDecisionError, load_design_decisions
 from .convention_discovery import infer_conventions
@@ -43,7 +44,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
     business_context_path = (project.root / business_context_path).resolve() if business_context_path is not None else None
     lock, state = RLock(), {}
 
-    def capture():
+    def capture(*, delta=False):
         policy = load_document(policy_path) if policy_path is not None else None
         proposals = load_document(proposals_path) if proposals_path is not None else None
         if policy and policy["document"]["kind"] != "policy":
@@ -54,11 +55,16 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
         decisions = load_design_decisions(design_decisions_path) if design_decisions_path is not None else None
         business = load_business_context(business_context_path) if business_context_path is not None else None
         snapshot = inspect_artifacts(project)
+        previous = state.get('catalog') if delta else None
+        if catalog is not None:
+            catalog = scope_catalog(catalog, snapshot, previous=previous)
+        delta_result = catalog.sync_delta(previous) if delta and catalog is not None else None
         replacement = {"context_id": uuid4().hex, "snapshot": snapshot,
                        "inference": infer_conventions(project, snapshot),
                        "business": business, "policy": policy, "proposals": proposals, "design_decisions": decisions, "catalog": catalog}
         state.clear()
         state.update(replacement)
+        return delta_result
 
     def summary():
         manifest = state["snapshot"]["manifest"]
@@ -160,6 +166,17 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
             return call(context_id, lambda: {**read_business_context(state["business"], section, offset=offset, limit=limit), "context_id": context_id})
 
     if catalog_path is not None:
+        @server.tool(annotations=_READ, description="Read a bounded page of quarantined identity mappings and configuration provenance. These assets are excluded from normal search, fetch and design context pending correction and sync.")
+        def catalog_quarantine(context_id: str, offset: int = 0, limit: int = 20) -> dict[str, object]:
+            return call(context_id, lambda: {**state['catalog'].quarantine(offset=offset, limit=limit), 'context_id': context_id})
+
+        @server.tool(annotations=_REFRESH, description="Re-read project artifacts and sync metadata only for added/changed project assets. Removes departed assets, preserves unchanged observations, and replaces context ID. No source rows or file writes.")
+        def catalog_sync(context_id: str) -> dict[str, object]:
+            def sync():
+                delta = capture(delta=True)
+                return {**summary(), 'delta': delta}
+            return call(context_id, sync)
+
         @server.tool(annotations=_READ, description="Describe configured metadata providers, capabilities and pinned source revisions. No remote authorization is implied.")
         def catalog_status(context_id: str) -> dict[str, object]:
             return call(context_id, lambda: {**state["catalog"].describe(), "context_id": state["context_id"]})

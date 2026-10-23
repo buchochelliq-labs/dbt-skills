@@ -127,3 +127,44 @@ HTTP transport, probes, cache TTLs and reviewed identity mapping remain follow-u
 The example connects discovery/resolution and naming calls to an illustrative
 SQL/YAML artifact. General model generation and execution are outside this context
 product; the host agent uses the metadata to reason about the full data model.
+
+## Project membership, delta sync and quarantine
+
+The modelling MCP server and shared planner wrap catalog resolution in a
+`ProjectCatalog` boundary. Only physical relations declared as sources in the
+validated project manifest, or models/seeds/snapshots produced by the selected
+project, are eligible. Ephemeral models are excluded. Missing/mismatched manifests
+and unresolved identifiers grant no scope. Foreign-key endpoints do not widen it.
+
+A provider supplies local `project_bindings()` metadata: shared asset ID to an
+explicit relation (or null for curated facts that inherit a shared mapping), with
+a stable configuration/fact signature. This method must not perform remote reads.
+Providers without bindings receive no project access. Scoped search is opt-in via
+`search_scoped`; otherwise it is unsupported. The low-level resolver remains a
+provider contract, so Python project workflows should use `scope_catalog` just as
+the planner and MCP do.
+
+Two different concrete relations for one shared asset identity cause **quarantine**,
+even when both relations belong to the project. Quarantined identities are excluded
+from normal search, resolution, remote fetches and design evidence. `catalog_status`
+reports the count; `catalog_quarantine` returns a bounded review page with the
+configured claims, provider IDs, binding hashes and configuration provenance. These
+are local mapping diagnostics, not remotely fetched table facts. Other assets remain
+usable. Correct the configuration or local catalog declaration and sync to release
+an identity; provider priority never silently resolves identity ambiguity.
+
+`catalog_sync(context_id)` re-reads selected inputs and replaces the context ID.
+It reports added, changed, removed and quarantined asset IDs, unchanged count and
+per-delta resolution status. Only added/changed eligible assets are fetched, through
+normal ordered resolution. Unchanged Unity Catalog observations retain their
+original timestamps/provenance; removed identities lose access. Changes to mappings,
+provider order, scope or relevant local facts invalidate reuse. Changed credentials
+prevent observation transfer. This is in-memory delta reuse, not persistent TTL caching.
+
+After adding a source, regenerate the dbt manifest using existing dbt tooling, then
+invoke `catalog_sync`. Include its explicit catalog mapping if needed. YAML edits
+alone do not establish resolved physical identity. There is no background watcher or
+automatic dbt execution; the host agent can invoke sync after artifact regeneration.
+Initial reads remain lazy. Use `modelling_refresh` to discard all observations and
+retry/recheck remote metadata, including failures for unchanged assets. Delta sync
+does not revalidate unchanged remote permissions or schema.

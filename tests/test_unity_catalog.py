@@ -134,6 +134,11 @@ class UnityCatalogTests(unittest.TestCase):
         from dbt_skills.project import discover_project
         self.load()
         (self.root / 'dbt_project.yml').write_text('name: demo\n')
+        (self.root / 'target').mkdir()
+        (self.root / 'target/manifest.json').write_text(json.dumps({
+            'metadata': {'project_name': 'demo', 'dbt_schema_version': 'https://schemas.getdbt.com/dbt/manifest/v12.json'},
+            'nodes': {}, 'sources': {'source.demo.customers': {'resource_type': 'source', 'package_name': 'demo',
+                'database': 'demo', 'schema': 'xyz', 'identifier': 'customers'}}}))
         server = create_server(discover_project(self.root), catalog_path='catalogs.json')
         table = copy.deepcopy(TABLE)
         def response(*args, **kwargs):

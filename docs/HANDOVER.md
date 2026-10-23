@@ -172,3 +172,14 @@ MCP pages preserve attribution, proposed/reviewed status and file/hash/locator
 provenance; every statement remains unverified. No UOL dependency, inferred mapping,
 SQL, file writes or catalog reads. Selection is pinned until refresh and included
 in design-decision evidence; changed definitions require review. See BUSINESS_CONTEXT.md.
+
+## Project-bound catalog follow-up — 2026-10-23
+
+Catalog context in MCP/planning is now restricted to validated project sources and
+produced physical relations. `catalog_sync` compares successive snapshots and
+fetches only added/changed eligible assets; unchanged observations preserve their
+original provenance. Regenerate the manifest before syncing source-definition edits.
+Ambiguous shared-ID mappings are quarantined, excluded from fetch/search/design,
+and exposed through `catalog_quarantine` for correction and resync. Independent
+assets continue syncing. This adds no watcher, warehouse execution or persistent TTL
+cache. See [catalog workflow](CATALOG.md#project-membership-delta-sync-and-quarantine).

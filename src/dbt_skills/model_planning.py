@@ -84,13 +84,20 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
         question('project_snapshot', 'Provide a supported manifest matching this project before planning.')
         return result
 
-    # Resolve only operator-selected assets, not relationship targets or inferred names.
+    from .project_catalog import scope_catalog
+    catalog = scope_catalog(catalog, snapshot)
+    # Resolve only in-project assets, not relationship targets or inferred names.
     for asset in request['assets']:
         identifier = asset['asset_id']
         facts = catalog.resolve(identifier, list(FIELDS))
         if facts['status'] in ('denied', 'error'):
             result.update(status='blocked', evidence={}, entities=[], relationships=[], suggestions=[], questions=[])
-            question('catalog_unavailable', 'Resolve catalog access or provider failure before planning.', identifier)
+            if facts.get('scope_reason') == 'conflicting_bindings':
+                question('catalog_conflict', 'Clarify conflicting physical relation mappings before fetching project context.', identifier)
+            elif facts.get('scope_reason'):
+                question('project_scope', 'Asset is not bound to a source or produced relation in the selected project snapshot.', identifier)
+            else:
+                question('catalog_unavailable', 'Resolve catalog access or provider failure before planning.', identifier)
             return result
         result['evidence'][identifier] = facts
     if any(f['status'] == 'conflict' for f in result['evidence'].values()):

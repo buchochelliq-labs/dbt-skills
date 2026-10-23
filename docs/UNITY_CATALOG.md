@@ -91,3 +91,12 @@ asset IDs. Additional catalog adapters, remote discovery, key/relationship extra
 and automatic authentication refresh remain outstanding. Automated tests cover
 HTTP outcomes, filtering, provenance, fallback and MCP refresh with simulated
 responses. No live Databricks workspace or live Copilot UI has been validated.
+
+## Project boundary
+
+In MCP and planning, configured mappings are additionally intersected with the
+validated project manifest. Configuration alone cannot expand the agent's scope.
+See [project membership and quarantine](CATALOG.md#project-membership-delta-sync-and-quarantine)
+for delta sync after source additions. Ambiguous mappings are quarantined before
+HTTP access; independent project assets continue to work. Normal refresh discards
+observations; delta sync retains unchanged observations without resetting freshness.

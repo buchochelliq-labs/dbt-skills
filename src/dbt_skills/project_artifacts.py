@@ -63,6 +63,9 @@ def _manifest_graph(resources: dict) -> dict:
             value = record.get(key)
             if isinstance(value, str):
                 node[key] = value
+        config = record.get('config', {})
+        if isinstance(config, dict) and isinstance(config.get('materialized'), str):
+            node['materialized'] = config['materialized']
         nodes.append(node)
         depends = record.get('depends_on', {})
         if not isinstance(depends, dict):
