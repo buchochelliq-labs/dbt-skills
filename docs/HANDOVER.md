@@ -207,3 +207,18 @@ Repository check found #53–#55 merged into their stacked feature branches rath
 main. The next PR targets main and carries the reviewed current-row/deletion/lookup
 changes plus event history. No automatic merge/release. Remaining richer-model gaps:
 stateful snapshots/SCD2, model refs, temporal/multiple joins and safe existing-file edits.
+
+### Generated-model revisions (2026-10-23)
+
+Implemented shared `model_revisions` preparation and operator-only apply plus
+read-only MCP `model_revise`. Revisions validate an unchanged generated base,
+retain its paths, expose before/after hashes and diffs, require the exact reviewed
+revision digest and validate replacements. Staged two-file replacement attempts
+rollback without overwriting independently changed outputs; it is not atomic.
+Manual model adoption, changed evidence and renames remain unsupported. This
+completes the first bounded edit workflow, not general existing-model migration.
+
+Validation: 281 tests passed with real dbt parse enabled, including CLI/MCP
+revision flows, tamper/drift rejection, rollback after second-write and final
+validation failures, preservation of independently changed outputs and file modes.
+Independent review found no critical/important issue within the stated scope.

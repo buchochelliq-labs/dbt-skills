@@ -413,3 +413,42 @@ stateful SCD2 merge that preserves overwritten/disappearing source rows. Tempora
 joins, incremental history maintenance, hard-delete inference and existing-file edits
 remain separate workflows. Current-row/lookup settings cannot be combined with this
 history rule. The same review/apply/validate and operator-only parse path is used.
+
+## Revising a generated model
+
+An unchanged, previously applied draft can be revised at the same SQL and YAML
+paths. The base files, generation contract, model inventory and pinned evidence
+must still validate. Manual edits, renames, changed policy/catalog/manifest inputs
+and arbitrary existing models require a future adoption workflow; this command
+will not infer a safe replacement for them. An explicitly selected alternate
+policy or catalog is allowed when both the original pinned inputs and proposed
+inputs still validate.
+
+Prepare a complete new request and retain the original applied draft JSON:
+
+```sh
+python -m dbt_skills.model_revisions prepare \
+  --project-dir /path/to/project --base-draft base.json \
+  --request revised-request.json --policy modelling.yml \
+  --catalog-config catalogs.json > revision.json
+```
+
+Paths to documents resolve from the selected project (absolute paths also work).
+Preparation is read-only and returns either clarification questions or a sealed
+revision containing both drafts, before/after hashes and unified diffs. Review the
+complete revision, then explicitly apply its exact `revision_id`:
+
+```sh
+python -m dbt_skills.model_revisions apply \
+  --project-dir /path/to/project --revision revision.json \
+  --approve REVIEWED_REVISION_ID
+```
+
+Both files are staged before replacement, existing modes are preserved and the
+base is checked again before writes. Replacements are validated locally. Failure
+attempts rollback only for files still matching this operation's replacement
+bytes. The pair is **not an atomic transaction**: interruption or incomplete
+rollback requires workspace inspection. Concurrent hostile filesystem mutation
+is outside this local operator contract. No warehouse validation is implied.
+Save the successful revision's `proposed` object as the new base draft for later
+revisions or explicit isolated dbt parse validation.

@@ -84,7 +84,7 @@ def _relative(path):
     return parts
 
 
-def _target(project, path, model_paths):
+def _target(project, path, model_paths, *, allow_existing=False):
     parts = _relative(path)
     if not any(path.startswith(p + '/') for p in model_paths):
         raise DraftError('Draft path must be inside a configured model directory')
@@ -95,7 +95,7 @@ def _target(project, path, model_paths):
             raise DraftError('Symlink model paths are not supported')
         if target != project.root / path and target.exists() and not target.is_dir():
             raise DraftError('Model parent path is not a directory')
-    if target.exists():
+    if target.exists() and (not allow_existing or not target.is_file()):
         raise DraftError('Draft targets must not already exist')
     return target
 
@@ -326,7 +326,7 @@ def render_projection(request, source, model_name, mapping=None, alias=None, loo
     return sql, properties
 
 
-def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None):
+def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None, _replacement_paths=()):
     """Create no files. Caller-supplied intent/grain are assertions, never approval."""
     allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context', 'current_row', 'lookup', 'history_rule'}
     if not isinstance(request, dict) or set(request) - allowed or len(json.dumps(request)) > 16384:
@@ -360,14 +360,16 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     names = _names(loaded, request)
     if isinstance(names, dict):
         return names
+    if _replacement_paths and list(_replacement_paths) != names:
+        return _questions('A revision must retain the existing SQL and properties paths')
     mapping = column_mapping(loaded, request, names[0])
     if isinstance(mapping, dict):
         return mapping
     paths, project_input = _config(project)
     try:
-        inventory = _model_inventory(project, paths)
+        inventory = [p for p in _model_inventory(project, paths) if p not in _replacement_paths]
         for name in names:
-            _target(project, name, paths)
+            _target(project, name, paths, allow_existing=name in _replacement_paths)
     except DraftError as error:
         return _questions(str(error))
     model_name = PurePosixPath(names[0]).stem

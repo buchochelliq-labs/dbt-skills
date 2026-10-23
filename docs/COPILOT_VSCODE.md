@@ -65,3 +65,14 @@ and review patch from explicit choices, rationale and attribution. It derives ev
 hashes from the pinned context. Review and save the returned `proposed_document` through
 your normal file workflow, then refresh; the tool never saves or approves it. See the
 [proposal request](MODEL_PLANNING.md#prepare-a-decision-for-review).
+
+### Revising a retained generated model
+
+With policy and catalog selected, `model_revise(context_id, draft_id, request)`
+prepares a review-only revision of an unchanged applied draft retained in this
+server session. Supply a complete new request. It returns a sealed revision and
+SQL/YAML diffs; it cannot approve or write changes. Apply through the explicit
+operator CLI described in [MODEL_DRAFTS.md](MODEL_DRAFTS.md), then call
+`model_validate` with the proposed draft ID. Proposed drafts share the existing
+four-draft retention limit; refresh invalidates all retained drafts. Saved base
+JSON remains usable through the CLI if its files and evidence still validate.

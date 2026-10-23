@@ -21,6 +21,7 @@ from .design_decision_proposals import prepare_design_decision
 from .decision_proposals import prepare_decision
 from .modelling_policy import PolicyError, load_document, resolve_policy_name
 from .model_drafts import DraftError, prepare_model
+from .model_revisions import prepare_revision
 from .model_validation import validate_applied
 from .model_planning import PlanningError, plan_model
 from .policy_comparison import compare_model_names
@@ -210,6 +211,23 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                         del drafts[next(iter(drafts))]
                     return result
                 return {**result, "context_id": context_id}
+            return call(context_id, run, require_policy=True)
+
+        @server.tool(annotations=_READ, description="Propose SQL/YAML changes to an unchanged applied model from a retained draft. Returns exact before/after hashes and review diffs. No writes, approval, arbitrary file adoption or warehouse execution; refresh invalidates retained drafts.")
+        def model_revise(context_id: str, draft_id: str, request: dict[str, object]) -> dict[str, object]:
+            def run():
+                check_planning_files()
+                if draft_id not in state["drafts"]:
+                    raise DraftError("Draft is not retained in this context; prepare and review again")
+                result = prepare_revision(project, policy_path, state["catalog"], state["drafts"][draft_id], request,
+                                          snapshot=state["snapshot"], context_id=context_id)
+                if result["status"] == "pending_review":
+                    proposed = result["proposed"]
+                    drafts = state["drafts"]
+                    drafts[proposed["draft_id"]] = deepcopy(proposed)
+                    while len(drafts) > 4:
+                        del drafts[next(iter(drafts))]
+                return result
             return call(context_id, run, require_policy=True)
 
         @server.tool(annotations=_READ, description="Check applied files and evidence for one of the last four server-generated drafts. Fixed status codes only; never runs dbt or queries data. Refresh invalidates retained drafts.")
