@@ -1,5 +1,8 @@
 # Repository handover and execution plan
 
+> **2026-10-23 direction:** See the [agreed architecture](ARCHITECTURE.md) for the current workflow and delivery order: Copilot in VS Code first, shared project/catalog context, optional UOL, and modelling policy before a standalone agent runtime. Earlier sequencing below is historical.
+
+
 **Snapshot:** 2026-10-23  
 **Repository:** `buchochelliq-labs/dbt-skills`
 

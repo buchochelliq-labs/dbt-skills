@@ -57,3 +57,13 @@ For large artifacts, benchmark realistic project sizes and use bounded/selective
 2. Do not adopt or distribute newly relicensed versions until reviewed; continued use of an older version is only permissible where its terms allow it.
 3. Prefer a maintained compatible open implementation; otherwise consider a lawful fork or clean replacement behind the adapter.
 4. If replacement is not lawful or maintainable, disable the optional capability and document the impact rather than creating a proprietary service dependency.
+# Modelling policy validation dependency (2026-10-23)
+
+Use `jsonschema==4.26.0` for the bundled Draft 2020-12 modelling document schema.
+It was already installed transitively through the MCP stack; it is now an explicit
+runtime dependency because the policy loader imports it directly. Exact installed
+distribution metadata reports MIT; its COPYING notice is preserved in
+THIRD_PARTY_NOTICES.md. No dynamic schema loading or remote references are used.
+The schema remains portable if this validator must be replaced. Dependency updates
+must re-run schema/negative-input tests and review the new distribution's license.
+This does not resolve the repository's own distribution-license decision (#5).

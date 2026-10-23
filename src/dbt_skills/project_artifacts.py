@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import stat
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -81,6 +82,8 @@ def _inspect_json(path: Path, kind: str, project: ProjectInfo, now: datetime, th
     report = {'path': str(path), 'source_kind': 'local_artifact', 'status': 'missing',
               'observed_at': now.isoformat(), 'freshness': 'unknown', 'age_seconds': None}
     try:
+        if not stat.S_ISREG(path.stat().st_mode):
+            return {**report, 'status': 'inaccessible', 'reason': 'Artifact is not a regular file'}
         with path.open('rb') as stream:
             content = stream.read(MAX_ARTIFACT_BYTES + 1)
     except FileNotFoundError:

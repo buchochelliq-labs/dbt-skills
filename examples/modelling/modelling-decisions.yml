@@ -1,0 +1,15 @@
+schema_version: 1
+kind: decisions
+records:
+  - id: retain-legacy-customer-name
+    rule_id: staging-file
+    decision: exception
+    models:
+      - model.example.legacy_customer
+    rationale: Retain this name until the legacy consumer is migrated.
+    approved_by: example-maintainer
+    approved_at: '2026-10-23T12:00:00Z'
+    evidence:
+      - document: docs/decisions/customer-migration.md
+        revision: example-only-not-a-real-revision
+        locator: migration-plan

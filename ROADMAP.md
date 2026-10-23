@@ -1,5 +1,8 @@
 # Open-Source dbt Wizard Alternative Roadmap
 
+> **2026-10-23 direction:** See the [agreed architecture](docs/ARCHITECTURE.md) for the current workflow and delivery order: Copilot in VS Code first, shared project/catalog context, optional UOL, and modelling policy before a standalone agent runtime. Earlier sequencing below is historical.
+
+
 **Status:** The M0 documentation baseline is merged to `main` in #27. The local SQLCipher UOL core, source-tree CLI/runtime, portable dbt context-routing skill, and thin GitHub Copilot CLI profile are implemented. A local stdio MCP bridge exposes bounded UOL reads and separate sync/cache controls; source adapters cover local JSON, project-matched dbt manifests, and optional ODS MCP column-lineage analysis. Cache keys use supported OS credential stores, and platform ACL/permission checks fail closed; the Windows/macOS/Linux × Python 3.11/3.14 CI matrix passed in #34. Copilot CLI discovery and approval behavior have not been smoke-tested. No remote ontology/catalog providers are implemented. ODS v0.0.2 passes a minimal dbt-oss 2.0.8 manifest/Parquet and stdio MCP smoke test; a Python SDK adapter prototype passes the same fixture contract, including opaque and absent-provider behavior. The project will not rely on dbt's full product distribution for lineage; missing or opaque column-level lineage must be reported as unavailable. Ontos and OntoBricks remain optional ontology sources; neither exposes Genie Ontology. Outstanding work includes issue #5 component/license assessment, #6 ODS integration validation, and runtime/UOL integration in #31.
 **Research checked:** 2026-10-22
 
