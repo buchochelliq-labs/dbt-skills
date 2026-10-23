@@ -282,8 +282,8 @@ The helper rank column never appears in the output and avoids projected-name col
 rows within each business key. It is not a warehouse check: if ties remain, selection
 can be nondeterministic. Confirm a stable final tie-break column before adoption.
 `retain_latest` keeps the winning row even if it is a deletion marker. It never filters
-deletions or resurrects an older row. Projects needing active-only output must use a
-separately reviewed transform; other deletion/tie policies currently ask for clarification.
+deletions or resurrects an older row. For active-only output, use the explicit boolean-marker policy below; other deletion/tie
+policies ask for clarification.
 Null business keys group together and require the proposed not-null tests to be run.
 The generated uniqueness test on a single output key does not test input ordering ties.
 
@@ -293,3 +293,30 @@ operator-only dbt parse remains available. Parsing does not execute the SQL or p
 warehouse semantics. This supports a single-source current-row model, not incremental
 merge, SCD2 history, joins or existing-model edits. `source_rows` requests cannot carry
 a current-row rule. Existing source-row projections retain their previous rendering.
+
+### Exclude latest deletion markers
+
+Replace `deletions: "retain_latest"` with:
+
+```json
+{"mode": "exclude_marked", "column": "is_deleted", "nulls": "retain"}
+```
+
+The marker must exist in catalog metadata with normalized type `boolean`. Choose
+`nulls: "retain"` to keep unknown flags or `nulls: "exclude"` to exclude them. This
+choice is required even if metadata declares the column non-null. `true` marks a
+deletion and `false` an active row; these meanings are caller assertions, not facts
+inferred from a column name. String codes, numeric flags and arbitrary SQL predicates
+are unsupported and require clarification.
+
+Selection ranks **all** source rows before filtering the winner. If the latest row
+is marked deleted, the entity is absent; an older active row is never restored. A
+later active event can restore an entity. The marker need not be in `columns`; when
+omitted, it is used internally and does not appear in SQL output or generated YAML.
+If projected, normal column naming still applies. Marker/source identifiers that differ
+only by case require clarification to avoid ambiguous inner columns across adapters. The complete deletion/null policy
+is retained in the unverified design record and recomputed during applied validation.
+
+This does not infer hard deletions from missing source rows or implement incremental
+deletes. Correctness depends on the selected source retaining the required events
+and the human confirming ordering and marker semantics. No source data is queried.

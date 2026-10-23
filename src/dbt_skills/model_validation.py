@@ -72,7 +72,7 @@ def validate_applied(project, draft):
 
         def projection():
             request = draft['request']
-            available = {c['name'] for c in draft['catalog']['selected']['columns']['value']}
+            available = {c['name']: c for c in draft['catalog']['selected']['columns']['value']}
             temporal = current_row_design(request, available)
             if temporal is not None and temporal.get('status') == 'needs_clarification':
                 return False

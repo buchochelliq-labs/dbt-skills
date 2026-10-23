@@ -169,3 +169,13 @@ SQL tests cover selection and dbt parse stays output-safe. No warehouse reads oc
 Ties remain an unverified human assertion; deletion markers are kept, not filtered.
 Next richer-model gaps: active-only deletion handling, joins, full history and reviewed
 existing-file changes. Live Copilot UI validation remains deferred by user direction.
+
+## Current-row deletion filtering — 2026-10-23
+
+Current-row drafts now accept explicit `exclude_marked` deletion policy with a
+catalog-declared boolean marker and required null retain/exclude choice. Ranking
+precedes filtering, so a winning tombstone cannot resurrect an older active row.
+Markers can remain internal or follow normal output naming when projected. Existing
+retain_latest rules remain compatible; applied validation recomputes the new rule.
+Synthetic SQL, MCP and real dbt parse cover the workflow without warehouse data.
+Next richer-model priorities: joins, full history and reviewed existing-file edits.
