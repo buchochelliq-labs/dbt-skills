@@ -20,7 +20,7 @@ def infer_conventions(project, snapshot=None) -> dict:
     inventory = discover_policy_files(project.root, include_references=True)
     result = {
         "status": "needs_review", "truncated": inventory["truncated"],
-        "source": {key: manifest.get(key) for key in ("status", "identity", "freshness", "sha256")},
+        "source": {key: manifest.get(key) for key in ("path", "status", "identity", "freshness", "sha256", "generated_at", "observed_at", "age_seconds")},
         "existing_documents": {key: inventory[key][:16] for key in ("candidates", "references")},
         "observations": {"schema_version": 1, "kind": "observations", "records": []},
         "proposed_policy": {"schema_version": 1, "kind": "policy", "tokens": {}, "naming": [], "modelling": []},
