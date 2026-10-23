@@ -110,6 +110,18 @@ class OntologySourceTests(unittest.TestCase):
         with self.assertRaisesRegex(ProviderContractError, "no project identity"):
             asyncio.run(provider.fetch_page(cursor=None, page_size=100, full_refresh=True))
 
+    def test_explicit_manifest_bypasses_templated_target_and_preserves_path_evidence(self):
+        (self.root / "dbt_project.yml").write_text(
+            "name: analytics_demo\ntarget-path: \"{{ env_var('BUILD_DIR') }}\"\n",
+            encoding="utf-8",
+        )
+        custom = self.root / "build" / "explicit.json"
+        custom.parent.mkdir()
+        custom.write_bytes(self.manifest_path.read_bytes())
+        provider = ManifestSnapshotProvider(self.root, custom)
+        page = asyncio.run(provider.fetch_page(cursor=None, page_size=100, full_refresh=True))
+        self.assertEqual(page.claims[0].evidence["artifact"], str(custom))
+
     def test_manifest_pagination_reuses_projection_and_rejects_changed_artifact(self):
         provider = ManifestSnapshotProvider(self.root)
         first = asyncio.run(
@@ -139,6 +151,10 @@ class OntologySourceTests(unittest.TestCase):
             )
 
     def test_cli_registers_manifest_and_ods_sources_disabled_with_scopes(self):
+        (self.root / "dbt_project.yml").write_text(
+            "name: analytics_demo\ntarget-path: \"{{ env_var('BUILD_DIR') }}\"\n",
+            encoding="utf-8",
+        )
         database = Path(self.temp_dir.name) / "cli.sqlite3"
         with (
             patch(
@@ -159,6 +175,8 @@ class OntologySourceTests(unittest.TestCase):
                         "add-manifest",
                         "auto",
                         str(self.root),
+                        "--manifest",
+                        str(self.manifest_path),
                         "--include-entity-type",
                         "model",
                     ]

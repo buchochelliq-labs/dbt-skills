@@ -58,7 +58,8 @@ The secret is never accepted as a command-line value or written to the project c
 
 ## Scope and limitations
 
-- `inspect` searches upward from the selected directory for `dbt_project.yml`, parses it with PyYAML `safe_load`, and reports its name/version/profile and manifest-file presence. It does not open `profiles.yml`, inspect artifacts, or run dbt.
+- `inspect` searches upward from the selected directory for `dbt_project.yml`, parses it with PyYAML `safe_load`, and reports its name/version/profile and manifest-file presence. It honors a literal `target-path` from the project; `inspect --target-path PATH` overrides it (relative paths are resolved against the project root). The default is `target`. Jinja target paths are not evaluated: supply a resolved literal override. Environment and previous dbt invocation overrides are not guessed. It never opens `profiles.yml` or runs dbt.
+- `inspect --artifacts` additionally reads local artifact status, provenance, age, and the supported resource graph. See [artifact inspection](ARTIFACT_INSPECTION.md) for schema support, bounds, and limitations. This is an opt-in local CLI operation; `ask` still does not send artifact contents to a model.
 - `ask` requires a project-local config created by `init`; CLI flags and `DBT_SKILLS_MODEL` / `DBT_SKILLS_BASE_URL` environment variables can override non-secret defaults.
 - Provider errors are surfaced without echoing response bodies or credentials.
 - Retrieved project metadata is marked untrusted in the system prompt. This prompt instruction is a defense-in-depth hint, not a security boundary or substitute for reviewing provider data handling.

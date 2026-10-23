@@ -80,7 +80,10 @@ class ManifestSnapshotProvider:
 
     def _read_claims(self, content: bytes) -> tuple[list[OntologyClaim], str]:
         try:
-            project = discover_project(self.project_dir)
+            project = discover_project(
+                self.project_dir,
+                target_path=self.manifest_path.parent if self.manifest_path is not None else None,
+            )
         except ProjectError as error:
             raise ProviderContractError(str(error)) from error
         path = self.manifest_path or project.manifest_path
@@ -115,7 +118,7 @@ class ManifestSnapshotProvider:
             "dbt_schema_version": schema_version,
             "dbt_version": dbt_version,
             "invocation_id": _string(metadata.get("invocation_id")),
-            "artifact": "target/manifest.json",
+            "artifact": str(path),
             "artifact_sha256": artifact_revision,
         }
 
@@ -510,7 +513,10 @@ def configured_provider(
         if project_dir is None:
             raise ProviderContractError(f"Manifest source {source_id} has no project directory")
         try:
-            project = discover_project(project_dir)
+            project = discover_project(
+                project_dir,
+                target_path=Path(manifest_path).expanduser().resolve().parent if manifest_path else None,
+            )
         except ProjectError as error:
             raise ProviderContractError(str(error)) from error
         if selected_project is not None and project.root != selected_project.root:
@@ -540,7 +546,7 @@ def configured_provider(
         ):
             raise ProviderContractError(f"ODS source {source_id} has incomplete configuration")
         try:
-            project = discover_project(project_dir)
+            project = discover_project(project_dir, target_path=Path(target_dir).expanduser().resolve())
         except ProjectError as error:
             raise ProviderContractError(str(error)) from error
         if selected_project is not None and project.root != selected_project.root:

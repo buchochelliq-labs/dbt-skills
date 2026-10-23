@@ -42,7 +42,9 @@ class RuntimeConfig:
     timeout_seconds: float
 
 
-def discover_project(start: str | Path = ".") -> ProjectInfo:
+def discover_project(
+    start: str | Path = ".", *, target_path: str | Path | None = None
+) -> ProjectInfo:
     candidate = Path(start).expanduser().resolve()
     if not candidate.is_dir():
         raise ProjectError(f"Project path is not a directory: {candidate}")
@@ -77,7 +79,14 @@ def discover_project(start: str | Path = ".") -> ProjectInfo:
     profile_value = config.get("profile")
     profile = profile_value if isinstance(profile_value, str) and profile_value.strip() else None
     root = config_path.parent
-    manifest_path = root / "target" / "manifest.json"
+    target = target_path if target_path is not None else config.get("target-path", "target")
+    if isinstance(target, Path):
+        target = str(target)
+    if not isinstance(target, str) or not target.strip():
+        raise ProjectError("target-path must be a non-empty literal path")
+    if any(marker in target for marker in ("{{", "{%", "{#")) or "\x00" in target:
+        raise ProjectError("Cannot resolve target-path; supply an explicit literal target path")
+    manifest_path = (root / target).resolve() / "manifest.json"
     return ProjectInfo(
         root=root,
         config_path=config_path,
@@ -89,8 +98,8 @@ def discover_project(start: str | Path = ".") -> ProjectInfo:
     )
 
 
-def initialize_project(start: str | Path = ".") -> Path:
-    project = discover_project(start)
+def initialize_project(start: str | Path = ".", *, target_path: str | Path | None = None) -> Path:
+    project = discover_project(start, target_path=target_path)
     config_dir = project.root / ".dbt-skills"
     if config_dir.is_symlink():
         raise ProjectError(f"Refusing to write through a symlink: {config_dir}")
