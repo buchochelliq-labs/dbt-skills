@@ -143,6 +143,10 @@ class ModellingMCPTests(unittest.TestCase):
             config = self.root / 'catalogs.json'
             config.write_text(json.dumps({'schema_version': 1, 'providers': [
                 {'id': 'local', 'type': 'file', 'path': 'catalog.json', 'scope': 'development'}]}))
+            manifest = json.loads(self.manifest.read_text())
+            manifest['sources']['source.fixture.customer'] = {'resource_type': 'source', 'package_name': 'fixture',
+                'database': 'demo', 'schema': 'xyz', 'identifier': 'customer'}
+            self.manifest.write_text(json.dumps(manifest))
             client = self.client(catalog_config=config)
             async with client:
                 tools = {t.name for t in (await client.list_tools()).tools}

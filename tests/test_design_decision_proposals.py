@@ -74,6 +74,8 @@ class DesignDecisionProposalTests(unittest.TestCase):
     def test_denied_provider_withholds_record(self):
         class Denied:
             id = 'denied'
+            def project_bindings(self):
+                return {'urn:demo:xyz:customers': {'relation': {'catalog': 'demo', 'schema': 'xyz', 'name': 'customers'}}}
             def fetch(self, asset_id, fields):
                 return ProviderResult('denied')
         result = self.propose(catalog=CatalogResolver([Denied()]))

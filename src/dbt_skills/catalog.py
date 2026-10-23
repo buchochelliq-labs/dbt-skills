@@ -98,6 +98,7 @@ class CatalogProvider(Protocol):
     def fetch(self, asset_id: str, fields: list[Field]) -> ProviderResult: ...
     def search(self, query: str, *, offset: int = 0, limit: int = 20) -> dict: ...
     def describe(self) -> dict: ...
+    def project_bindings(self) -> dict: ...
 
 
 def _identifier(value, *, asset=False):
@@ -191,6 +192,18 @@ class FileCatalogProvider:
         self._assets = {a['id']: (i, a) for i, a in enumerate(doc['assets'])}
         self.source_at = doc['generated_at']
         self.retrieved_at = datetime.now(timezone.utc).isoformat()
+
+    def project_bindings(self):
+        return {key: {'relation': deepcopy(asset['facts'].get('relation')),
+                      'signature': {'scope': self.scope, 'document': str(self.path),
+                                    'native_id': asset['native_id'], 'facts': deepcopy(asset['facts'])}}
+                for key, (_, asset) in self._assets.items()}
+
+    def search_scoped(self, allowed, query, *, offset=0, limit=20):
+        from copy import copy
+        scoped = copy(self)
+        scoped._assets = {key: value for key, value in self._assets.items() if key in allowed}
+        return scoped.search(query, offset=offset, limit=limit)
 
     def _access(self):
         try:
@@ -369,9 +382,16 @@ def load_catalog(path: Path) -> CatalogResolver:
         raise CatalogError('Invalid catalog configuration')
     providers = []
     for entry in doc['providers']:
-        if not isinstance(entry, dict) or set(entry) != {'id', 'type', 'path', 'scope'} or entry['type'] != 'file' or not isinstance(entry['path'], str) or not 1 <= len(entry['path']) <= 4096:
+        if not isinstance(entry, dict):
+            raise CatalogError('Invalid catalog provider configuration')
+        if entry.get('type') == 'unity_catalog':
+            from .unity_catalog import UnityCatalogProvider
+            providers.append(UnityCatalogProvider(entry))
+        elif (set(entry) == {'id', 'type', 'path', 'scope'} and entry['type'] == 'file'
+              and isinstance(entry['path'], str) and 1 <= len(entry['path']) <= 4096):
+            providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
+        else:
             raise CatalogError('Invalid or unsupported catalog provider configuration')
-        providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
     resolver = CatalogResolver(providers)
     resolver.config = {'document': str(path), 'revision': revision}
     return resolver

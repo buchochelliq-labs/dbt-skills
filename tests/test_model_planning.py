@@ -74,6 +74,10 @@ class ModelPlanningTests(unittest.TestCase):
             'columns': [{'name': 'order_id', 'type': 'int64', 'nullable': False}, {'name': 'customer_id', 'type': 'int64', 'nullable': False}],
             'primary_key': {'columns': ['order_id'], 'enforcement': 'not_enforced', 'rely': False},
             'foreign_keys': [{'columns': ['customer_id'], 'target_asset': 'urn:demo:xyz:customers', 'target_columns': ['customer_id'], 'enforcement': 'not_enforced', 'rely': False}]}}
+        manifest = json.loads(self.fixture.manifest.read_text())
+        manifest['sources']['source.catalog_workflow.xyz.orders'] = {'resource_type': 'source',
+            'package_name': 'catalog_workflow', 'database': 'demo', 'schema': 'xyz', 'identifier': 'orders'}
+        self.fixture.manifest.write_text(json.dumps(manifest))
         doc['assets'].append(order)
         path.write_text(json.dumps(doc))
         return path, doc
@@ -127,6 +131,8 @@ class ModelPlanningTests(unittest.TestCase):
         # successful collection of the first asset's metadata.
         class GuardedProvider:
             id = 'physical'
+            def project_bindings(self):
+                return file_provider.project_bindings()
             def fetch(self, asset_id, fields):
                 return ProviderResult('denied') if asset_id.endswith('orders') else file_provider.fetch(asset_id, fields)
         self.request['assets'].append({'asset_id': 'urn:demo:xyz:orders'})
@@ -142,10 +148,10 @@ class ModelPlanningTests(unittest.TestCase):
         doc['assets'][0]['facts']['relation'] = {'catalog': 'other', 'schema': 'xyz', 'name': 'customers'}
         path.write_text(json.dumps(doc))
         result = self.plan()
-        self.assertIn('catalog_conflict', self.codes(result))
+        self.assertEqual(result['status'], 'blocked')
         self.assertFalse(result['entities'])
         self.assertFalse(result['suggestions'])
-        self.assertEqual(len(result['evidence']['urn:demo:xyz:customers']['claims']['relation']), 2)
+        self.assertEqual(result['evidence'], {})
 
     def test_mcp_plan_uses_context_and_rejects_policy_changes(self):
         import asyncio
@@ -183,6 +189,8 @@ class ModelPlanningTests(unittest.TestCase):
         from dbt_skills.catalog import CatalogResolver
         class BrokenProvider:
             id = 'broken'
+            def project_bindings(self):
+                return {'urn:demo:xyz:customers': {'relation': {'catalog': 'demo', 'schema': 'xyz', 'name': 'customers'}}}
             def fetch(self, asset_id, fields):
                 raise RuntimeError('PRIVATE_SENTINEL')
         result = plan_model(self.fixture.project, load_document(self.root / 'modelling.yml'), CatalogResolver([BrokenProvider()]), self.request)
@@ -190,10 +198,11 @@ class ModelPlanningTests(unittest.TestCase):
         self.assertNotIn('PRIVATE_SENTINEL', json.dumps(result))
 
     def test_missing_snapshot_and_invalid_key_metadata_remain_questions(self):
+        original_manifest = self.fixture.manifest.read_text()
         self.fixture.manifest.write_text('{}')
         self.assertIn('project_snapshot', self.codes(self.plan()))
         # Restore a valid snapshot independently of the key declaration.
-        self.fixture.manifest.write_text(json.dumps({'metadata': {'dbt_schema_version': 'https://schemas.getdbt.com/dbt/manifest/v12.json', 'project_name': 'catalog_workflow'}, 'nodes': {}, 'sources': {}}))
+        self.fixture.manifest.write_text(original_manifest)
         path = self.root / 'curated.json'
         doc = json.loads(path.read_text())
         doc['assets'][0]['facts']['primary_key']['columns'] = ['missing']
