@@ -111,3 +111,12 @@ alongside selected model/properties file rules. Unknown scope, overlapping const
 missing tokens and mismatches return clarification with provenance. Unrelated scoped
 rules do not block generation; applicable warehouse_alias/column rules still do.
 Applied validation shares the same check. See [naming constraints](MODEL_DRAFTS.md#additional-naming-constraints).
+
+## Column naming during projection generation (2026-10-23)
+
+Optional per-source-column values/scope now resolve declared column templates into
+quoted SQL aliases and YAML names/tests. Source grain and catalog facts stay unchanged;
+output grain and mapping retain rule provenance. Scope/value conflicts, ambiguous rules,
+missing tokens, unsafe outputs and collisions clarify. Shared applied validation
+recomputes the mapping. Includes a separate example and real-dbt alias parse coverage.
+This supersedes the earlier unsupported-column note; warehouse aliases remain unsupported.

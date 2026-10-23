@@ -61,7 +61,7 @@ class DraftNamingTargetTests(unittest.TestCase):
         self.assertIn('overlap', result['questions'][0].lower())
 
     def test_applicable_unsupported_targets_still_block(self):
-        for target in ('warehouse_alias', 'column'):
+        for target in ('warehouse_alias',):
             result = self.draft([{'id': 'unsupported', 'target': target, 'template': '{concept}'}])
             self.assertEqual(result['status'], 'needs_clarification')
             self.assertNotIn('files', result)

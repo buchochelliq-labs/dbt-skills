@@ -1,0 +1,38 @@
+{
+  "intent": "Project XYZ customer rows for staging review",
+  "asset_id": "urn:demo:xyz:customers",
+  "source_id": "source.catalog_workflow.xyz.customers",
+  "model_rule": "staging_file",
+  "properties_rule": "staging_properties",
+  "values": {
+    "system": "xyz",
+    "concept": "customer_projection"
+  },
+  "columns": [
+    "customer_id",
+    "customer_name",
+    "updated_at"
+  ],
+  "grain": [
+    "customer_id"
+  ],
+  "history": "source_rows",
+  "scope": {},
+  "column_context": {
+    "customer_id": {
+      "values": {
+        "attribute": "customer_key"
+      }
+    },
+    "customer_name": {
+      "values": {
+        "attribute": "customer_name"
+      }
+    },
+    "updated_at": {
+      "values": {
+        "attribute": "updated_at"
+      }
+    }
+  }
+}

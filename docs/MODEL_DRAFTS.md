@@ -39,9 +39,58 @@ Additional rules use supplied scope plus the rendered SQL parent directory. Rule
 with a known scope mismatch are inapplicable; rules with unresolved scope ask a
 question. Multiple applicable constraints for the same target require clarification,
 even if their templates agree. Missing values return the configured token questions.
-Applicable `warehouse_alias` and `column` conventions still block generation because
-this projection generator cannot enforce them; unrelated scoped rules do not block it.
+Applicable `warehouse_alias` conventions still block generation because this
+projection generator cannot enforce them; unrelated scoped rules do not block it.
+Column conventions are resolved separately for each projected source column below.
 Applied-file validation checks these same constraints using the reviewed policy.
+
+## Column conventions and output names
+
+Optional request `column_context` maps **selected source column names** to per-column
+`values` and `scope` string mappings. Token and scope keys are team-defined. No token is
+implicitly filled from a source name, business concept or position.
+
+For a declared `attribute` token and a column rule with `template: "{attribute}"`:
+
+```json
+"column_context": {
+  "customer_id": {"values": {"attribute": "customer_key"}},
+  "customer_name": {"values": {"attribute": "customer_name"}}
+}
+```
+
+Each column combines model scope with its own scope and the actual SQL parent directory.
+A known scope mismatch excludes a rule; unknown scope and multiple applicable rules ask
+for clarification. For example, team-defined `role: key` and `role: label` scopes can
+select different column templates. Overlapping model/per-column token values and scope
+must agree; per-column input cannot silently override model context or fixed bindings.
+
+The selected rule resolves literal tokens using the existing naming engine. Output names
+must be portable SQL identifiers, and case-insensitive output collisions block drafting.
+Columns without applicable rules keep their source name. Supplied per-column token values
+without an applicable rule produce clarification rather than being silently discarded.
+Unknown source-column keys or malformed contexts fail validation. The complete request,
+including column context, remains bounded to 16 KiB.
+
+SQL quotes both the original source identifier and any changed output alias with
+`adapter.quote`. YAML column names and proposed tests use output names. Requested `columns`
+and `grain` always refer to source identifiers; `design.output_grain` and
+`design.column_mapping` show the output names and rule provenance. No expressions, casts,
+row transformations or catalog fact rewriting are introduced. Composite grain uniqueness
+still needs a separate reviewed test. Applied validation recomputes the mapping from the
+reviewed policy/request and checks both file content and recorded mapping metadata.
+
+Try the separate example policy/request with the same synthetic manifest:
+
+```sh
+PYTHONPATH=src python -m dbt_skills.model_drafts prepare \
+  --project-dir examples/catalog-workflow --target-path artifacts \
+  --policy modelling-columns.yml --catalog-config catalogs.json \
+  --request model-request-columns.json > draft.json
+```
+
+The example renames `customer_id` to `customer_key` without changing the original catalog
+claim. Follow the review/apply/validate steps below in a disposable project copy.
 
 ## Request and evidence
 
@@ -173,7 +222,7 @@ dbt-duckdb 1.10.0 with an in-memory profile and no source rows.
 ## Remaining work
 
 Full business-model reasoning, joins/history, approved exceptions during generation,
-warehouse alias/column naming targets, existing-file changes, composite-key tests and warehouse-backed
+warehouse alias naming targets, existing-file changes, composite-key tests and warehouse-backed
 validation remain follow-ups. An applicable unsupported naming target blocks
 this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness

@@ -13,7 +13,7 @@ import sys
 import yaml
 
 from .catalog import CatalogError, FIELDS, _document, _raw, load_catalog
-from .modelling_naming import NamingRule, resolve_name
+from .modelling_naming import NamingError, NamingRule, resolve_name
 from .modelling_policy import PolicyError, _Loader, load_document
 from .project import discover_project
 from .project_artifacts import MAX_ARTIFACT_BYTES, inspect_artifacts
@@ -171,7 +171,7 @@ def _names(loaded, request):
     context = {**request.get('scope', {}), 'directory': directory}
     groups = {}
     for index, rule in enumerate(document['naming']):
-        if rule['target'] in ('model_file', 'properties_file'):
+        if rule['target'] in ('model_file', 'properties_file', 'column'):
             continue
         scope = rule.get('scope', {})
         if any(k in context and context[k] != v for k, v in scope.items()):
@@ -196,24 +196,88 @@ def _names(loaded, request):
     return result
 
 
-def render_projection(request, source, model_name):
-    sql = 'select\n    ' + ',\n    '.join("{{ adapter.quote('" + c + "') }}" for c in request['columns']) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
-    columns = []
-    for name in request['columns']:
-        column = {'name': name, 'quote': True}
-        if name in request['grain']:
+def column_mapping(loaded, request, model_path):
+    """Resolve per-column conventions without implicit tokens or scope overrides."""
+    entries = request.get('column_context', {})
+    if not isinstance(entries, dict) or len(entries) > 256 or set(entries) - set(request['columns']):
+        raise DraftError('Column context must select only projected source columns')
+    for entry in entries.values():
+        if not isinstance(entry, dict) or set(entry) - {'values', 'scope'}:
+            raise DraftError('Column context supports only values and scope mappings')
+        for key in ('values', 'scope'):
+            values = entry.get(key, {})
+            if not isinstance(values, dict) or len(values) > 256 or any(not isinstance(k, str) or not isinstance(v, str) for k, v in values.items()):
+                raise DraftError('Column context values and scope require string mappings')
+    document = loaded['document']
+    directory = str(PurePosixPath(model_path).parent)
+    global_scope = {**request.get('scope', {}), 'directory': directory}
+    mapping = []
+    for source in request['columns']:
+        entry = entries.get(source, {})
+        local_values, local_scope = entry.get('values', {}), entry.get('scope', {})
+        if any(k in request['values'] and request['values'][k] != v for k, v in local_values.items()):
+            return _questions('Per-column token values conflict with model token values', column=source)
+        if any(k in global_scope and global_scope[k] != v for k, v in local_scope.items()):
+            return _questions('Per-column scope conflicts with model scope', column=source)
+        context = {**global_scope, **local_scope}
+        applicable = []
+        for index, rule in enumerate(document['naming']):
+            if rule['target'] != 'column':
+                continue
+            scope = rule.get('scope', {})
+            if any(k in context and context[k] != v for k, v in scope.items()):
+                continue
+            if any(k not in context for k in scope):
+                return _questions('Clarify column naming rule scope', column=source, rule_id=rule['id'])
+            applicable.append((index, rule))
+        if len(applicable) > 1:
+            return _questions('Applicable column naming rules overlap', column=source)
+        if not applicable:
+            if local_values:
+                return _questions('No applicable column naming rule consumes these token values', column=source)
+            mapping.append({'source': source, 'output': source, 'rule_id': None, 'provenance': None})
+            continue
+        index, rule = applicable[0]
+        provenance = {**loaded['provenance'], 'locator': f'/naming/{index}'}
+        try:
+            name = resolve_name(NamingRule(rule['id'], rule['template'], document['tokens'], provenance, rule.get('bindings', {})), {**request['values'], **local_values})
+        except NamingError:
+            return _questions('Column token values conflict with bindings or literal naming constraints', column=source, rule_id=rule['id'])
+        if name['status'] != 'resolved':
+            return _questions('Supply the missing column naming tokens', column=source, naming=name)
+        output = name['value']
+        if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', output) is None:
+            return _questions('Column rules must render portable SQL identifiers', column=source, rule_id=rule['id'])
+        mapping.append({'source': source, 'output': output, 'rule_id': rule['id'], 'provenance': provenance})
+    if len({m['output'].casefold() for m in mapping}) != len(mapping):
+        return _questions('Output column names collide; choose distinct names before drafting')
+    return mapping
+
+
+def render_projection(request, source, model_name, mapping=None):
+    mapping = mapping if mapping is not None else [{'source': c, 'output': c} for c in request['columns']]
+    expressions, columns = [], []
+    for item in mapping:
+        source_column, output = item['source'], item['output']
+        expression = "{{ adapter.quote('" + source_column + "') }}"
+        if output != source_column:
+            expression += " as {{ adapter.quote('" + output + "') }}"
+        expressions.append(expression)
+        column = {'name': output, 'quote': True}
+        if source_column in request['grain']:
             column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
         columns.append(column)
+    sql = 'select\n    ' + ',\n    '.join(expressions) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
     properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
     return sql, properties
 
 
 def prepare_model(project, policy_path, catalog, request, *, snapshot=None, context_id=None):
     """Create no files. Caller-supplied intent/grain are assertions, never approval."""
-    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope'}
+    allowed = {'intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'values', 'columns', 'grain', 'history', 'scope', 'column_context'}
     if not isinstance(request, dict) or set(request) - allowed or len(json.dumps(request)) > 16384:
         raise DraftError('Invalid or oversized model request')
-    required = allowed - {'scope'}
+    required = allowed - {'scope', 'column_context'}
     if any(k not in request or request[k] in ('', [], None) for k in required):
         return _questions('Specify intent, asset/source, both naming rules, token values, projection columns, grain and history')
     for key in ('intent', 'asset_id', 'source_id', 'model_rule', 'properties_rule', 'history'):
@@ -235,6 +299,9 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     names = _names(loaded, request)
     if isinstance(names, dict):
         return names
+    mapping = column_mapping(loaded, request, names[0])
+    if isinstance(mapping, dict):
+        return mapping
     paths, project_input = _config(project)
     try:
         inventory = _model_inventory(project, paths)
@@ -269,7 +336,7 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     available = {c['name'] for c in facts['selected']['columns']['value']}
     if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
-    sql, properties = render_projection(request, source, model_name)
+    sql, properties = render_projection(request, source, model_name, mapping)
     files = [{'path': path, 'content': content, 'operation': 'create', 'diff': ''.join(difflib.unified_diff([], content.splitlines(keepends=True), fromfile='/dev/null', tofile=path))}
              for path, content in zip(names, (sql, properties))]
     inputs = [project_input, {'path': manifest['path'], 'sha256': manifest['sha256']},
@@ -290,7 +357,7 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
              'context_id': context_id, 'model_inventory': {'sha256': _digest(inventory), 'count': len(inventory)}, 'request': deepcopy(request), 'files': files, 'preconditions': inputs,
              'policy': loaded, 'catalog': facts,
              'source': {k: manifest.get(k) for k in ('path', 'sha256', 'generated_at', 'observed_at', 'freshness')},
-             'design': {'grain': request['grain'], 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
+             'design': {'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
                         'normal_form_status': 'unverified', 'standards': loaded['document']['modelling']},
              'validation': {'executed': [], 'proposed': ['Review source mapping, grain, modelling principles and inherited dbt configuration', 'Validate with dbt only through a separately authorized output-safe runner'],
                             'limitations': ['No SQL/database execution or proof of key/normal form', 'Composite grain uniqueness test is not generated', 'No existing properties/model files are modified', 'Manifest/source freshness is evidence, not live warehouse verification']}}
