@@ -16,6 +16,11 @@ naming:
 - id: business_columns
   target: column
   template: '{attribute}'
+- id: staging_relation
+  target: warehouse_alias
+  template: stage_{system}_{concept}
+  scope:
+    directory: models/staging
 modelling:
 - id: staging_design
   style: relational

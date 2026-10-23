@@ -60,12 +60,6 @@ class DraftNamingTargetTests(unittest.TestCase):
         self.assertEqual(result['status'], 'needs_clarification')
         self.assertIn('overlap', result['questions'][0].lower())
 
-    def test_applicable_unsupported_targets_still_block(self):
-        for target in ('warehouse_alias',):
-            result = self.draft([{'id': 'unsupported', 'target': target, 'template': '{concept}'}])
-            self.assertEqual(result['status'], 'needs_clarification')
-            self.assertNotIn('files', result)
-
     def test_directory_rule_uses_model_parent_not_properties_parent(self):
         for rule in self.policy['naming']:
             if rule['target'] == 'properties_file':

@@ -171,7 +171,7 @@ def _names(loaded, request):
     context = {**request.get('scope', {}), 'directory': directory}
     groups = {}
     for index, rule in enumerate(document['naming']):
-        if rule['target'] in ('model_file', 'properties_file', 'column'):
+        if rule['target'] in ('model_file', 'properties_file', 'column', 'warehouse_alias'):
             continue
         scope = rule.get('scope', {})
         if any(k in context and context[k] != v for k, v in scope.items()):
@@ -254,7 +254,44 @@ def column_mapping(loaded, request, model_path):
     return mapping
 
 
-def render_projection(request, source, model_name, mapping=None):
+def warehouse_alias(loaded, request, model_path, manifest, inventory=()):
+    """Literal configured alias, not the adapter/macro-resolved warehouse relation."""
+    context = {**request.get('scope', {}), 'directory': str(PurePosixPath(model_path).parent)}
+    applicable = []
+    for index, rule in enumerate(loaded['document']['naming']):
+        if rule['target'] != 'warehouse_alias':
+            continue
+        scope = rule.get('scope', {})
+        if any(k in context and context[k] != v for k, v in scope.items()):
+            continue
+        if any(k not in context for k in scope):
+            return _questions('Clarify warehouse alias rule scope')
+        applicable.append((index, rule))
+    if not applicable:
+        return None
+    if len(applicable) != 1:
+        return _questions('Applicable warehouse alias rules overlap')
+    index, rule = applicable[0]
+    provenance = {**loaded['provenance'], 'locator': f'/naming/{index}'}
+    try:
+        name = resolve_name(NamingRule(rule['id'], rule['template'], loaded['document']['tokens'], provenance, rule.get('bindings', {})), request['values'])
+    except NamingError:
+        return _questions('Warehouse alias tokens conflict with literal naming constraints or bindings')
+    if name['status'] != 'resolved':
+        return _questions('Supply the missing warehouse alias naming tokens', naming=name)
+    value = name['value']
+    if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', value) is None:
+        return _questions('Warehouse alias must be a portable SQL identifier')
+    known = {PurePosixPath(p).stem.casefold() for p in inventory if p != model_path}
+    for resource in manifest.get('resources', []):
+        if resource.get('resource_type') == 'model':
+            known.update(v.casefold() for v in (resource.get('alias'), resource.get('name')) if isinstance(v, str))
+    if value.casefold() in known:
+        return _questions('Known model name or alias collision; choose another alias or review an existing-model change')
+    return {'status': 'resolved', 'value': value, 'rule_id': rule['id'], 'provenance': provenance}
+
+
+def render_projection(request, source, model_name, mapping=None, alias=None):
     mapping = mapping if mapping is not None else [{'source': c, 'output': c} for c in request['columns']]
     expressions, columns = [], []
     for item in mapping:
@@ -268,6 +305,8 @@ def render_projection(request, source, model_name, mapping=None):
             column['data_tests'] = ['not_null'] + (['unique'] if len(request['grain']) == 1 else [])
         columns.append(column)
     sql = 'select\n    ' + ',\n    '.join(expressions) + "\nfrom {{ source('" + source['source_name'] + "', '" + source['name'] + "') }}\n"
+    if alias is not None:
+        sql = "{{ config(alias='" + alias['value'] + "') }}\n\n" + sql
     properties = yaml.safe_dump({'version': 2, 'models': [{'name': model_name, 'columns': columns}]}, sort_keys=False)
     return sql, properties
 
@@ -336,7 +375,10 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     available = {c['name'] for c in facts['selected']['columns']['value']}
     if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
-    sql, properties = render_projection(request, source, model_name, mapping)
+    alias = warehouse_alias(loaded, request, names[0], manifest, inventory)
+    if alias is not None and alias['status'] != 'resolved':
+        return alias
+    sql, properties = render_projection(request, source, model_name, mapping, alias)
     files = [{'path': path, 'content': content, 'operation': 'create', 'diff': ''.join(difflib.unified_diff([], content.splitlines(keepends=True), fromfile='/dev/null', tofile=path))}
              for path, content in zip(names, (sql, properties))]
     inputs = [project_input, {'path': manifest['path'], 'sha256': manifest['sha256']},
@@ -357,10 +399,10 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
              'context_id': context_id, 'model_inventory': {'sha256': _digest(inventory), 'count': len(inventory)}, 'request': deepcopy(request), 'files': files, 'preconditions': inputs,
              'policy': loaded, 'catalog': facts,
              'source': {k: manifest.get(k) for k in ('path', 'sha256', 'generated_at', 'observed_at', 'freshness')},
-             'design': {'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
+             'design': {'warehouse_alias': alias, 'grain': request['grain'], 'output_grain': [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']], 'column_mapping': mapping, 'grain_evidence': 'caller_assertion', 'history': 'source_rows',
                         'normal_form_status': 'unverified', 'standards': loaded['document']['modelling']},
              'validation': {'executed': [], 'proposed': ['Review source mapping, grain, modelling principles and inherited dbt configuration', 'Validate with dbt only through a separately authorized output-safe runner'],
-                            'limitations': ['No SQL/database execution or proof of key/normal form', 'Composite grain uniqueness test is not generated', 'No existing properties/model files are modified', 'Manifest/source freshness is evidence, not live warehouse verification']}}
+                            'limitations': ['No SQL/database execution or proof of key/normal form', 'Composite grain uniqueness test is not generated', 'No existing properties/model files are modified', 'Effective warehouse alias, schema/database and custom naming macros require operator review; known-name checks do not prove uniqueness', 'Manifest/source freshness is evidence, not live warehouse verification']}}
     draft['draft_id'] = _digest(draft)
     _bounded(draft)
     return draft

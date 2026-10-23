@@ -152,6 +152,7 @@ class ColumnNamingTests(unittest.TestCase):
         draft = self.fixture.draft()
         draft['design'].pop('column_mapping')
         draft['design'].pop('output_grain')
+        draft['design'].pop('warehouse_alias')
         draft['draft_id'] = _digest({k: v for k, v in draft.items() if k != 'draft_id'})
         apply_draft(self.fixture.project, draft, draft['draft_id'])
         self.assertEqual(validate_applied(self.fixture.project, draft)['status'], 'passed')

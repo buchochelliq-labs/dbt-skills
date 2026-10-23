@@ -120,3 +120,12 @@ output grain and mapping retain rule provenance. Scope/value conflicts, ambiguou
 missing tokens, unsafe outputs and collisions clarify. Shared applied validation
 recomputes the mapping. Includes a separate example and real-dbt alias parse coverage.
 This supersedes the earlier unsupported-column note; warehouse aliases remain unsupported.
+
+## Literal warehouse alias conventions (2026-10-23)
+
+Projection drafting now resolves applicable warehouse_alias rules into explicit literal
+dbt alias config, preserving model filename/ID/YAML identity. Known manifest/model-file
+collisions, unsafe identifiers and ambiguous naming context clarify. Alias provenance
+is recorded and applied validation recomputes it. Custom alias macros, target schema/
+database and live relation uniqueness still need review; no warehouse checks occur.
+This supersedes earlier unsupported-alias notes.

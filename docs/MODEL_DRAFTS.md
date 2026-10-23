@@ -39,10 +39,37 @@ Additional rules use supplied scope plus the rendered SQL parent directory. Rule
 with a known scope mismatch are inapplicable; rules with unresolved scope ask a
 question. Multiple applicable constraints for the same target require clarification,
 even if their templates agree. Missing values return the configured token questions.
-Applicable `warehouse_alias` conventions still block generation because this
-projection generator cannot enforce them; unrelated scoped rules do not block it.
-Column conventions are resolved separately for each projected source column below.
+Warehouse aliases and column conventions are resolved separately below.
+Unrelated scoped rules do not block generation.
 Applied-file validation checks these same constraints using the reviewed policy.
+
+## Warehouse alias conventions
+
+An applicable `warehouse_alias` rule resolves a literal relation-name configuration:
+
+```yaml
+- id: staging_relation
+  target: warehouse_alias
+  template: stage_{system}_{concept}
+  scope:
+    directory: models/staging
+```
+
+The generator adds `{{ config(alias='stage_xyz_customer') }}` before the projection.
+The SQL filename, dbt model name and YAML model name remain unchanged. Tokens use the
+same team-defined values and fixed bindings as file rules. Missing tokens/scope,
+overlapping rules and non-portable SQL identifiers require clarification. If no alias
+rule applies, no alias config is generated. `design.warehouse_alias` records the
+configured value and rule provenance; applied validation recomputes it.
+
+Known model names/aliases in the manifest and SQL/Python filenames in the local model
+inventory are checked case-insensitively for collisions. This check is conservative
+across schemas and packages; the new model's own filename is excluded. It cannot prove
+that a warehouse relation is free: unparsed models can contain custom aliases, and target
+database/schema or `generate_alias_name` macros may change the effective relation.
+Review inherited configuration and custom naming macros before execution. This feature
+sets the literal alias configuration; it never evaluates project macros or queries the
+warehouse to certify the final name. An operator-only parse can check project parsing.
 
 ## Column conventions and output names
 
@@ -90,7 +117,7 @@ PYTHONPATH=src python -m dbt_skills.model_drafts prepare \
 ```
 
 The example renames `customer_id` to `customer_key` without changing the original catalog
-claim. Follow the review/apply/validate steps below in a disposable project copy.
+claim and sets the configured relation alias to `stage_xyz_customer_projection`. Follow the review/apply/validate steps below in a disposable project copy.
 
 ## Request and evidence
 
@@ -222,7 +249,7 @@ dbt-duckdb 1.10.0 with an in-memory profile and no source rows.
 ## Remaining work
 
 Full business-model reasoning, joins/history, approved exceptions during generation,
-warehouse alias naming targets, existing-file changes, composite-key tests and warehouse-backed
+effective warehouse relation checks, existing-file changes, composite-key tests and warehouse-backed
 validation remain follow-ups. An applicable unsupported naming target blocks
 this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness
