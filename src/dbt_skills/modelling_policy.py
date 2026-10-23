@@ -112,7 +112,7 @@ def resolve_policy_name(path: str | Path, rule_id: str, values: dict[str, str]) 
     raise PolicyError("Naming rule was not found")
 
 
-def discover_policy_files(root: str | Path, *, max_entries: int = 10000) -> dict:
+def discover_policy_files(root: str | Path, *, max_entries: int = 10000, include_references: bool = False) -> dict:
     """Find standard document filenames without reading their contents or following links."""
     root = Path(root).resolve()
     if not root.is_dir() or not 1 <= max_entries <= 100000:
@@ -120,7 +120,7 @@ def discover_policy_files(root: str | Path, *, max_entries: int = 10000) -> dict
     names = {f"modelling{suffix}.{extension}" for suffix in ("", "-observations", "-decisions")
              for extension in ("yml", "yaml")}
     excluded = {".git", "target", "dbt_packages", "node_modules", ".venv", "venv", "__pycache__"}
-    candidates, pending, scanned, truncated = [], [root], 0, False
+    candidates, references, pending, scanned, truncated = [], [], [root], 0, False
     try:
         while pending and not truncated:
             directory = pending.pop()
@@ -136,8 +136,15 @@ def discover_policy_files(root: str | Path, *, max_entries: int = 10000) -> dict
                         pending.append(Path(entry.path))
                     elif entry.name in names and entry.is_file(follow_symlinks=False):
                         candidates.append(Path(entry.path).relative_to(root).as_posix())
+                    elif include_references and entry.is_file(follow_symlinks=False):
+                        name = entry.name.lower()
+                        if name in (".sqlfluff", "dbt_project.yml") or (
+                            Path(name).suffix in (".md", ".yml", ".yaml") and
+                            any(word in name for word in ("model", "standard", "convention", "decision"))
+                        ):
+                            references.append(Path(entry.path).relative_to(root).as_posix())
     except OSError:
         raise PolicyError("Cannot complete policy discovery") from None
-    return {"candidates": sorted(candidates), "truncated": truncated,
+    return {"candidates": sorted(candidates), **({"references": sorted(references)} if include_references else {}), "truncated": truncated,
             "questions": ["Which existing document is authoritative?" if candidates else
                           "Where are your modelling standards documented, or should a policy be proposed?"]}
