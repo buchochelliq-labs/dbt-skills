@@ -82,3 +82,7 @@ Thin read-only stdio adapter now exposes the existing core through seven tools, 
 ## Catalog provider slice (2026-10-23)
 
 Typed provider interface, strict metadata-only JSON file provider and ordered fact-group resolver now back optional catalog tools in the modelling MCP server. Same context ID and atomic refresh, explicit shared asset IDs, scoped provenance, no denial/error fallback, encountered conflicts retained. See [contract](CATALOG.md) and [customer walkthrough](../examples/catalog-workflow/README.md). This is not persistent caching or live UC/OpenMetadata integration. Example SQL/YAML is illustrative, not generated/applied or dbt-validated. Issues #18/#16/#39 remain open.
+
+## Source projection drafts (2026-10-23)
+
+Shared prepare API, CLI and optional model_draft MCP tool now generate reviewable SQL/YAML for an explicitly mapped source, selected columns and asserted grain. Separate operator CLI creates new files only with the reviewed digest and unchanged input hashes. See [model drafts](MODEL_DRAFTS.md). No SQL execution, automatic approval, changes to existing models, joins/history or normal-form proof. Live host and output-safe dbt validation remain pending.

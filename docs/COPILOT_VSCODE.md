@@ -1,6 +1,6 @@
 # Copilot in VS Code: local modelling tools
 
-This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. It does **not** yet generate model SQL/YAML, apply decisions, prove normal forms or access warehouses. UOL is optional and is not imported by this adapter.
+This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. With policy and catalog configuration, `model_draft` also generates source-projection SQL/YAML for review; a separate operator CLI can create the reviewed files. It does not apply standards decisions, prove normal forms or access warehouses. See [model drafts](MODEL_DRAFTS.md). UOL is optional and is not imported by this adapter.
 
 ## Setup
 
@@ -41,6 +41,6 @@ Example request: “Read our modelling rules, ask about missing business intent,
 
 Automated tests launch the real stdio process and exercise discovery, clarification, comparison, proposal generation, snapshot refresh, changed-policy rejection and no-write behavior. Run `PYTHONPATH=src python -m unittest discover -s tests -p test_modelling_mcp.py -v` from this checkout.
 
-A live VS Code/Copilot session has **not** been verified in the implementation environment because VS Code is unavailable. Before rollout, verify in the intended harness: all seven tools appear; context identifies the intended project; missing tokens produce questions; comparison cites evidence; a proposal remains pending and leaves files unchanged; refresh invalidates the old ID. Check the host's trust/approval prompts and that no unrelated data-access tools are enabled. Protocol tests do not establish UI compatibility or host permission behavior.
+A live VS Code/Copilot session has **not** been verified in the implementation environment because VS Code is unavailable. Before rollout, verify in the intended harness: all seven base tools and the configured optional tools appear; context identifies the intended project; missing tokens produce questions; comparison cites evidence; a proposal remains pending and leaves files unchanged; refresh invalidates the old ID. Check the host's trust/approval prompts and that no unrelated data-access tools are enabled. Protocol tests do not establish UI compatibility or host permission behavior.
 
 Configuration references (checked 2026-10-23): [MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers), [MCP configuration](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), [custom agent files](https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference).

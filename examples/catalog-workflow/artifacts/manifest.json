@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "project_name": "catalog_workflow",
+    "generated_at": "2026-10-23T08:00:00Z"
+  },
+  "nodes": {
+    "model.catalog_workflow.stg_xyz_customer": {
+      "resource_type": "model",
+      "package_name": "catalog_workflow",
+      "name": "stg_xyz_customer",
+      "original_file_path": "models/staging/stg_xyz_customer.sql",
+      "depends_on": {
+        "nodes": [
+          "source.catalog_workflow.xyz.customers"
+        ]
+      }
+    }
+  },
+  "sources": {
+    "source.catalog_workflow.xyz.customers": {
+      "resource_type": "source",
+      "package_name": "catalog_workflow",
+      "source_name": "xyz",
+      "name": "customers",
+      "identifier": "customers",
+      "database": "demo",
+      "schema": "xyz"
+    }
+  }
+}

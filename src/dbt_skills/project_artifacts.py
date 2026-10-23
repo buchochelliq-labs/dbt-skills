@@ -59,7 +59,7 @@ def _manifest_graph(resources: dict) -> dict:
     nodes, edges = [], []
     for unique_id, record in sorted(resources.items()):
         node = {'unique_id': unique_id}
-        for key in ('name', 'resource_type', 'package_name', 'database', 'schema', 'alias', 'original_file_path'):
+        for key in ('name', 'resource_type', 'package_name', 'database', 'schema', 'alias', 'original_file_path', 'source_name', 'identifier'):
             value = record.get(key)
             if isinstance(value, str):
                 node[key] = value
