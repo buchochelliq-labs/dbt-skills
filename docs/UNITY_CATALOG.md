@@ -81,8 +81,10 @@ Changing/removing the local token blocks reuse immediately; permission changes
 behind an unchanged token are visible only on a fresh retrieval. The status tool
 reports configuration/credential readiness, not a remote authorization check.
 Use short sessions and explicit refresh when freshness or access changes matter.
-Persistent caching, TTL configuration/recommendations and cross-session reuse are
-not implemented here. No TTL is silently chosen or extended.
+Bounded memory caching is enabled by default. Optional encrypted persistence,
+configurable lifetimes and review-only TTL suggestions are described in
+[Catalog cache](CATALOG_CACHE.md). Permission lifetime remains independent of
+metadata retention; suggestions never extend either lifetime automatically.
 
 ## Current limits and validation
 

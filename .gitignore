@@ -5,3 +5,5 @@ __pycache__/
 *.uol.sqlite3
 *.uol.sqlite3-shm
 *.uol.sqlite3-wal
+
+.dbt-skills-catalog-cache/
