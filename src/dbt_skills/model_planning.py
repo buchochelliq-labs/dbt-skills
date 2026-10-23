@@ -5,7 +5,7 @@ import json
 import re
 
 from .catalog import CatalogError, FIELDS, _document, load_catalog
-from .design_decisions import decision_context, select_decision, validate_decisions, load_design_decisions
+from .design_decisions import decision_context, select_decision, answer_identity, validate_decisions, load_design_decisions
 from .context_limits import ContextLimitError, check_bounds
 from .modelling_policy import load_document, validate_document
 from .project import discover_project
@@ -102,14 +102,17 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
     for edge in manifest.get('resource_edges', []):
         children.setdefault(edge['to'], set()).add(edge['from'])
     entities = {}
+    assets_by_id = {a['asset_id']: a for a in request['assets']}
+    contexts = {a['asset_id']: decision_context(request['intent'], a, policy, manifest,
+                result['evidence'][a['asset_id']], catalog.config) for a in request['assets']}
     for asset in request['assets']:
         identifier = asset['asset_id']
-        context = decision_context(request['intent'], asset, policy, manifest, result['evidence'][identifier], catalog.config)
-        decision = select_decision(decisions, context, asset)
-        messages = {'stale': 'Review the saved design choice against changed evidence before reusing it.',
+        context = contexts[identifier]
+        decision = select_decision(decisions, context, asset, contexts, assets_by_id)
+        messages = {'incomplete': 'Explicitly select every related asset before reusing this design decision.', 'stale': 'Review the saved design choice against changed evidence before reusing it.',
                     'conflict': 'Resolve the difference between the new request and the saved design choice.',
                     'ambiguous': 'Select one reviewed design record; multiple records match this intent, asset and scope.'}
-        codes = {'stale': 'stale_design_decision', 'conflict': 'design_decision_conflict', 'ambiguous': 'ambiguous_design_decision'}
+        codes = {'incomplete': 'incomplete_design_decision', 'stale': 'stale_design_decision', 'conflict': 'design_decision_conflict', 'ambiguous': 'ambiguous_design_decision'}
         if decision['status'] in messages:
             question(codes[decision['status']], messages[decision['status']], identifier)
         saved_grain = decision['status'] == 'matched' and 'grain' not in asset
@@ -206,7 +209,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
             else:
                 relationship['status'] = 'declared_endpoints_valid'
                 relationship['target_key'] = 'matches_declared_primary_key' if set(fk['target_columns']) == set(entities[target][2]) else 'not_established'
-                question('confirm_relationship', 'Confirm relationship meaning, cardinality, optionality and temporal alignment before joining.', identifier, target_asset=target)
+                question('confirm_relationship', 'Confirm relationship meaning, cardinality, optionality and temporal alignment before joining.', identifier, target_asset=target, columns=deepcopy(fk['columns']), target_columns=deepcopy(fk['target_columns']))
                 if identifier != target:
                     suggestion('review_separate_entities', 'Consider retaining separate entity models linked by this declared relationship; confirm business boundaries and dependencies before combining or decomposing.', asset_id=identifier, target_asset=target)
     # Narrative memory supplies context for review, never proof or executable rules.
@@ -216,7 +219,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
             continue
         for index, answer in enumerate(decision['record'].get('answers', [])):
             for item in result['questions']:
-                if item.get('asset_id') == entity['asset_id'] and item['code'] == answer['question_code']:
+                if item.get('asset_id') == entity['asset_id'] and answer_identity(item) == answer_identity(answer):
                     item['recorded_answer'] = {
                         **deepcopy(answer), 'verified': False,
                         'provenance': {**decision['provenance'],

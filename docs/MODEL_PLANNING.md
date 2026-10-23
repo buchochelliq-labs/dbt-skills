@@ -207,7 +207,7 @@ same optional field inside `record`. Each answer has a stable `question_code`, a
 }
 ```
 
-Supported codes are `functional_dependencies`, `multivalued_dependencies`,
+Supported non-relationship codes are `functional_dependencies`, `multivalued_dependencies`,
 `join_dependencies`, `review_principles`, `relationships_unknown`,
 `grain_key_difference`, `current_row_rule` and `history_rule`. These describe
 semantic understanding, including temporal intent; they do not implement SCD or
@@ -229,6 +229,50 @@ catalog declaration, instruction, approved standard or executable SQL rule.
 Stale, conflicting and ambiguous records never supply active answers. Their review
 questions remain explicit. Replacing an answer requires the existing explicit
 `replace_record_id` workflow and preserves the previous record in the review patch.
-This first slice records answers within an existing single-asset grain/history
-record. Cross-entity design records and arbitrary business-concept notes are not
-implemented; the host agent still reasons about the complete data model.
+Answers belong to an anchored design record. Related-entity dependencies and
+relationship answers are described below; arbitrary business-concept notes are not
+yet implemented. The host agent reasons about the complete data model.
+
+## Decisions involving related entities
+
+Decision proposals can now use two to eight explicitly selected plan assets. The
+first is the **anchor** and still needs explicit grain and temporal intent. Other
+assets are evidence dependencies: the generated record stores `related_contexts`
+containing each asset ID, scope, evidence fingerprints and any supplied grain or
+history assertions. These dependencies do not approve or replace those entities'
+own decisions. The agent uses the record's rationale and answers as context for
+reasoning about the complete data model.
+
+A `confirm_relationship` answer must identify the exact declared relationship:
+
+```json
+{
+  "question_code": "confirm_relationship",
+  "target_asset": "urn:demo:xyz:customers",
+  "columns": ["customer_id"],
+  "target_columns": ["customer_id"],
+  "answer": "Each order belongs to a customer; retain separate entities.",
+  "rationale": "Orders and customers have different business lifecycles."
+}
+```
+
+Both assets must be explicitly selected, and the planner must raise that exact
+relationship question for the anchor. Different foreign keys to the same target
+have separate identities. Column lists are ordered mappings, bounded to 32 unique
+identifiers of equal length. For other answer codes, relationship fields are not
+accepted. This stores reviewed meaning; it does not prove cardinality or modify
+catalog relationships. Undeclared relationships and arbitrary new business
+concepts still need a broader context-record design.
+
+Every related dependency is checked before reuse. A missing selection produces
+`incomplete_design_decision`; changed scope/evidence is stale, and an explicit
+assertion differing from a saved related assertion is a conflict. In all these
+cases the anchor record cannot supply saved grain/history or active answers.
+Related assets are never fetched implicitly. Denial/error from any selected asset
+blocks the proposal and withholds collected evidence. A new related grain/history
+assertion with no saved counterpart remains caller-supplied context, not a
+previously reviewed choice. Existing single-asset records remain compatible.
+
+The existing explicit replacement workflow applies to the anchor's intent/asset/
+scope. Changing dependency selections requires a reviewed replacement, rather than
+silently rebinding a saved answer to another entity. CLI and MCP use the same code.

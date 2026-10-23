@@ -1,7 +1,7 @@
 """Prepare review-only saved design choices; never write or approve a record."""
 from copy import deepcopy
 
-from .design_decisions import DesignDecisionError, validate_decisions, validate_answers
+from .design_decisions import DesignDecisionError, validate_decisions, validate_answers, answer_identity
 from .context_limits import ContextLimitError, check_bounds
 from .model_planning import PlanningError, _request, plan_model
 
@@ -14,7 +14,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
             raise ValueError
         plan_request = request['plan']
         _request(plan_request)
-        if len(plan_request['assets']) != 1 or not {'grain', 'history'} <= set(plan_request['assets'][0]):
+        if not {'grain', 'history'} <= set(plan_request['assets'][0]):
             raise ValueError
         metadata = request['record']
         if not isinstance(metadata, dict) or set(metadata) - {'answers'} != {'id', 'rationale', 'recorded_by', 'recorded_at'}:
@@ -25,7 +25,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
         if 'replace_record_id' in request and (not isinstance(replacement, str) or not replacement.strip() or len(replacement) > 128):
             raise ValueError
     except (ValueError, TypeError, KeyError, ContextLimitError, PlanningError):
-        raise DesignDecisionError('Supply one explicit grain/history choice, record attribution and optional replacement ID') from None
+        raise DesignDecisionError('Supply an explicit anchor grain/history choice, selected related assets, record attribution and optional replacement ID') from None
     if decisions is not None:
         validate_decisions(decisions['document'])
     # Do not let existing records supply choices: a new proposal must be explicit.
@@ -44,13 +44,20 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     blocking = {'required_metadata', 'catalog_conflict', 'project_snapshot', 'grain_columns_missing'}
     if not planning['entities'] or any(q['code'] in blocking for q in planning['questions']):
         return result
-    active_codes = {q['code'] for q in planning['questions']}
-    if any(a['question_code'] not in active_codes for a in metadata.get('answers', [])):
+    anchor_id = plan_request['assets'][0]['asset_id']
+    active_codes = {answer_identity(q) for q in planning['questions'] if q.get('asset_id') == anchor_id}
+    if any(answer_identity(a) not in active_codes for a in metadata.get('answers', [])):
         result['questions'].append({'code': 'inactive_design_answer', 'message': 'Record answers only for questions raised by this plan.'})
         return result
     context = planning['entities'][0]['decision_context']
     asset = plan_request['assets'][0]
     record = {**deepcopy(context), **deepcopy(metadata), 'grain': deepcopy(asset['grain']), 'history': asset['history']}
+    if len(plan_request['assets']) > 1:
+        contexts = {e['asset_id']: e['decision_context'] for e in planning['entities']}
+        record['related_contexts'] = [
+            {**{k: deepcopy(contexts[a['asset_id']][k]) for k in ('asset_id', 'scope', 'evidence')},
+             **{k: deepcopy(a[k]) for k in ('grain', 'history') if k in a}}
+            for a in plan_request['assets'][1:]]
     validate_decisions({'schema_version': 1, 'kind': 'design_decisions', 'records': [record]})
     document = deepcopy(decisions['document']) if decisions else {'schema_version': 1, 'kind': 'design_decisions', 'records': []}
     records = document['records']
