@@ -59,3 +59,9 @@ to the server arguments alongside policy and catalogs. Copy each entity's
 [design planning](MODEL_PLANNING.md#reuse-reviewed-grain-and-history-decisions).
 After changing the file, call `modelling_refresh` and use its new context ID. Saved
 attribution is not authenticated approval; dependency questions still require review.
+
+`model_propose_decision(context_id, request)` prepares a complete grain/history record
+and review patch from explicit choices, rationale and attribution. It derives evidence
+hashes from the pinned context. Review and save the returned `proposed_document` through
+your normal file workflow, then refresh; the tool never saves or approves it. See the
+[proposal request](MODEL_PLANNING.md#prepare-a-decision-for-review).

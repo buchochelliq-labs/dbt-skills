@@ -145,3 +145,15 @@ standards promotion, semantic proof or plan-to-apply path was added. See
 Next priorities remain richer semantic decision handling, joins/history generation,
 existing-model edits, live Copilot VS Code verification, remote catalog adapters and
 provenance-aware cache/TTL work. Do not merge or release on the user's behalf.
+
+## Reviewable design decision proposals — 2026-10-23
+
+Merged #51 provides saved grain/history reuse. The next slice adds shared
+`prepare_design_decision`, a CLI and read-only MCP `model_propose_decision` so hosts
+can prepare complete reviewable records without inventing/copying hashes. Explicit
+choices, rationale and attribution are required. Existing matches need an explicit
+replacement ID; unrelated records survive, duplicate matches clarify, base digests
+and replacement test patches support external review/save. Missing metadata/columns,
+conflicting catalogs and denied access prevent proposals. Remaining semantic questions
+stay visible. No writes, authenticated approval, normal-form proof or automatic
+plan-to-draft conversion. See MODEL_PLANNING.md for the full workflow.
