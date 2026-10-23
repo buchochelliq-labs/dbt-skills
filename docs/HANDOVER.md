@@ -103,3 +103,29 @@ Read-only local validation checks envelope/input revisions, exact applied bytes,
 ## Catalog-grounded design planning (2026-10-23)
 
 Shared read-only planner, CLI and optional MCP model_plan now assemble selected entity/key/relationship hypotheses, scoped standards, dependency/history questions and existing-model reuse candidates. Uses the same validated snapshot; preserves catalog provenance/conflicts and blocks on provider denial/error. See [design planning](MODEL_PLANNING.md). Semantic reasoning and human decisions remain necessary: no normalisation proof, automatic decomposition, joins/history SQL or existing-file edits.
+
+## Draft naming constraint coverage (2026-10-23)
+
+Source-projection drafts now check applicable model_id and directory conventions
+alongside selected model/properties file rules. Unknown scope, overlapping constraints,
+missing tokens and mismatches return clarification with provenance. Unrelated scoped
+rules do not block generation; applicable warehouse_alias/column rules still do.
+Applied validation shares the same check. See [naming constraints](MODEL_DRAFTS.md#additional-naming-constraints).
+
+## Column naming during projection generation (2026-10-23)
+
+Optional per-source-column values/scope now resolve declared column templates into
+quoted SQL aliases and YAML names/tests. Source grain and catalog facts stay unchanged;
+output grain and mapping retain rule provenance. Scope/value conflicts, ambiguous rules,
+missing tokens, unsafe outputs and collisions clarify. Shared applied validation
+recomputes the mapping. Includes a separate example and real-dbt alias parse coverage.
+This supersedes the earlier unsupported-column note; warehouse aliases remain unsupported.
+
+## Literal warehouse alias conventions (2026-10-23)
+
+Projection drafting now resolves applicable warehouse_alias rules into explicit literal
+dbt alias config, preserving model filename/ID/YAML identity. Known manifest/model-file
+collisions, unsafe identifiers and ambiguous naming context clarify. Alias provenance
+is recorded and applied validation recomputes it. Custom alias macros, target schema/
+database and live relation uniqueness still need review; no warehouse checks occur.
+This supersedes earlier unsupported-alias notes.

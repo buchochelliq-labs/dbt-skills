@@ -10,7 +10,7 @@ import tempfile
 
 from .catalog import _document
 from .model_drafts import (_bounded, _config, _digest, _file_hash,
-                           _model_inventory, _relative, _names, render_projection)
+                           _model_inventory, _relative, _names, column_mapping, warehouse_alias, render_projection)
 from .project import discover_project
 from .project_artifacts import inspect_artifacts
 
@@ -88,7 +88,21 @@ def validate_applied(project, draft):
             entries = draft['files']
             if _names(draft['policy'], request) != [f['path'] for f in entries]:
                 return False
-            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem)
+            mapping = column_mapping(draft['policy'], request, entries[0]['path'])
+            if isinstance(mapping, dict):
+                return False
+            if 'column_mapping' in draft['design'] or 'column_context' in request:
+                output_grain = [next(m['output'] for m in mapping if m['source'] == c) for c in request['grain']]
+                if draft['design'].get('column_mapping') != mapping or draft['design'].get('output_grain') != output_grain:
+                    return False
+            model_paths, _ = _config(project)
+            alias = warehouse_alias(draft['policy'], request, entries[0]['path'], manifest, _model_inventory(project, model_paths))
+            if alias is not None and alias['status'] != 'resolved':
+                return False
+            if alias is not None or 'warehouse_alias' in draft['design']:
+                if draft['design'].get('warehouse_alias') != alias:
+                    return False
+            expected = render_projection(request, sources[0], Path(entries[0]['path']).stem, mapping, alias)
             return [f['content'] for f in entries] == list(expected)
         check('projection_contract', projection)
     return {'status': 'passed' if all(c['status'] == 'passed' for c in checks) else 'failed',

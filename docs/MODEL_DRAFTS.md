@@ -11,6 +11,114 @@ requires the existing context ID and uses the pinned manifest; changed policy is
 rejected. Catalog provider digest/access checks remain in force. No MCP write or
 approval tool is added.
 
+## Additional naming constraints
+
+The selected `model_file` and `properties_file` rules produce the output paths.
+Applicable `model_id` rules must match the SQL filename stem, and applicable
+`directory` rules must match its parent directory. The directory target concerns
+the SQL model; the properties path remains governed by `properties_file`.
+
+```yaml
+- id: staging_identifier
+  target: model_id
+  template: stg_{system}_{concept}
+  scope:
+    directory: models/staging
+- id: staging_directory
+  target: directory
+  template: models/staging
+```
+
+These entries go in the policy's `naming` list and reuse its declared team-defined
+tokens and fixed bindings. No particular token names or number of tokens are required.
+The model ID here is the dbt model name (SQL filename stem), not the manifest's
+`model.package.name` unique ID. Rules never silently rename the generated files.
+Mismatches return the expected/actual value plus rule provenance for clarification.
+
+Additional rules use supplied scope plus the rendered SQL parent directory. Rules
+with a known scope mismatch are inapplicable; rules with unresolved scope ask a
+question. Multiple applicable constraints for the same target require clarification,
+even if their templates agree. Missing values return the configured token questions.
+Warehouse aliases and column conventions are resolved separately below.
+Unrelated scoped rules do not block generation.
+Applied-file validation checks these same constraints using the reviewed policy.
+
+## Warehouse alias conventions
+
+An applicable `warehouse_alias` rule resolves a literal relation-name configuration:
+
+```yaml
+- id: staging_relation
+  target: warehouse_alias
+  template: stage_{system}_{concept}
+  scope:
+    directory: models/staging
+```
+
+The generator adds `{{ config(alias='stage_xyz_customer') }}` before the projection.
+The SQL filename, dbt model name and YAML model name remain unchanged. Tokens use the
+same team-defined values and fixed bindings as file rules. Missing tokens/scope,
+overlapping rules and non-portable SQL identifiers require clarification. If no alias
+rule applies, no alias config is generated. `design.warehouse_alias` records the
+configured value and rule provenance; applied validation recomputes it.
+
+Known model names/aliases in the manifest and SQL/Python filenames in the local model
+inventory are checked case-insensitively for collisions. This check is conservative
+across schemas and packages; the new model's own filename is excluded. It cannot prove
+that a warehouse relation is free: unparsed models can contain custom aliases, and target
+database/schema or `generate_alias_name` macros may change the effective relation.
+Review inherited configuration and custom naming macros before execution. This feature
+sets the literal alias configuration; it never evaluates project macros or queries the
+warehouse to certify the final name. An operator-only parse can check project parsing.
+
+## Column conventions and output names
+
+Optional request `column_context` maps **selected source column names** to per-column
+`values` and `scope` string mappings. Token and scope keys are team-defined. No token is
+implicitly filled from a source name, business concept or position.
+
+For a declared `attribute` token and a column rule with `template: "{attribute}"`:
+
+```json
+"column_context": {
+  "customer_id": {"values": {"attribute": "customer_key"}},
+  "customer_name": {"values": {"attribute": "customer_name"}}
+}
+```
+
+Each column combines model scope with its own scope and the actual SQL parent directory.
+A known scope mismatch excludes a rule; unknown scope and multiple applicable rules ask
+for clarification. For example, team-defined `role: key` and `role: label` scopes can
+select different column templates. Overlapping model/per-column token values and scope
+must agree; per-column input cannot silently override model context or fixed bindings.
+
+The selected rule resolves literal tokens using the existing naming engine. Output names
+must be portable SQL identifiers, and case-insensitive output collisions block drafting.
+Columns without applicable rules keep their source name. Supplied per-column token values
+without an applicable rule produce clarification rather than being silently discarded.
+Unknown source-column keys or malformed contexts fail validation. The complete request,
+including column context, remains bounded to 16 KiB.
+
+SQL quotes both the original source identifier and any changed output alias with
+`adapter.quote`. YAML column names and proposed tests use output names. Requested `columns`
+and `grain` always refer to source identifiers; `design.output_grain` and
+`design.column_mapping` show the output names and rule provenance. No expressions, casts,
+row transformations or catalog fact rewriting are introduced. Composite grain uniqueness
+still needs a separate reviewed test. Applied validation recomputes the mapping from the
+reviewed policy/request and checks both file content and recorded mapping metadata.
+
+Try the separate example policy/request with the same synthetic manifest:
+
+```sh
+PYTHONPATH=src python -m dbt_skills.model_drafts prepare \
+  --project-dir examples/catalog-workflow --target-path artifacts \
+  --policy modelling-columns.yml --catalog-config catalogs.json \
+  --request model-request-columns.json > draft.json
+```
+
+The example renames `customer_id` to `customer_key` without changing the original catalog
+claim and sets the configured relation alias to `stage_xyz_customer_projection`. Follow the review/apply/validate steps below in a disposable project copy.
+
 ## Request and evidence
 
 See [model-request.json](../examples/catalog-workflow/model-request.json). Requests
@@ -141,8 +249,8 @@ dbt-duckdb 1.10.0 with an in-memory profile and no source rows.
 ## Remaining work
 
 Full business-model reasoning, joins/history, approved exceptions during generation,
-additional naming targets, existing-file changes, composite-key tests and warehouse-backed
-validation remain follow-ups. A policy declaring unsupported naming targets blocks
-this generator rather than silently ignoring them. General policy principles and
+effective warehouse relation checks, existing-file changes, composite-key tests and warehouse-backed
+validation remain follow-ups. An applicable unsupported naming target blocks
+this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness
 and local catalog export timestamps do not prove current warehouse state.
