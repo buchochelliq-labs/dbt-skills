@@ -1,0 +1,108 @@
+{
+  "scope": "small synthetic SQLCipher/FTS5 baseline, not cross-engine relevance ranking",
+  "lexical": [
+    {
+      "query": "stg_xyz_customer",
+      "ids": [
+        "stg"
+      ]
+    },
+    {
+      "query": "sales.orders",
+      "ids": [
+        "orders"
+      ]
+    },
+    {
+      "query": "3NF",
+      "ids": [
+        "normal"
+      ]
+    },
+    {
+      "query": "annual recurring revenue",
+      "ids": [
+        "finance"
+      ]
+    },
+    {
+      "query": "client",
+      "ids": [
+        "dim",
+        "stg"
+      ]
+    },
+    {
+      "query": "customer",
+      "ids": [
+        "dim",
+        "stg"
+      ]
+    },
+    {
+      "query": "custmer",
+      "ids": []
+    },
+    {
+      "query": "people buying things",
+      "ids": []
+    }
+  ],
+  "evidence_paths": {
+    "status": "complete_within_depth",
+    "paths": [
+      [
+        [
+          "customer",
+          "account"
+        ],
+        [
+          "human#customer-account"
+        ]
+      ],
+      [
+        [
+          "customer",
+          "order"
+        ],
+        [
+          "catalog#customer-order"
+        ]
+      ],
+      [
+        [
+          "customer",
+          "account",
+          "order"
+        ],
+        [
+          "human#customer-account",
+          "catalog#account-order"
+        ]
+      ]
+    ],
+    "examined": 5
+  },
+  "edge_budget": {
+    "status": "truncated",
+    "paths": [],
+    "examined": 0,
+    "reason": "edge_budget"
+  },
+  "path_budget": {
+    "status": "truncated",
+    "paths": [
+      [
+        [
+          "customer",
+          "account"
+        ],
+        [
+          "human#customer-account"
+        ]
+      ]
+    ],
+    "examined": 2,
+    "reason": "path_budget"
+  }
+}

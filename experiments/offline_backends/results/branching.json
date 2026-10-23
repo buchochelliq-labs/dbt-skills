@@ -1,0 +1,374 @@
+[
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 0.09767949813976884,
+      "p95_ms": 0.21416699746623635,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 0.16861500262166373,
+      "p95_ms": 0.29992499912623316,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18481152,
+    "repetition": 1
+  },
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 0.09731449972605333,
+      "p95_ms": 0.2563500020187348,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 0.1495114956924226,
+      "p95_ms": 0.2531450008973479,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18481152,
+    "repetition": 2
+  },
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 0.1001879973046016,
+      "p95_ms": 0.18691700097406283,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 0.15322250328608789,
+      "p95_ms": 0.29762100166408345,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18481152,
+    "repetition": 3
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 1.881487503851531,
+      "p95_ms": 2.231785998446867,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 1.760618502885336,
+      "p95_ms": 2.7217620008741505,
+      "samples": 30
+    },
+    "peak_rss_bytes": 111489024,
+    "repetition": 1
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 2.2454209974966943,
+      "p95_ms": 2.880897001887206,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 2.0160609965387266,
+      "p95_ms": 2.52698300027987,
+      "samples": 30
+    },
+    "peak_rss_bytes": 110567424,
+    "repetition": 2
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 2.519202000257792,
+      "p95_ms": 2.638247999129817,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 2.407702002528822,
+      "p95_ms": 2.609073999337852,
+      "samples": 30
+    },
+    "peak_rss_bytes": 110813184,
+    "repetition": 3
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 1.1108504986623302,
+      "p95_ms": 1.3767999989795499,
+      "samples": 30
+    },
+    "peak_rss_bytes": 123080704,
+    "repetition": 1
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 1.115697501518298,
+      "p95_ms": 1.7226920026587322,
+      "samples": 30
+    },
+    "peak_rss_bytes": 122953728,
+    "repetition": 2
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "cyclic",
+    "nodes": 500,
+    "edges": 3000,
+    "reachable_nodes": 65,
+    "returned_nodes": 65,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 1.3454849977279082,
+      "p95_ms": 1.7121660057455301,
+      "samples": 30
+    },
+    "peak_rss_bytes": 107044864,
+    "repetition": 3
+  },
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 1.0655639998731203,
+      "p95_ms": 1.3952269946457818,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 7.053934496070724,
+      "p95_ms": 10.001684997405391,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18612224,
+    "repetition": 1
+  },
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 1.1886109969054814,
+      "p95_ms": 1.2519750016508624,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 6.425613501050975,
+      "p95_ms": 8.328167001309339,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18612224,
+    "repetition": 2
+  },
+  {
+    "engine": "sqlite",
+    "version": "3.53.1",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 0.9687695019238163,
+      "p95_ms": 1.2344990027486347,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 6.515791996207554,
+      "p95_ms": 7.825462002074346,
+      "samples": 30
+    },
+    "peak_rss_bytes": 18612224,
+    "repetition": 3
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 2.816782500303816,
+      "p95_ms": 3.0373590052477084,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 2.9062799985695165,
+      "p95_ms": 3.1077129970071837,
+      "samples": 30
+    },
+    "peak_rss_bytes": 114126848,
+    "repetition": 1
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 2.234534997114679,
+      "p95_ms": 2.7106260022264905,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 2.8456205036491156,
+      "p95_ms": 3.0076250041020103,
+      "samples": 30
+    },
+    "peak_rss_bytes": 114262016,
+    "repetition": 2
+  },
+  {
+    "engine": "duckdb",
+    "version": "2.0.0",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": {
+      "p50_ms": 2.4473000012221746,
+      "p95_ms": 2.8791650038328953,
+      "samples": 30
+    },
+    "three_hop": {
+      "p50_ms": 3.004711001267424,
+      "p95_ms": 5.443073001515586,
+      "samples": 30
+    },
+    "peak_rss_bytes": 113737728,
+    "repetition": 3
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 3.3514000024297275,
+      "p95_ms": 5.764658999396488,
+      "samples": 30
+    },
+    "peak_rss_bytes": 121655296,
+    "repetition": 1
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 3.464630000962643,
+      "p95_ms": 5.082228999526706,
+      "samples": 30
+    },
+    "peak_rss_bytes": 105263104,
+    "repetition": 2
+  },
+  {
+    "engine": "ladybug",
+    "version": "0.21.2",
+    "topology": "convergent",
+    "nodes": 130,
+    "edges": 4225,
+    "reachable_nodes": 129,
+    "returned_nodes": 100,
+    "oracle_equal": true,
+    "deduplicated_sql_three_hop": null,
+    "three_hop": {
+      "p50_ms": 4.044060999149224,
+      "p95_ms": 4.8701900013838895,
+      "samples": 30
+    },
+    "peak_rss_bytes": 120315904,
+    "repetition": 3
+  }
+]

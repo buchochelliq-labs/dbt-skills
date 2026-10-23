@@ -1,0 +1,3 @@
+duckdb==2.0.0
+ladybug==0.21.2
+psutil==7.2.2

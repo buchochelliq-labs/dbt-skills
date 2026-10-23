@@ -1,0 +1,42 @@
+{
+  "engine": "ladybug",
+  "relations": 500,
+  "nodes": 10501,
+  "edges": 10500,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "encrypted": false,
+  "threads": 1,
+  "configured_cache_or_memory_bytes": 268435456,
+  "notes": [
+    "Single process, synthetic sparse graph; not an end-to-end product benchmark.",
+    "Reopen is OS-cache-warm, not cold disk. Peak RSS includes fixture generation.",
+    "No arbitrary source data or embeddings.",
+    "Fixed literal FTS query only: repeated parameterized FTS crashes on this build; see repro_fts.py."
+  ],
+  "open_ms": 31.136278004851192,
+  "version": "0.21.2",
+  "build_ms": 299.7803250036668,
+  "lookup": {
+    "p50_ms": 0.05011900429963134,
+    "p95_ms": 0.10674799705157056,
+    "samples": 100
+  },
+  "three_hop": {
+    "p50_ms": 6.68607049738057,
+    "p95_ms": 11.088334002124611,
+    "samples": 100
+  },
+  "lexical_search": {
+    "p50_ms": 2.431355998851359,
+    "p95_ms": 2.747940001427196,
+    "samples": 20
+  },
+  "delta_1pct_ms": 5.319154006429017,
+  "fts_update_visible": true,
+  "delete_ms": 2.10340599733172,
+  "fts_delete_visible": true,
+  "disk_bytes_after_close": 10260480,
+  "reopen_ms": 7.442963993526064,
+  "peak_rss_bytes": 112414720
+}

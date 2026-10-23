@@ -1,0 +1,41 @@
+{
+  "engine": "sqlcipher",
+  "relations": 500,
+  "nodes": 10501,
+  "edges": 10500,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "encrypted": true,
+  "threads": 1,
+  "configured_cache_or_memory_bytes": 268435456,
+  "notes": [
+    "Single process, synthetic sparse graph; not an end-to-end product benchmark.",
+    "Reopen is OS-cache-warm, not cold disk. Peak RSS includes fixture generation.",
+    "No arbitrary source data or embeddings."
+  ],
+  "open_ms": 3.535256997565739,
+  "version": "3.53.4",
+  "build_ms": 66.47737800085451,
+  "lookup": {
+    "p50_ms": 0.005592999514192343,
+    "p95_ms": 0.0070309979491867125,
+    "samples": 100
+  },
+  "three_hop": {
+    "p50_ms": 0.014997502148617059,
+    "p95_ms": 0.020340004994068295,
+    "samples": 100
+  },
+  "lexical_search": {
+    "p50_ms": 0.42162949830526486,
+    "p95_ms": 0.5398089997470379,
+    "samples": 20
+  },
+  "delta_1pct_ms": 2.1192690037423745,
+  "fts_update_visible": true,
+  "delete_ms": 2.59165299939923,
+  "fts_delete_visible": true,
+  "disk_bytes_after_close": 3211264,
+  "reopen_ms": 0.21260499488562346,
+  "peak_rss_bytes": 30314496
+}

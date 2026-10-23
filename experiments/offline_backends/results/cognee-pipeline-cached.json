@@ -1,0 +1,18 @@
+{
+  "cognee": "1.6.5",
+  "ladybug": "0.19.0",
+  "cached_tokenizer": true,
+  "graph_subprocess_enabled": false,
+  "network_guard": "Python audit hook only",
+  "scope": "real local datasets, graph_only storage task, explicit permission context, public dataset delete",
+  "stage": "complete",
+  "shared_node_has_two_source_owners": true,
+  "conflicts_and_original_observation_preserved": true,
+  "project_database_isolation": true,
+  "outsider_list_exception": "PermissionDeniedError",
+  "outsider_context_exception": "PermissionDeniedError",
+  "outsider_delete_exception": "UnauthorizedDataAccessError",
+  "first_source_delete_preserves_shared_node_and_other_claim": true,
+  "last_source_delete_removes_graph_without_affecting_other_project": true,
+  "network_attempts": []
+}

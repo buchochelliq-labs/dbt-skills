@@ -1,0 +1,15 @@
+{
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "logical_cpus": 9,
+  "isolation": "shared execution container; not dedicated benchmark hardware",
+  "runs": "separate processes; OS filesystem cache not flushed",
+  "direct": {
+    "installed_site_packages_bytes": 111318275,
+    "distribution_count": 4
+  },
+  "cognee": {
+    "installed_site_packages_bytes": 1427416390,
+    "distribution_count": 176
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "cognee": "1.6.5",
+  "ladybug": "0.19.0",
+  "import_ms": 4427.8163199996925,
+  "scope": "low-level graph adapter only; not high-level dataset ACL integration",
+  "network_guard": "Python audit hook; native networking not OS-isolated",
+  "two_claims_one_edge_write_ms": 86.63337199686794,
+  "source_ref_in_get_nodes": false,
+  "source_ref_in_ownership_api": true,
+  "neighborhood_nodes": 2,
+  "neighborhood_edges": 1,
+  "low_level_getter_returns_other_project": true,
+  "restart_retains_values": true,
+  "delete_retains_other_claim": true,
+  "disk_bytes": 311296,
+  "network_attempts": [],
+  "peak_rss_bytes": 364986368
+}

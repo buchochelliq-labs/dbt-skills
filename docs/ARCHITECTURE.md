@@ -82,6 +82,10 @@ first workflow.
 
 ## Facts and cache
 
+Storage direction is recorded in [ADR 0001](decisions/0001-local-context-storage.md):
+retain SQLCipher, use SQLite retrieval as the baseline, and require demonstrated
+benefit before adding an optional backend. Catalog selection remains independent.
+
 Every fact retains provider, native asset/field or document locator, source
 version, source/retrieval/verification timestamps, scope, evidence type and
 derivation/supporting fact IDs. Preserve these through cache, merging and model

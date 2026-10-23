@@ -1,0 +1,55 @@
+{
+  "cognee": "1.6.5",
+  "ladybug": "0.19.0",
+  "cached_tokenizer": true,
+  "graph_subprocess_enabled": false,
+  "network_guard": "Python audit hook only",
+  "scope": "real local datasets, graph_only storage task, explicit permission context, public dataset delete",
+  "stage": "complete",
+  "shared_node_has_two_source_owners": true,
+  "conflicts_and_original_observation_preserved": true,
+  "project_database_isolation": true,
+  "outsider_list_exception": "PermissionDeniedError",
+  "outsider_context_exception": "PermissionDeniedError",
+  "outsider_delete_exception": "UnauthorizedDataAccessError",
+  "grant_then_revoke_blocks_fresh_context": true,
+  "at_rest_positive_evidence": [
+    {
+      "path": "data/4f0999f9-e056-4528-bb8e-73b5ae88e8ac/text_59d6cebcb275a80ae699640555ad696c.txt",
+      "bytes": 52,
+      "plaintext_markers": [
+        "claim_value"
+      ],
+      "sqlite_header": false
+    },
+    {
+      "path": "data/4f0999f9-e056-4528-bb8e-73b5ae88e8ac/text_8e976eef5dcc1367dd27a7c6665adf9a.txt",
+      "bytes": 46,
+      "plaintext_markers": [
+        "input_document"
+      ],
+      "sqlite_header": false
+    },
+    {
+      "path": "system/databases/4f0999f9-e056-4528-bb8e-73b5ae88e8ac/7d7e380a-aeb1-5b05-949a-701bcb8be32d.lbug",
+      "bytes": 1482752,
+      "plaintext_markers": [
+        "claim_value"
+      ],
+      "sqlite_header": false
+    },
+    {
+      "path": "system/databases/cognee_db",
+      "bytes": 630784,
+      "plaintext_markers": [
+        "input_document",
+        "claim_value"
+      ],
+      "sqlite_header": true
+    }
+  ],
+  "at_rest_scope": "temporary application roots before deletion; live files; no negative encryption claim",
+  "first_source_delete_preserves_shared_node_and_other_claim": true,
+  "last_source_delete_removes_graph_without_affecting_other_project": true,
+  "network_attempts": []
+}

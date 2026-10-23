@@ -1,0 +1,126 @@
+{
+  "scope": "real SQLCipher ontology crash/reopen; prototype projection policy",
+  "crash_method": "os._exit(73) in child; not power-loss simulation",
+  "cases": [
+    {
+      "mode": "full",
+      "interruption": "after_stage",
+      "child_exit": 73,
+      "reopened_snapshot": "old",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    },
+    {
+      "mode": "full",
+      "interruption": "during_publish",
+      "child_exit": 73,
+      "reopened_snapshot": "old",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    },
+    {
+      "mode": "full",
+      "interruption": "after_commit",
+      "child_exit": 73,
+      "reopened_snapshot": "new",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    },
+    {
+      "mode": "incremental",
+      "interruption": "after_stage",
+      "child_exit": 73,
+      "reopened_snapshot": "old",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    },
+    {
+      "mode": "incremental",
+      "interruption": "during_publish",
+      "child_exit": 73,
+      "reopened_snapshot": "old",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    },
+    {
+      "mode": "incremental",
+      "interruption": "after_commit",
+      "child_exit": 73,
+      "reopened_snapshot": "new",
+      "lexical_index_consistent": true,
+      "resume_and_second_reopen_complete": true,
+      "original_observation_preserved": true,
+      "prototype_gate": {
+        "matching": "available",
+        "stale_generation": "unavailable",
+        "wrong_project": "unavailable",
+        "permission_boundary": "unavailable",
+        "revoked": "unavailable",
+        "removed_asset": "unavailable",
+        "quarantined": "unavailable",
+        "partial": "unavailable",
+        "unknown_claim": "unavailable"
+      }
+    }
+  ]
+}

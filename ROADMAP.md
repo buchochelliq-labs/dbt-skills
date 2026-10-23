@@ -1,5 +1,13 @@
 # Open-Source dbt Wizard Alternative Roadmap
 
+## Current priority after backend evaluation
+
+Retain encrypted SQLite-family persistence per [ADR 0001](docs/decisions/0001-local-context-storage.md).
+No multi-backend production refactor is planned. Next demonstrate the complete
+Copilot data-model design workflow through [host acceptance](docs/COPILOT_ACCEPTANCE.md)
+(#24/#25), preserving clarification, evidence, exceptions and the context-only boundary.
+Older runtime-first sequencing below is historical.
+
 ## Product boundary — clarified 2026-10-23
 
 This product supplies reliable context so an agent can create or revise a **data

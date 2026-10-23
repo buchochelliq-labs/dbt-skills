@@ -32,6 +32,54 @@ revocation without exposing raw data. Live-provider validation remains outstandi
 Issue #39 remains open for the documented follow-ups. Issue #60 records optional
 OpenMetadata companion evaluation; lightweight standalone/offline use is retained.
 
+## Offline backend spike — first measured pass
+
+Issue #62 now has disposable experiments under
+`experiments/offline_backends/README.md`, including 18 direct-engine runs,
+a model-free Cognee adapter probe, FTS reproducers and process-lock checks.
+The second pass in `experiments/offline_backends/SECOND_PASS.md` verifies Cognee's
+graph-only pipeline, explicit dataset permission checks and source-owner deletion
+with pre-staged tokenizer files; a cold-cache delete reproduces a blocked download.
+Branching graph results include an independent oracle and deduplicated SQL.
+Interim recommendation: retain SQLCipher default; evaluate Cognee policy/encryption
+fit before choosing an integration. This is not a completed backend selection
+or permission/encryption parity claim. No production persistence refactor was made.
+The third pass, `experiments/offline_backends/POLICY_FIT.md`, maps the policy boundary
+and verifies grant/revoke across fresh read contexts. Synthetic plaintext is readable
+in input, relational and graph files in the tested Cognee configuration. Keep the
+encrypted canonical store; assess Cognee as an optional derived retrieval projection
+only after encryption and generation-consistency gates. No production adapter exists.
+The fourth slice, `experiments/offline_backends/RECOVERY.md`, verifies six abrupt
+process-exit cases against the real SQLCipher generation writer: full/incremental
+sync retain a complete old or new generation, resume, and reopen consistently.
+Its 54 projection-gate checks are a prototype contract only; that slice did not
+exercise actual derived-index interruption/activation or in-flight revision changes.
+The fifth slice in `experiments/offline_backends/PROJECTION.md` now tests four
+process-exit boundaries with separate real SQLCipher/FTS5 generation files and an
+encrypted activation registry. Rebuild, two-source identity, stale-index withholding
+and serial cleanup pass. An injected revision change is detected during retrieval;
+live revocation, concurrent snapshot capture and reader-safe GC remain unverified.
+Keep a single encrypted store as the simpler default; separate projections must earn
+their extra lifecycle cost. Next selection work: bounded evidence retrieval/relevance
+and an ADR, not a production backend framework.
+`experiments/offline_backends/SELECTION.md` now presents five selection options and
+recommends retaining SQLCipher with SQLite lexical/edge retrieval as the baseline.
+The final small retrieval probe passes eight lexical cases (including documented
+typo/paraphrase misses) and three evidence-path/budget checks. It is not a real-user
+relevance benchmark. Selection is proposed for the maintainer, not an accepted ADR;
+do not implement every optional backend. No production changes were made.
+
+## Current next action after backend selection
+
+[ADR 0001](decisions/0001-local-context-storage.md) now records the direction to
+retain SQLCipher and stop expanding backend prototypes. The selection report above
+is the historical options comparison. Optional-adapter gates remain conditional;
+no production adapter or retrieval implementation was added by the spike.
+Proceed with #24/#25 using [Copilot acceptance](COPILOT_ACCEPTANCE.md). Its supporting
+29 protocol/core tests passed; live host acceptance remains outstanding. The existing
+fixture deliberately lacks order metadata; a positive multi-entity live scenario
+needs a corresponding metadata fixture. SQL generation is not part of this milestone.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.

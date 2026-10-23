@@ -1,0 +1,42 @@
+{
+  "engine": "duckdb",
+  "relations": 5000,
+  "nodes": 105001,
+  "edges": 105000,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "encrypted": false,
+  "threads": 1,
+  "configured_cache_or_memory_bytes": 268435456,
+  "notes": [
+    "Single process, synthetic sparse graph; not an end-to-end product benchmark.",
+    "Reopen is OS-cache-warm, not cold disk. Peak RSS includes fixture generation.",
+    "No arbitrary source data or embeddings."
+  ],
+  "open_ms": 73.22502899478422,
+  "version": "2.0.0",
+  "build_ms": 990.4244880017359,
+  "lookup": {
+    "p50_ms": 2.1512865023396444,
+    "p95_ms": 2.877231003367342,
+    "samples": 100
+  },
+  "three_hop": {
+    "p50_ms": 12.623325499589555,
+    "p95_ms": 15.301102001103573,
+    "samples": 100
+  },
+  "lexical_search": {
+    "p50_ms": 28.751484998792876,
+    "p95_ms": 31.133002004935406,
+    "samples": 20
+  },
+  "delta_1pct_ms": 24.757199003943242,
+  "fts_update_visible": false,
+  "fts_rebuild_ms": 339.5321959978901,
+  "delete_ms": 22.36515600088751,
+  "fts_delete_visible": true,
+  "disk_bytes_after_close": 24129536,
+  "reopen_ms": 27.44473500206368,
+  "peak_rss_bytes": 212168704
+}

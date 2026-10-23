@@ -1,0 +1,74 @@
+[
+  {
+    "relations": 500,
+    "engine": "sqlcipher",
+    "runs": 3,
+    "lookup_p95_ms": 0.008161994628608227,
+    "three_hop_p95_ms": 0.02320399653399363,
+    "lexical_search_p95_ms": 0.5398089997470379,
+    "build_ms": 51.39820699696429,
+    "delta_1pct_ms": 2.949453999463003,
+    "disk_bytes_after_close": 3211264,
+    "peak_rss_bytes": 30470144
+  },
+  {
+    "relations": 500,
+    "engine": "duckdb",
+    "runs": 3,
+    "lookup_p95_ms": 0.5884310012334026,
+    "three_hop_p95_ms": 3.2916549971560016,
+    "lexical_search_p95_ms": 19.342127998243086,
+    "build_ms": 166.85208499984583,
+    "delta_1pct_ms": 3.5561170006985776,
+    "disk_bytes_after_close": 4993024,
+    "peak_rss_bytes": 129753088
+  },
+  {
+    "relations": 500,
+    "engine": "ladybug",
+    "runs": 3,
+    "lookup_p95_ms": 0.13806400238536298,
+    "three_hop_p95_ms": 11.088334002124611,
+    "lexical_search_p95_ms": 3.630767001595814,
+    "build_ms": 350.22781499719713,
+    "delta_1pct_ms": 6.396024000423495,
+    "disk_bytes_after_close": 10260480,
+    "peak_rss_bytes": 128126976
+  },
+  {
+    "relations": 5000,
+    "engine": "sqlcipher",
+    "runs": 3,
+    "lookup_p95_ms": 0.011067000741604716,
+    "three_hop_p95_ms": 0.03072500112466514,
+    "lexical_search_p95_ms": 7.784048997564241,
+    "build_ms": 474.2459539993433,
+    "delta_1pct_ms": 28.404488002706785,
+    "disk_bytes_after_close": 34037760,
+    "peak_rss_bytes": 95092736
+  },
+  {
+    "relations": 5000,
+    "engine": "duckdb",
+    "runs": 3,
+    "lookup_p95_ms": 2.877231003367342,
+    "three_hop_p95_ms": 13.720306000323035,
+    "lexical_search_p95_ms": 31.133002004935406,
+    "build_ms": 1000.7560859958176,
+    "delta_1pct_ms": 24.757199003943242,
+    "disk_bytes_after_close": 24129536,
+    "peak_rss_bytes": 209674240
+  },
+  {
+    "relations": 5000,
+    "engine": "ladybug",
+    "runs": 3,
+    "lookup_p95_ms": 0.18342199473408982,
+    "three_hop_p95_ms": 62.77590000536293,
+    "lexical_search_p95_ms": 19.778895999479573,
+    "build_ms": 1647.8881680013728,
+    "delta_1pct_ms": 19.56918499490712,
+    "disk_bytes_after_close": 37724160,
+    "peak_rss_bytes": 195473408
+  }
+]

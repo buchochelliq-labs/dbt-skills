@@ -1,0 +1,60 @@
+{
+  "scope": "real separate SQLCipher FTS5 files and encrypted activation registry; disposable adapter",
+  "cases": [
+    {
+      "interruption": "partial_build",
+      "child_exit": 74,
+      "after_restart": "unavailable",
+      "rebuild_or_committed_read_correct": true,
+      "two_source_identity_preserved": true,
+      "stale_projection_withheld": true,
+      "injected_revision_change_withheld": true,
+      "serial_cleanup_preserves_active": true,
+      "abandoned_files_removed": [
+        "old.db",
+        "candidate.db"
+      ]
+    },
+    {
+      "interruption": "before_activation",
+      "child_exit": 74,
+      "after_restart": "unavailable",
+      "rebuild_or_committed_read_correct": true,
+      "two_source_identity_preserved": true,
+      "stale_projection_withheld": true,
+      "injected_revision_change_withheld": true,
+      "serial_cleanup_preserves_active": true,
+      "abandoned_files_removed": [
+        "old.db",
+        "candidate.db"
+      ]
+    },
+    {
+      "interruption": "during_activation",
+      "child_exit": 74,
+      "after_restart": "unavailable",
+      "rebuild_or_committed_read_correct": true,
+      "two_source_identity_preserved": true,
+      "stale_projection_withheld": true,
+      "injected_revision_change_withheld": true,
+      "serial_cleanup_preserves_active": true,
+      "abandoned_files_removed": [
+        "old.db",
+        "candidate.db"
+      ]
+    },
+    {
+      "interruption": "after_activation",
+      "child_exit": 74,
+      "after_restart": "available",
+      "rebuild_or_committed_read_correct": true,
+      "two_source_identity_preserved": true,
+      "stale_projection_withheld": true,
+      "injected_revision_change_withheld": true,
+      "serial_cleanup_preserves_active": true,
+      "abandoned_files_removed": [
+        "old.db"
+      ]
+    }
+  ]
+}
