@@ -31,9 +31,11 @@ can remain in chat: these tools do not save, approve or implement the design.
 
 Do not score this fixture as a complete known customer/order model: its missing
 order metadata deliberately exercises clarification. A second fixture containing
-two explicitly mapped assets and relationship metadata is needed for live positive
-multi-entity relationship acceptance. Existing protocol tests cover related-asset
-behavior but cannot substitute for that host session.
+two explicitly mapped assets and relationship metadata is now available at
+`examples/data-model-workflow`, with a real-stdio acceptance test. Use its request
+and startup instructions for the positive multi-entity session. A populated eight-table
+fictional source and UC loader are available at `examples/northwind-source`.
+Protocol tests still cannot substitute for the live host session.
 
 ## Automated supporting evidence
 

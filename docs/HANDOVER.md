@@ -80,6 +80,13 @@ Proceed with #24/#25 using [Copilot acceptance](COPILOT_ACCEPTANCE.md). Its supp
 fixture deliberately lacks order metadata; a positive multi-entity live scenario
 needs a corresponding metadata fixture. SQL generation is not part of this milestone.
 
+The positive fixture is now supplied in `examples/data-model-workflow`: two entities,
+declared relationship, legacy-name exception, refresh and invalid-endpoint scenarios
+are exercised through real MCP stdio. `examples/northwind-source` adds an original
+eight-table fictional SQLite source generator, schema-only context export and a
+Databricks UC Delta loader notebook. All 231 local tests pass. UC loading and live
+Copilot remain unverified; the notebook does not transfer SQLite key/check constraints.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.
