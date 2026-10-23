@@ -69,6 +69,17 @@ typo/paraphrase misses) and three evidence-path/budget checks. It is not a real-
 relevance benchmark. Selection is proposed for the maintainer, not an accepted ADR;
 do not implement every optional backend. No production changes were made.
 
+## Current next action after backend selection
+
+[ADR 0001](decisions/0001-local-context-storage.md) now records the direction to
+retain SQLCipher and stop expanding backend prototypes. The selection report above
+is the historical options comparison. Optional-adapter gates remain conditional;
+no production adapter or retrieval implementation was added by the spike.
+Proceed with #24/#25 using [Copilot acceptance](COPILOT_ACCEPTANCE.md). Its supporting
+29 protocol/core tests passed; live host acceptance remains outstanding. The existing
+fixture deliberately lacks order metadata; a positive multi-entity live scenario
+needs a corresponding metadata fixture. SQL generation is not part of this milestone.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.
