@@ -209,7 +209,10 @@ def _run(args: argparse.Namespace) -> int:
                 provider_name = JSONSnapshotProvider.provider_name
                 options = {"snapshot_path": str(snapshot)}
             elif args.source_command == "add-manifest":
-                project = discover_project(args.project_dir)
+                project = discover_project(
+                    args.project_dir,
+                    target_path=args.manifest.expanduser().resolve().parent if args.manifest else None,
+                )
                 manifest = (
                     args.manifest.expanduser().resolve()
                     if args.manifest
@@ -227,8 +230,8 @@ def _run(args: argparse.Namespace) -> int:
                     "manifest_path": str(manifest),
                 }
             else:
-                project = discover_project(args.project_dir)
                 target_dir = args.target_dir.expanduser().resolve()
+                project = discover_project(args.project_dir, target_path=target_dir)
                 source_id = (
                     ods_source_id(project, target_dir)
                     if args.source_id == "auto"
