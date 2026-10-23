@@ -165,8 +165,34 @@ def _names(loaded, request):
         if applicable != [rule['id']]:
             return _questions('The selected naming rule is out of scope or overlaps another rule')
         result.append(path)
-    if any(r['target'] not in ('model_file', 'properties_file') for r in document['naming']):
-        return _questions('This projection generator cannot yet enforce the other configured naming targets')
+    # Additional conventions constrain the rendered SQL model; never rename it
+    # silently or infer applicability from a rule's position in the policy.
+    directory = str(PurePosixPath(result[0]).parent)
+    context = {**request.get('scope', {}), 'directory': directory}
+    groups = {}
+    for index, rule in enumerate(document['naming']):
+        if rule['target'] in ('model_file', 'properties_file'):
+            continue
+        scope = rule.get('scope', {})
+        if any(k in context and context[k] != v for k, v in scope.items()):
+            continue
+        if any(k not in context for k in scope):
+            return _questions('Clarify naming rule scope before checking additional conventions')
+        groups.setdefault(rule['target'], []).append((index, rule))
+    for target, rules in groups.items():
+        if target not in ('model_id', 'directory'):
+            return _questions('This projection generator cannot yet enforce the applicable naming target', unsupported_target=target)
+        if len(rules) != 1:
+            return _questions('Applicable naming constraints overlap; clarify the policy before drafting')
+        index, rule = rules[0]
+        provenance = {**loaded['provenance'], 'locator': f'/naming/{index}'}
+        name = resolve_name(NamingRule(rule['id'], rule['template'], document['tokens'], provenance, rule.get('bindings', {})), request['values'])
+        if name['status'] != 'resolved':
+            return _questions('Supply the missing naming tokens', naming=name)
+        actual = PurePosixPath(result[0]).stem if target == 'model_id' else directory
+        if name['value'] != actual:
+            return _questions('Rendered model path disagrees with an applicable naming constraint; reconcile the rules or token values',
+                              naming_constraint={'target': target, 'rule_id': rule['id'], 'expected': name['value'], 'actual': actual, 'provenance': provenance})
     return result
 
 

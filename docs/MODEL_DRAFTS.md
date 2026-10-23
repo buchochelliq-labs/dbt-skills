@@ -11,6 +11,38 @@ requires the existing context ID and uses the pinned manifest; changed policy is
 rejected. Catalog provider digest/access checks remain in force. No MCP write or
 approval tool is added.
 
+## Additional naming constraints
+
+The selected `model_file` and `properties_file` rules produce the output paths.
+Applicable `model_id` rules must match the SQL filename stem, and applicable
+`directory` rules must match its parent directory. The directory target concerns
+the SQL model; the properties path remains governed by `properties_file`.
+
+```yaml
+- id: staging_identifier
+  target: model_id
+  template: stg_{system}_{concept}
+  scope:
+    directory: models/staging
+- id: staging_directory
+  target: directory
+  template: models/staging
+```
+
+These entries go in the policy's `naming` list and reuse its declared team-defined
+tokens and fixed bindings. No particular token names or number of tokens are required.
+The model ID here is the dbt model name (SQL filename stem), not the manifest's
+`model.package.name` unique ID. Rules never silently rename the generated files.
+Mismatches return the expected/actual value plus rule provenance for clarification.
+
+Additional rules use supplied scope plus the rendered SQL parent directory. Rules
+with a known scope mismatch are inapplicable; rules with unresolved scope ask a
+question. Multiple applicable constraints for the same target require clarification,
+even if their templates agree. Missing values return the configured token questions.
+Applicable `warehouse_alias` and `column` conventions still block generation because
+this projection generator cannot enforce them; unrelated scoped rules do not block it.
+Applied-file validation checks these same constraints using the reviewed policy.
+
 ## Request and evidence
 
 See [model-request.json](../examples/catalog-workflow/model-request.json). Requests
@@ -141,8 +173,8 @@ dbt-duckdb 1.10.0 with an in-memory profile and no source rows.
 ## Remaining work
 
 Full business-model reasoning, joins/history, approved exceptions during generation,
-additional naming targets, existing-file changes, composite-key tests and warehouse-backed
-validation remain follow-ups. A policy declaring unsupported naming targets blocks
-this generator rather than silently ignoring them. General policy principles and
+warehouse alias/column naming targets, existing-file changes, composite-key tests and warehouse-backed
+validation remain follow-ups. An applicable unsupported naming target blocks
+this generator rather than being silently ignored. General policy principles and
 inherited dbt materialization/configuration require human review. Manifest freshness
 and local catalog export timestamps do not prove current warehouse state.
