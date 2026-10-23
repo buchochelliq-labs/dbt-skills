@@ -78,3 +78,7 @@ The test workflow is the verification source for the supported Windows, macOS, a
 ## Modelling MCP adapter (2026-10-23)
 
 Thin read-only stdio adapter now exposes the existing core through seven tools, with pinned context IDs, policy-change checks, paging, pending proposals and no UOL dependency. See [VS Code setup](COPILOT_VSCODE.md). Real protocol tests cover the workflow; live VS Code/Copilot validation remains outstanding. SQL/YAML model generation and catalog providers remain future work.
+
+## Catalog provider slice (2026-10-23)
+
+Typed provider interface, strict metadata-only JSON file provider and ordered fact-group resolver now back optional catalog tools in the modelling MCP server. Same context ID and atomic refresh, explicit shared asset IDs, scoped provenance, no denial/error fallback, encountered conflicts retained. See [contract](CATALOG.md) and [customer walkthrough](../examples/catalog-workflow/README.md). This is not persistent caching or live UC/OpenMetadata integration. Example SQL/YAML is illustrative, not generated/applied or dbt-validated. Issues #18/#16/#39 remain open.

@@ -1,0 +1,15 @@
+schema_version: 1
+kind: policy
+tokens:
+  system: Which source-system identifier has the team agreed?
+  concept: Which business concept does this model represent?
+naming:
+  - id: staging_file
+    target: model_file
+    template: 'models/staging/stg_{system}_{concept}.sql'
+    scope:
+      directory: models/staging
+modelling:
+  - id: staging_design
+    style: relational
+    normal_form: 3NF

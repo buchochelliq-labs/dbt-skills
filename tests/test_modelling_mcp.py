@@ -34,10 +34,12 @@ class ModellingMCPTests(unittest.TestCase):
         self.env = os.environ.copy()
         self.env["PYTHONPATH"] = str(ROOT / "src")
 
-    def client(self, with_policy=True, mode="auto"):
+    def client(self, with_policy=True, mode="auto", catalog_config=None):
         args = ["-m", "dbt_skills.modelling_mcp", "--project-dir", str(self.root), "--target-path", "build"]
         if with_policy:
             args += ["--policy", str(self.policy)]
+        if catalog_config is not None:
+            args += ["--catalog-config", str(catalog_config)]
         return Client(StdioServerParameters(command=sys.executable, args=args, env=self.env, cwd=ROOT), read_timeout_seconds=20, mode=mode)
 
     def test_real_stdio_workflow_and_snapshot_refresh(self):
@@ -129,4 +131,41 @@ class ModellingMCPTests(unittest.TestCase):
                     context = (await client.call_tool("modelling_context", {})).structured_content
                     self.assertEqual(context["project_name"], "fixture")
                     self.assertIsNotNone(context["policy"])
+        asyncio.run(exercise())
+
+    def test_optional_catalog_context_and_source_to_name_workflow(self):
+        async def exercise():
+            metadata = self.root / 'catalog.json'
+            metadata.write_text(json.dumps({'schema_version': 1, 'generated_at': '2026-10-23T08:00:00Z',
+                'assets': [{'id': 'urn:example:customer', 'native_id': 'xyz.customer', 'facts': {
+                    'relation': {'catalog': 'demo', 'schema': 'xyz', 'name': 'customer'},
+                    'columns': [{'name': 'customer_id', 'type': 'int64', 'nullable': False}]}}]}))
+            config = self.root / 'catalogs.json'
+            config.write_text(json.dumps({'schema_version': 1, 'providers': [
+                {'id': 'local', 'type': 'file', 'path': 'catalog.json', 'scope': 'development'}]}))
+            client = self.client(catalog_config=config)
+            async with client:
+                tools = {t.name for t in (await client.list_tools()).tools}
+                self.assertTrue({'catalog_status', 'catalog_search', 'catalog_resolve'} <= tools)
+                context = (await client.call_tool('modelling_context', {})).structured_content
+                key = context['context_id']
+                self.assertIsNotNone(context['catalog'])
+                status = (await client.call_tool('catalog_status', {'context_id': key})).structured_content
+                self.assertEqual(status['providers'][0]['status'], 'available')
+                self.assertEqual(status['providers'][0]['capabilities'], ['relation', 'columns', 'primary_key', 'foreign_keys'])
+                found = (await client.call_tool('catalog_search', {'context_id': key, 'provider_id': 'local', 'query': 'customer'})).structured_content
+                asset = found['assets'][0]['asset_id']
+                facts = (await client.call_tool('catalog_resolve', {'context_id': key, 'asset_id': asset, 'fields': ['relation', 'columns', 'primary_key']})).structured_content
+                self.assertEqual(facts['status'], 'partial')
+                self.assertEqual(facts['missing'], ['primary_key'])
+                rendered = (await client.call_tool('modelling_render', {'context_id': key, 'rule_id': 'staging', 'values': {'concept': 'customer'}})).structured_content
+                self.assertEqual(rendered['value'], 'stg_customer.sql')
+                metadata.write_text('{}')
+                changed = (await client.call_tool('catalog_resolve', {'context_id': key, 'asset_id': asset, 'fields': ['columns']})).structured_content
+                self.assertEqual(changed['status'], 'error')
+                self.assertEqual(changed['selected'], {})
+                with self.assertRaises(MCPError):
+                    await client.call_tool('modelling_refresh', {})
+                with self.assertRaises(MCPError):
+                    await client.call_tool('catalog_search', {'context_id': key, 'provider_id': 'unknown', 'query': ''})
         asyncio.run(exercise())
