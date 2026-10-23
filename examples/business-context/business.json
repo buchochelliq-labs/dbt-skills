@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "business_context",
+  "concepts": [
+    {
+      "scope": {
+        "domain": "sales"
+      },
+      "status": "reviewed",
+      "rationale": "Confirmed business vocabulary.",
+      "recorded_by": "domain_owner",
+      "recorded_at": "2026-10-23T18:00:00Z",
+      "id": "customer",
+      "name": "Customer",
+      "definition": "A party buying our services."
+    },
+    {
+      "scope": {
+        "domain": "sales"
+      },
+      "status": "reviewed",
+      "rationale": "Confirmed business vocabulary.",
+      "recorded_by": "domain_owner",
+      "recorded_at": "2026-10-23T18:00:00Z",
+      "id": "order",
+      "name": "Order",
+      "definition": "A commitment to purchase services."
+    }
+  ],
+  "relationships": [
+    {
+      "scope": {
+        "domain": "sales"
+      },
+      "status": "reviewed",
+      "rationale": "Confirmed business vocabulary.",
+      "recorded_by": "domain_owner",
+      "recorded_at": "2026-10-23T18:00:00Z",
+      "id": "order_customer",
+      "from": "order",
+      "to": "customer",
+      "predicate": "placed_by",
+      "definition": "An order is placed by a customer."
+    }
+  ]
+}

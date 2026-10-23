@@ -4,6 +4,7 @@ from copy import deepcopy
 import json
 import re
 
+from .business_context import load_business_context, validate_business_context
 from .catalog import CatalogError, FIELDS, _document, load_catalog
 from .design_decisions import decision_context, select_decision, answer_identity, validate_decisions, load_design_decisions
 from .context_limits import ContextLimitError, check_bounds
@@ -49,9 +50,11 @@ def _request(request):
         raise PlanningError('Use bounded intent and one to eight distinct assets with supported design assertions') from None
 
 
-def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=None):
+def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=None, business=None):
     """Host agent interprets intent; this core assembles evidence and review questions."""
     _request(request)
+    if business is not None:
+        validate_business_context(business['document'])
     if decisions is not None:
         validate_decisions(decisions['document'])
     validate_document(policy['document'])
@@ -62,6 +65,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
     result = {'schema_version': 1, 'status': 'needs_clarification', 'intent': request['intent'],
               'entities': [], 'relationships': [], 'suggestions': [], 'questions': [], 'evidence': {},
               'policy_provenance': deepcopy(policy['provenance']),
+              'business_context': deepcopy(business['provenance']) if business else None,
               'source': {k: manifest.get(k) for k in ('path', 'sha256', 'status', 'identity', 'freshness', 'generated_at', 'observed_at')},
               'impact_complete': False, 'validation_executed': [],
               'limitations': ['Design hypotheses require human review; no standards or decisions are updated',
@@ -104,7 +108,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
     entities = {}
     assets_by_id = {a['asset_id']: a for a in request['assets']}
     contexts = {a['asset_id']: decision_context(request['intent'], a, policy, manifest,
-                result['evidence'][a['asset_id']], catalog.config) for a in request['assets']}
+                result['evidence'][a['asset_id']], catalog.config, business) for a in request['assets']}
     for asset in request['assets']:
         identifier = asset['asset_id']
         context = contexts[identifier]
@@ -246,12 +250,14 @@ def main(argv=None):
     parser.add_argument('--catalog-config', required=True)
     parser.add_argument('--target-path')
     parser.add_argument('--design-decisions')
+    parser.add_argument('--business-context')
     args = parser.parse_args(argv)
     try:
         project = discover_project(args.project_dir, target_path=args.target_path)
         request, _ = _document(project.root / args.request)
         result = plan_model(project, load_document(project.root / args.policy), load_catalog(project.root / args.catalog_config), request,
-                            decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None)
+                            decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None,
+                            business=load_business_context(project.root / args.business_context) if args.business_context else None)
         print(json.dumps(result, indent=2))
         return {'pending_review': 0, 'needs_clarification': 2, 'blocked': 1}[result['status']]
     except (ValueError, OSError, TypeError, KeyError, RuntimeError):

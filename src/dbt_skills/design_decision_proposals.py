@@ -6,7 +6,7 @@ from .context_limits import ContextLimitError, check_bounds
 from .model_planning import PlanningError, _request, plan_model
 
 
-def prepare_design_decision(project, policy, catalog, request, *, decisions=None, snapshot=None):
+def prepare_design_decision(project, policy, catalog, request, *, decisions=None, snapshot=None, business=None):
     """Derive evidence from the selected context, never from caller-supplied hashes."""
     try:
         check_bounds(request)
@@ -29,7 +29,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     if decisions is not None:
         validate_decisions(decisions['document'])
     # Do not let existing records supply choices: a new proposal must be explicit.
-    planning = plan_model(project, policy, catalog, plan_request, snapshot=snapshot)
+    planning = plan_model(project, policy, catalog, plan_request, snapshot=snapshot, business=business)
     result = {'status': 'needs_clarification', 'planning': planning, 'questions': [],
               'proposed_document': None, 'decisions_patch': [],
               'decisions_base': deepcopy(decisions['provenance']) if decisions else None,
@@ -92,6 +92,7 @@ def main(argv=None):
     import argparse
     import json
     from .catalog import _document, load_catalog
+    from .business_context import load_business_context
     from .design_decisions import load_design_decisions
     from .modelling_policy import load_document
     from .project import discover_project
@@ -101,13 +102,15 @@ def main(argv=None):
     parser.add_argument('--policy', required=True)
     parser.add_argument('--catalog-config', required=True)
     parser.add_argument('--design-decisions')
+    parser.add_argument('--business-context')
     parser.add_argument('--target-path')
     args = parser.parse_args(argv)
     try:
         project = discover_project(args.project_dir, target_path=args.target_path)
         request, _ = _document(project.root / args.request)
         result = prepare_design_decision(project, load_document(project.root / args.policy), load_catalog(project.root / args.catalog_config), request,
-                                         decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None)
+                                         decisions=load_design_decisions(project.root / args.design_decisions) if args.design_decisions else None,
+                                         business=load_business_context(project.root / args.business_context) if args.business_context else None)
         print(json.dumps(result, indent=2))
         return {'pending_review': 0, 'needs_clarification': 2, 'blocked': 1}[result['status']]
     except (ValueError, OSError, TypeError, KeyError, RuntimeError):
