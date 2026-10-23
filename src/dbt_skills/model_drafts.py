@@ -376,8 +376,8 @@ def prepare_model(project, policy_path, catalog, request, *, snapshot=None, cont
     relation = facts['selected']['relation']['value']
     if relation != {'catalog': source.get('database'), 'schema': source.get('schema'), 'name': source.get('identifier', source.get('name'))}:
         return _questions('Catalog asset and selected dbt source physical relation do not match', catalog=facts)
-    available = {c['name'] for c in facts['selected']['columns']['value']}
-    if not set(request['columns']) <= available or not set(request['grain']) <= set(request['columns']):
+    available = {c['name']: c for c in facts['selected']['columns']['value']}
+    if not set(request['columns']) <= set(available) or not set(request['grain']) <= set(request['columns']):
         return _questions('Projection columns must exist in the catalog; grain columns must be included')
     temporal = current_row_design(request, available)
     if temporal is not None and temporal.get('status') == 'needs_clarification':
