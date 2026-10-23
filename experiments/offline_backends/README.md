@@ -7,7 +7,8 @@ No product source or dependency requirements changed. No real source data used.
 **Update:** [Second-pass evidence](SECOND_PASS.md) now exercises the real Cognee
 graph-only pipeline, permission checks, source deletion and branching graphs.
 Further reports: [policy/encryption fit](POLICY_FIT.md) and
-[generation recovery](RECOVERY.md). The observations below describe the initial pass.
+[generation recovery](RECOVERY.md), and [real index activation](PROJECTION.md).
+The observations below describe the initial pass.
 
 ## Interim decision
 

@@ -52,8 +52,16 @@ only after encryption and generation-consistency gates. No production adapter ex
 The fourth slice, `experiments/offline_backends/RECOVERY.md`, verifies six abrupt
 process-exit cases against the real SQLCipher generation writer: full/incremental
 sync retain a complete old or new generation, resume, and reopen consistently.
-Its 54 projection-gate checks are a prototype contract only. Actual derived-index
-interruption/activation and in-flight permission revision checks remain unverified.
+Its 54 projection-gate checks are a prototype contract only; that slice did not
+exercise actual derived-index interruption/activation or in-flight revision changes.
+The fifth slice in `experiments/offline_backends/PROJECTION.md` now tests four
+process-exit boundaries with separate real SQLCipher/FTS5 generation files and an
+encrypted activation registry. Rebuild, two-source identity, stale-index withholding
+and serial cleanup pass. An injected revision change is detected during retrieval;
+live revocation, concurrent snapshot capture and reader-safe GC remain unverified.
+Keep a single encrypted store as the simpler default; separate projections must earn
+their extra lifecycle cost. Next selection work: bounded evidence retrieval/relevance
+and an ADR, not a production backend framework.
 
 ## Purpose and guardrails
 
