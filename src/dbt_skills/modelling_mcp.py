@@ -173,7 +173,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                 if current['provenance'] != state['design_decisions']['provenance']:
                     raise DesignDecisionError("Selected design decisions changed; refresh context before planning")
 
-        @server.tool(annotations=_READ, description="Prepare a pending grain/history decision document and review patch from explicit choices and pinned evidence. Requires rationale and attribution; no writes or approval. Existing matching records require an explicit replacement ID.")
+        @server.tool(annotations=_READ, description="Prepare a pending design decision document, including optional semantic answers, and review patch from explicit choices and pinned evidence. Requires rationale and attribution; no writes or approval. Existing matching records require an explicit replacement ID.")
         def model_propose_decision(context_id: str, request: dict[str, object]) -> dict[str, object]:
             def run():
                 check_planning_files()

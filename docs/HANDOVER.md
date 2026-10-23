@@ -143,3 +143,13 @@ policy/naming resolution, metadata catalogs, design decision records and proposa
 remain. Shared response bounds now live in context_limits; planner fixtures contain
 synthetic metadata only. Next: broader decision memory, catalog adapters and
 provenance-preserving caching/TTL; live Copilot verification remains deferred.
+
+## Semantic answer context (2026-10-23)
+
+Design decisions now accept optional bounded question/answer/rationale entries.
+Read-only proposals derive evidence and accept only active semantic question codes.
+The shared planner attaches matched answers with document/hash/locator provenance,
+verified false and review required. Stale/conflicting/ambiguous decisions do not
+supply active answers. No policy promotion, SQL rules or automatic writes. CLI and
+MCP share the same core; old records remain supported. This is single-asset answer
+memory, not yet cross-entity design records or a generic concept notebook.

@@ -1,7 +1,7 @@
 """Prepare review-only saved design choices; never write or approve a record."""
 from copy import deepcopy
 
-from .design_decisions import DesignDecisionError, validate_decisions
+from .design_decisions import DesignDecisionError, validate_decisions, validate_answers
 from .context_limits import ContextLimitError, check_bounds
 from .model_planning import PlanningError, _request, plan_model
 
@@ -17,8 +17,10 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
         if len(plan_request['assets']) != 1 or not {'grain', 'history'} <= set(plan_request['assets'][0]):
             raise ValueError
         metadata = request['record']
-        if not isinstance(metadata, dict) or set(metadata) != {'id', 'rationale', 'recorded_by', 'recorded_at'}:
+        if not isinstance(metadata, dict) or set(metadata) - {'answers'} != {'id', 'rationale', 'recorded_by', 'recorded_at'}:
             raise ValueError
+        if 'answers' in metadata:
+            validate_answers(metadata['answers'])
         replacement = request.get('replace_record_id')
         if 'replace_record_id' in request and (not isinstance(replacement, str) or not replacement.strip() or len(replacement) > 128):
             raise ValueError
@@ -35,12 +37,16 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
                                       'Verify the decisions base digest and source evidence have not changed before saving',
                                       'Attribution is caller-supplied, not authenticated approval; saving does not prove grain or normal form'],
               'limitations': ['No files or standards are changed; this proposal is not an approved decision',
-                              'Only explicit grain/history choices are recorded; semantic questions remain open']}
+                              'Explicit choices and semantic answers are assertions; review questions remain open']}
     if planning['status'] == 'blocked':
         result['status'] = 'blocked'
         return result
     blocking = {'required_metadata', 'catalog_conflict', 'project_snapshot', 'grain_columns_missing'}
     if not planning['entities'] or any(q['code'] in blocking for q in planning['questions']):
+        return result
+    active_codes = {q['code'] for q in planning['questions']}
+    if any(a['question_code'] not in active_codes for a in metadata.get('answers', [])):
+        result['questions'].append({'code': 'inactive_design_answer', 'message': 'Record answers only for questions raised by this plan.'})
         return result
     context = planning['entities'][0]['decision_context']
     asset = plan_request['assets'][0]
