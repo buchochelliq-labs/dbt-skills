@@ -86,3 +86,7 @@ Typed provider interface, strict metadata-only JSON file provider and ordered fa
 ## Source projection drafts (2026-10-23)
 
 Shared prepare API, CLI and optional model_draft MCP tool now generate reviewable SQL/YAML for an explicitly mapped source, selected columns and asserted grain. Separate operator CLI creates new files only with the reviewed digest and unchanged input hashes. See [model drafts](MODEL_DRAFTS.md). No SQL execution, automatic approval, changes to existing models, joins/history or normal-form proof. Live host and output-safe dbt validation remain pending.
+
+## Applied draft validation (2026-10-23)
+
+Read-only local validation checks envelope/input revisions, exact applied bytes, filename inventory and the restricted renderer. MCP accepts retained draft IDs only (four per context; refresh clears them). Separate operator-only CLI runs dbt parse with reviewed digest, explicit executable/profiles, timeout and suppressed/discarded output. Real dbt-core 1.11.7 + duckdb 1.10.0 smoke coverage uses no source rows. See [validation workflow](MODEL_DRAFTS.md#validate-applied-files). This supersedes the pending parse-runner notes above; warehouse validation, live Copilot verification, joins/history and changes to existing files remain open.
