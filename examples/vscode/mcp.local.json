@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "dbt-modelling": {
+      "type": "stdio",
+      "command": "/absolute/path/to/python",
+      "args": [
+        "-m",
+        "dbt_skills.modelling_mcp",
+        "--project-dir",
+        "/absolute/path/to/dbt-project",
+        "--policy",
+        "modelling.yml"
+      ],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/dbt-skills/src"
+      }
+    }
+  }
+}

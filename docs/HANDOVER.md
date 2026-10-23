@@ -74,3 +74,7 @@ The test workflow is the verification source for the supported Windows, macOS, a
 - Keep user approval explicit for state-changing tools and commands.
 - Run targeted tests while iterating, then the full suite and cross-platform CI for storage/runtime behavior.
 - Update the roadmap and relevant operator documentation when a capability or boundary changes.
+
+## Modelling MCP adapter (2026-10-23)
+
+Thin read-only stdio adapter now exposes the existing core through seven tools, with pinned context IDs, policy-change checks, paging, pending proposals and no UOL dependency. See [VS Code setup](COPILOT_VSCODE.md). Real protocol tests cover the workflow; live VS Code/Copilot validation remains outstanding. SQL/YAML model generation and catalog providers remain future work.
