@@ -1,6 +1,6 @@
 # Copilot in VS Code: local modelling tools
 
-This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. With policy and catalog configuration, `model_draft` also generates source-projection SQL/YAML for review; a separate operator CLI can create the reviewed files. It does not apply standards decisions, prove normal forms or access warehouses. See [model drafts](MODEL_DRAFTS.md). UOL is optional and is not imported by this adapter.
+This first adapter exposes the shared modelling core over MCP stdio. It supports context, clarification, naming comparison and pending decision proposals. It gives the agent evidence for designing entities and relationships across tables. It does not generate or apply model SQL, run dbt, prove normal forms or access warehouses. UOL is optional and is not imported by this adapter.
 
 ## Setup
 
@@ -45,10 +45,6 @@ A live VS Code/Copilot session has **not** been verified in the implementation e
 
 Configuration references (checked 2026-10-23): [MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers), [MCP configuration](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), [custom agent files](https://code.visualstudio.com/docs/agents/reference/custom-agent-file-reference).
 
-### Validate an applied draft
-
-After operator application, call `model_validate(context_id, draft_id)` for a draft returned by this server. Only the last four drafts are retained; context refresh invalidates them. The tool checks local integrity and the restricted projection contract, returning fixed statuses. It does not run dbt. For an explicitly approved local parse, follow the [operator CLI instructions](MODEL_DRAFTS.md#optional-operator-only-dbt-parse). A local or parse pass is not proof of warehouse correctness or normal form.
-
 ### Plan the data model before SQL
 
 With policy and catalogs configured, call `model_plan(context_id, request)` to ground the design in selected assets, scoped standards, declared keys/relationships and existing resource lineage. Discuss the returned questions with the human before choosing grain/history or generating files. See the [request and walkthrough](MODEL_PLANNING.md). The tool returns design hypotheses and provenance, never writes or executes SQL.
@@ -65,14 +61,3 @@ and review patch from explicit choices, rationale and attribution. It derives ev
 hashes from the pinned context. Review and save the returned `proposed_document` through
 your normal file workflow, then refresh; the tool never saves or approves it. See the
 [proposal request](MODEL_PLANNING.md#prepare-a-decision-for-review).
-
-### Revising a retained generated model
-
-With policy and catalog selected, `model_revise(context_id, draft_id, request)`
-prepares a review-only revision of an unchanged applied draft retained in this
-server session. Supply a complete new request. It returns a sealed revision and
-SQL/YAML diffs; it cannot approve or write changes. Apply through the explicit
-operator CLI described in [MODEL_DRAFTS.md](MODEL_DRAFTS.md), then call
-`model_validate` with the proposed draft ID. Proposed drafts share the existing
-four-draft retention limit; refresh invalidates all retained drafts. Saved base
-JSON remains usable through the CLI if its files and evidence still validate.

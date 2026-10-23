@@ -2,14 +2,14 @@
 from copy import deepcopy
 
 from .design_decisions import DesignDecisionError, validate_decisions
-from .model_drafts import DraftError, _bounded
+from .context_limits import ContextLimitError, check_bounds
 from .model_planning import PlanningError, _request, plan_model
 
 
 def prepare_design_decision(project, policy, catalog, request, *, decisions=None, snapshot=None):
     """Derive evidence from the selected context, never from caller-supplied hashes."""
     try:
-        _bounded(request)
+        check_bounds(request)
         if not isinstance(request, dict) or set(request) - {'plan', 'record', 'replace_record_id'}:
             raise ValueError
         plan_request = request['plan']
@@ -22,7 +22,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
         replacement = request.get('replace_record_id')
         if 'replace_record_id' in request and (not isinstance(replacement, str) or not replacement.strip() or len(replacement) > 128):
             raise ValueError
-    except (ValueError, TypeError, KeyError, DraftError, PlanningError):
+    except (ValueError, TypeError, KeyError, ContextLimitError, PlanningError):
         raise DesignDecisionError('Supply one explicit grain/history choice, record attribution and optional replacement ID') from None
     if decisions is not None:
         validate_decisions(decisions['document'])
@@ -69,8 +69,8 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     result.update(status='pending_review', proposed_document=document,
                   decisions_patch=patch if decisions else [{'op': 'add', 'path': '', 'value': document}])
     try:
-        _bounded(result)
-    except DraftError:
+        check_bounds(result)
+    except ContextLimitError:
         raise DesignDecisionError('Design proposal exceeds response limits; select a smaller decisions file or narrower policy') from None
     return result
 

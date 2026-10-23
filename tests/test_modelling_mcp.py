@@ -146,7 +146,8 @@ class ModellingMCPTests(unittest.TestCase):
             client = self.client(catalog_config=config)
             async with client:
                 tools = {t.name for t in (await client.list_tools()).tools}
-                self.assertTrue({'catalog_status', 'catalog_search', 'catalog_resolve'} <= tools)
+                self.assertTrue({'catalog_status', 'catalog_search', 'catalog_resolve', 'model_plan', 'model_propose_decision'} <= tools)
+                self.assertFalse({'model_draft', 'model_revise', 'model_validate'} & tools)
                 context = (await client.call_tool('modelling_context', {})).structured_content
                 key = context['context_id']
                 self.assertIsNotNone(context['catalog'])

@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 import yaml
 
-import test_model_drafts
+import metadata_fixture
 from dbt_skills.catalog import load_catalog
 from dbt_skills.modelling_policy import load_document
 from dbt_skills.project_artifacts import inspect_artifacts
@@ -13,7 +13,7 @@ from dbt_skills.model_planning import plan_model, PlanningError
 
 class ModelPlanningTests(unittest.TestCase):
     def setUp(self):
-        self.fixture = test_model_drafts.ModelDraftTests()
+        self.fixture = metadata_fixture.MetadataFixture()
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
         self.root = self.fixture.root

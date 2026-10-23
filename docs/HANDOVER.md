@@ -6,6 +6,21 @@
 **Snapshot:** 2026-10-23  
 **Repository:** `buchochelliq-labs/dbt-skills`
 
+## Product boundary — clarified 2026-10-23
+
+This product supplies reliable context so an agent can create or revise a **data
+model**: entities, relationships, keys, grain, normalisation and modelling rules
+across multiple tables. A dbt model is one implementation artifact, not the whole
+data model. The agent reasons over the supplied context, asks clarifying questions
+and explains design choices. The core assembles evidence and preserves decisions;
+it does not replace that reasoning with hard-coded SQL templates.
+
+Model SQL/YAML generation, current-row/deletion/lookup/event-history renderers,
+SCD implementations, model-file application/revision and a dbt execution runner
+are outside this product boundary and have been removed. SCD implementation is
+not a deferred requirement. Describing temporal semantics in metadata remains
+valid context. Use the host agent and existing dbt tooling for implementation.
+
 ## Purpose and guardrails
 
 This repository is building an open-source, local-first alternative to dbt Wizard, focused on project context, agent workflows, and catalog/ontology grounding. It should complement the public [`dbt-labs/dbt-agent-skills`](https://github.com/dbt-labs/dbt-agent-skills) catalog rather than duplicate general dbt skills. Do not infer that a capability is absent from dbt Wizard merely because it is not in a public repository.
@@ -14,14 +29,12 @@ Keep the core useful without dbt Wizard, mandatory hosted services, or OpenDataS
 
 ## Current workflow baseline
 
-As of 2026-10-23, merged #47/#48 provide source-projection prepare/review/apply,
-read-only applied validation and an operator-only output-safe dbt parse runner.
-Merged #49 adds metadata-grounded entity/relationship hypotheses and targeted
-standards/grain/history questions before SQL generation; #50 completes supported
-naming targets during source-projection drafting. The next slice reuses explicitly
-selected human-owned grain/history decisions with evidence fingerprints. See the progress
-sections below for exact boundaries. Live Copilot UI verification and broader modelling
-remain outstanding; protocol tests do not establish live host behavior.
+The shared context tools expose project metadata, catalog facts, naming conventions,
+scoped modelling standards and entity/relationship evidence. Human-owned design
+records retain grain and temporal intent with rationale and evidence fingerprints;
+review-only proposals help the agent prepare updates. These are grounding inputs
+for the agent's data-model design, not a SQL generator. Live Copilot UI verification
+remains outstanding; protocol tests do not establish live host behavior.
 
 ## Earlier infrastructure baseline
 
@@ -88,49 +101,15 @@ The test workflow is the verification source for the supported Windows, macOS, a
 
 ## Modelling MCP adapter (2026-10-23)
 
-Thin read-only stdio adapter now exposes the existing core through seven tools, with pinned context IDs, policy-change checks, paging, pending proposals and no UOL dependency. See [VS Code setup](COPILOT_VSCODE.md). Real protocol tests cover the workflow; live VS Code/Copilot validation remains outstanding. SQL/YAML model generation and catalog providers remain future work.
+Thin read-only stdio adapter now exposes the existing core through seven tools, with pinned context IDs, policy-change checks, paging, pending proposals and no UOL dependency. See [VS Code setup](COPILOT_VSCODE.md). Real protocol tests cover the workflow; live VS Code/Copilot validation remains outstanding. Catalog providers are described below; SQL generation is outside scope.
 
 ## Catalog provider slice (2026-10-23)
 
 Typed provider interface, strict metadata-only JSON file provider and ordered fact-group resolver now back optional catalog tools in the modelling MCP server. Same context ID and atomic refresh, explicit shared asset IDs, scoped provenance, no denial/error fallback, encountered conflicts retained. See [contract](CATALOG.md) and [customer walkthrough](../examples/catalog-workflow/README.md). This is not persistent caching or live UC/OpenMetadata integration. Example SQL/YAML is illustrative, not generated/applied or dbt-validated. Issues #18/#16/#39 remain open.
 
-## Source projection drafts (2026-10-23)
-
-Shared prepare API, CLI and optional model_draft MCP tool now generate reviewable SQL/YAML for an explicitly mapped source, selected columns and asserted grain. Separate operator CLI creates new files only with the reviewed digest and unchanged input hashes. See [model drafts](MODEL_DRAFTS.md). No SQL execution, automatic approval, changes to existing models, joins/history or normal-form proof. Live host and output-safe dbt validation remain pending.
-
-## Applied draft validation (2026-10-23)
-
-Read-only local validation checks envelope/input revisions, exact applied bytes, filename inventory and the restricted renderer. MCP accepts retained draft IDs only (four per context; refresh clears them). Separate operator-only CLI runs dbt parse with reviewed digest, explicit executable/profiles, timeout and suppressed/discarded output. Real dbt-core 1.11.7 + duckdb 1.10.0 smoke coverage uses no source rows. See [validation workflow](MODEL_DRAFTS.md#validate-applied-files). This supersedes the pending parse-runner notes above; warehouse validation, live Copilot verification, joins/history and changes to existing files remain open.
-
 ## Catalog-grounded design planning (2026-10-23)
 
 Shared read-only planner, CLI and optional MCP model_plan now assemble selected entity/key/relationship hypotheses, scoped standards, dependency/history questions and existing-model reuse candidates. Uses the same validated snapshot; preserves catalog provenance/conflicts and blocks on provider denial/error. See [design planning](MODEL_PLANNING.md). Semantic reasoning and human decisions remain necessary: no normalisation proof, automatic decomposition, joins/history SQL or existing-file edits.
-
-## Draft naming constraint coverage (2026-10-23)
-
-Source-projection drafts now check applicable model_id and directory conventions
-alongside selected model/properties file rules. Unknown scope, overlapping constraints,
-missing tokens and mismatches return clarification with provenance. Unrelated scoped
-rules do not block generation; applicable warehouse_alias/column rules still do.
-Applied validation shares the same check. See [naming constraints](MODEL_DRAFTS.md#additional-naming-constraints).
-
-## Column naming during projection generation (2026-10-23)
-
-Optional per-source-column values/scope now resolve declared column templates into
-quoted SQL aliases and YAML names/tests. Source grain and catalog facts stay unchanged;
-output grain and mapping retain rule provenance. Scope/value conflicts, ambiguous rules,
-missing tokens, unsafe outputs and collisions clarify. Shared applied validation
-recomputes the mapping. Includes a separate example and real-dbt alias parse coverage.
-This supersedes the earlier unsupported-column note; warehouse aliases remain unsupported.
-
-## Literal warehouse alias conventions (2026-10-23)
-
-Projection drafting now resolves applicable warehouse_alias rules into explicit literal
-dbt alias config, preserving model filename/ID/YAML identity. Known manifest/model-file
-collisions, unsafe identifiers and ambiguous naming context clarify. Alias provenance
-is recorded and applied validation recomputes it. Custom alias macros, target schema/
-database and live relation uniqueness still need review; no warehouse checks occur.
-This supersedes earlier unsupported-alias notes.
 
 ## Saved design decisions progress — 2026-10-23
 
@@ -138,13 +117,11 @@ The planner accepts an operator-selected `--design-decisions` JSON file in CLI a
 MCP. Exact intent/asset/scope and evidence fingerprints govern grain/history reuse.
 Stale, conflicting or ambiguous records require clarification; rationale, attribution
 and file/hash/locator provenance remain visible. Attribution is not authentication.
-The MCP checks for file changes and requires explicit refresh. No automatic writes,
-standards promotion, semantic proof or plan-to-apply path was added. See
+The MCP checks for file changes and requires explicit refresh. No automatic writes, standards promotion or semantic proof was added. See
 [design planning](MODEL_PLANNING.md) for the copy/review/save workflow.
 
-Next priorities remain richer semantic decision handling, joins/history generation,
-existing-model edits, live Copilot VS Code verification, remote catalog adapters and
-provenance-aware cache/TTL work. Do not merge or release on the user's behalf.
+Next priorities are richer semantic decision context, remote catalog adapters and
+provenance-aware cache/TTL work. Live Copilot VS Code verification remains deferred. Do not merge or release on the user's behalf.
 
 ## Reviewable design decision proposals — 2026-10-23
 
@@ -158,67 +135,11 @@ conflicting catalogs and denied access prevent proposals. Remaining semantic que
 stay visible. No writes, authenticated approval, normal-form proof or automatic
 plan-to-draft conversion. See MODEL_PLANNING.md for the full workflow.
 
-## Richer modelling: current-row selection — 2026-10-23
 
-User prioritised richer models, design memory, remote catalogs, cache/TTL and release
-work before live Copilot verification. The first richer-model slice adds `history=current`
-with explicit sort/null placement, unique-ordering assertion, retain-latest deletion
-handling and rationale. Shared generation uses a nested row-number window, existing
-naming/alias rules and create-only apply; validation recomputes SQL/design. Synthetic
-SQL tests cover selection and dbt parse stays output-safe. No warehouse reads occur.
-Ties remain an unverified human assertion; deletion markers are kept, not filtered.
-Next richer-model gaps: active-only deletion handling, joins, full history and reviewed
-existing-file changes. Live Copilot UI validation remains deferred by user direction.
+## Current removal work
 
-## Current-row deletion filtering — 2026-10-23
-
-Current-row drafts now accept explicit `exclude_marked` deletion policy with a
-catalog-declared boolean marker and required null retain/exclude choice. Ranking
-precedes filtering, so a winning tombstone cannot resurrect an older active row.
-Markers can remain internal or follow normal output naming when projected. Existing
-retain_latest rules remain compatible; applied validation recomputes the new rule.
-Synthetic SQL, MCP and real dbt parse cover the workflow without warehouse data.
-Next richer-model priorities: joins, full history and reviewed existing-file edits.
-
-## Single lookup joins — 2026-10-23
-
-The first join slice accepts one explicit left/inner equality lookup between distinct
-dbt sources in a new source-row model. Metadata checks require exact relation mapping,
-matching known key types and a declared lookup PK matching right keys. Contradictory
-FKs and output naming collisions clarify. Human-confirmed many-to-one/null behavior
-and rationale remain unverified. Both catalog reports and consulted provider revisions
-are preserved; denial withholds joined context. Applied validation reconstructs SQL
-and design. No warehouse reads or existing-file edits.
-
-Remaining richer-model work includes model-ref inputs, multi/temporal joins, full
-history and safe existing-file changes. Broader memory/catalog/cache/release priorities
-remain next; live Copilot verification stays deferred by user direction.
-
-## Event-history intervals and branch integration — 2026-10-23
-
-Historical drafts now derive half-open validity intervals from complete retained
-source events. Require date/timestamp effective time, explicit unique/non-null and
-complete-event assertions, deletion-event retention, table/view materialization and
-rationale. Generated interval fields follow column conventions. Output grain includes
-validity start; business key alone no longer gets a uniqueness test. No source reads,
-snapshot capture, history compression or incremental merge is claimed.
-
-Repository check found #53–#55 merged into their stacked feature branches rather than
-main. The next PR targets main and carries the reviewed current-row/deletion/lookup
-changes plus event history. No automatic merge/release. Remaining richer-model gaps:
-stateful snapshots/SCD2, model refs, temporal/multiple joins and safe existing-file edits.
-
-### Generated-model revisions (2026-10-23)
-
-Implemented shared `model_revisions` preparation and operator-only apply plus
-read-only MCP `model_revise`. Revisions validate an unchanged generated base,
-retain its paths, expose before/after hashes and diffs, require the exact reviewed
-revision digest and validate replacements. Staged two-file replacement attempts
-rollback without overwriting independently changed outputs; it is not atomic.
-Manual model adoption, changed evidence and renames remain unsupported. This
-completes the first bounded edit workflow, not general existing-model migration.
-
-Validation: 281 tests passed with real dbt parse enabled, including CLI/MCP
-revision flows, tamper/drift rejection, rollback after second-write and final
-validation failures, preservation of independently changed outputs and file modes.
-Independent review found no critical/important issue within the stated scope.
+Removed generator/apply/revision/parse modules and their MCP tools. Context planning,
+policy/naming resolution, metadata catalogs, design decision records and proposals
+remain. Shared response bounds now live in context_limits; planner fixtures contain
+synthetic metadata only. Next: broader decision memory, catalog adapters and
+provenance-preserving caching/TTL; live Copilot verification remains deferred.

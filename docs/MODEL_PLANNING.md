@@ -77,10 +77,9 @@ other semantic answers still require human/host reasoning and a reviewed decisio
 This tool does not persist answers, promote learned standards, apply exceptions or mark
 dependency evidence as proved. It does not parse arbitrary business prose into SQL.
 
-Once the human has selected a supported source-row projection, use the existing
-[prepare/review/apply/validate workflow](MODEL_DRAFTS.md). Joins, current/history transforms,
-changes to existing files and automatic conversion of design answers remain follow-ups.
-There is no automatic plan-to-apply shortcut and no warehouse execution.
+The host agent uses this evidence to propose a data-model design across entities
+and relationships. SQL generation, file application and dbt execution are not
+provided by this context layer.
 
 ## Reuse reviewed grain and history decisions
 
@@ -135,8 +134,8 @@ questions still apply. A saved choice never promotes a standard or proves a key.
 
 MCP pins the selected decisions file alongside project context. If it changes,
 `model_plan` requires `modelling_refresh`; old context IDs then become invalid.
-The planner does not persist arbitrary semantic answers yet, and drafting still
-requires an explicit reviewed request. There is no automatic plan-to-apply shortcut.
+The planner does not persist arbitrary semantic answers yet. The agent uses
+these records as context when discussing and revising the complete data-model design.
 
 ## Prepare a decision for review
 
@@ -192,5 +191,4 @@ both additions and replacements; the patch alone is not a concurrent-write guard
 
 MCP takes no file path in the tool call. Changes to selected policy or decisions
 require refresh, just as for `model_plan`. After saving an adopted proposal, refresh
-and plan again to see the reused decision and its provenance. Draft generation still
-requires an explicit reviewed request.
+and plan again to see the reused decision and its provenance. The agent remains responsible for reasoning about the complete data-model design.

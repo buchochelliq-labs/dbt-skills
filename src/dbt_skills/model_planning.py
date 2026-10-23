@@ -6,7 +6,7 @@ import re
 
 from .catalog import CatalogError, FIELDS, _document, load_catalog
 from .design_decisions import decision_context, select_decision, validate_decisions, load_design_decisions
-from .model_drafts import DraftError, _bounded
+from .context_limits import ContextLimitError, check_bounds
 from .modelling_policy import load_document, validate_document
 from .project import discover_project
 from .project_artifacts import inspect_artifacts
@@ -18,7 +18,7 @@ class PlanningError(ValueError):
 
 def _request(request):
     try:
-        _bounded(request)
+        check_bounds(request)
         if not isinstance(request, dict) or set(request) != {'intent', 'assets'}:
             raise ValueError
         if not isinstance(request['intent'], str) or not request['intent'].strip() or len(request['intent']) > 2048:
@@ -216,8 +216,8 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
 
 def _limit(result):
     try:
-        _bounded(result)
-    except DraftError:
+        check_bounds(result)
+    except ContextLimitError:
         raise PlanningError('Design evidence exceeds the response limit; select fewer assets or narrower policy') from None
 
 
