@@ -3,6 +3,9 @@
 Original deterministic sample data, inspired by a familiar trading-company domain;
 not a copy of Microsoft's Northwind database. Python standard library only.
 
+For environment setup, the CLI and a complete VS Code session, follow the
+[local quickstart](../../docs/RUN_LOCALLY.md).
+
 ```sh
 python examples/northwind-source/build.py --output-dir /tmp/northwind-demo
 ```

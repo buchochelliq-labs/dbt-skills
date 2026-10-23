@@ -1,5 +1,7 @@
 # dbt-skills
 
+**Start here:** [Run locally with Northwind and Copilot](docs/RUN_LOCALLY.md).
+
 Try the read-only [modelling policy CLI](docs/MODELLING_POLICY.md) to validate
 standards, resolve team-defined naming templates and locate existing policy files.
 Use [convention discovery](docs/CONVENTION_DISCOVERY.md) to propose naming layouts
