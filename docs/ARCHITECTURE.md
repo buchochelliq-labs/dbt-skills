@@ -124,3 +124,22 @@ conflicting fixed values and unsafe paths. Include rule and source provenance in
 each resolution. Keep complete policy loading/schema, observations and decisions
 as explicit remaining #37 work; do not call a naming primitive a complete policy
 engine. Review and run the complete existing test suite before publishing.
+
+## Local workspace application boundary (2026-10-24)
+
+```mermaid
+flowchart TB
+  UI["Connected React workspace"] --> PROXY["Same-origin local proxy"]
+  PROXY --> API["Authenticated loopback service"]
+  API --> MCP["Existing modelling MCP core"]
+  MCP --> SCOPE["Pinned project snapshot and policy"]
+  MCP --> CAT["Ordered project-scoped catalog resolver"]
+  CAT --> UC["Unity Catalog metadata"]
+  CAT --> OM["OpenMetadata metadata"]
+  CAT --> FILE["Authored file catalog"]
+  API --> STORE["Encrypted authored workspace revisions"]
+  API --> REVIEW["Native preflight and handoff export"]
+  AGENT["Independent Codex agent"] --> MCP
+```
+
+The original React UI uses the authoritative Python application for both explicit fictional simulation and configured metadata providers. Approved ontology context enters model planning only through the canonical resolver. Native delivery has no HTTP write endpoint. Provider reads are real adapter implementations; live-account validation remains outstanding.

@@ -1,0 +1,1829 @@
+{
+  "domains": [
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "parent": null,
+      "description": "Shared meaning across our business.",
+      "owner": "Enterprise Data Office",
+      "technicalOwner": "Data Platform",
+      "icon": "enterprise",
+      "ttl": null,
+      "steward": "Data Stewardship",
+      "providerPolicy": "Ordered, first sufficient"
+    },
+    {
+      "id": "customer",
+      "name": "Customer",
+      "parent": "enterprise",
+      "description": "A shared understanding of who we serve, how they join, and why they stay.",
+      "owner": "Customer Analytics",
+      "technicalOwner": "Customer Data Platform",
+      "icon": "customer",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "lifecycle",
+      "name": "Lifecycle",
+      "parent": "customer",
+      "description": "The definitions and decisions that describe the customer journey.",
+      "owner": null,
+      "technicalOwner": null,
+      "icon": "lifecycle",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding",
+      "parent": "lifecycle",
+      "description": "From a first commitment to a service ready to use.",
+      "owner": "Customer Experience",
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "retention",
+      "name": "Retention",
+      "parent": "lifecycle",
+      "description": "Understand continued service, engagement and customer churn.",
+      "owner": "Retention Analytics",
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": 6,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "parent": "enterprise",
+      "description": "Consistent financial meaning from recognised revenue to receivables.",
+      "owner": "Finance Analytics",
+      "technicalOwner": "Finance Data Platform",
+      "icon": "finance",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "revenue",
+      "name": "Revenue",
+      "parent": "finance",
+      "description": "Revenue recognition and recurring revenue semantics.",
+      "owner": null,
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "receivables",
+      "name": "Receivables",
+      "parent": "finance",
+      "description": "Amounts due, payment obligations and the collections lifecycle.",
+      "owner": null,
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "collections",
+      "name": "Collections",
+      "parent": "receivables",
+      "description": "Shared rules for outstanding balances and collection stages.",
+      "owner": "Credit Operations",
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "operations",
+      "name": "Operations",
+      "parent": "enterprise",
+      "description": "How our services are delivered, operated and supported.",
+      "owner": "Service Operations",
+      "technicalOwner": "Operations Engineering",
+      "icon": "operations",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    },
+    {
+      "id": "service",
+      "name": "Service delivery",
+      "parent": "operations",
+      "description": "Operational definitions for services and their state.",
+      "owner": null,
+      "technicalOwner": null,
+      "icon": "domain",
+      "ttl": null,
+      "steward": null,
+      "providerPolicy": null
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "active-customer",
+      "name": "Active customer",
+      "type": "Business term",
+      "domain": "lifecycle",
+      "summary": "A customer with at least one active service on the reporting date.",
+      "definition": "A customer with at least one active service on the reporting date.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 12,
+      "owner": "Customer Analytics",
+      "source": "Unity Catalog",
+      "sourcePath": "customer.metrics.active_customers",
+      "grain": "Customer",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "Live customer",
+        "In-service customer"
+      ],
+      "related": [
+        "customer-entity",
+        "active-customers",
+        "lifecycle-page"
+      ],
+      "scope": "Service",
+      "logic": "At least one service is active as of the reporting date. A billing account alone does not qualify.",
+      "exclusions": "Prospects and customers with no active service.",
+      "unit": "Customer",
+      "freshness": "Today, 09:20",
+      "originId": "uol:term:active-customer",
+      "memberships": [
+        "service"
+      ],
+      "validFrom": "2026-10-01",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "customer-entity",
+      "name": "Customer",
+      "type": "Concept",
+      "domain": "customer",
+      "summary": "A person or organisation with a service relationship.",
+      "definition": "A person or organisation that holds, or has held, a service relationship with the business.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 4,
+      "owner": "Customer Analytics",
+      "source": "Authored definitions",
+      "sourcePath": "concepts/customer.yaml",
+      "grain": "Customer",
+      "effective": "1 Sep 2026",
+      "synonyms": [
+        "Service customer"
+      ],
+      "related": [
+        "account",
+        "active-customer",
+        "service-concept"
+      ],
+      "scope": "Enterprise",
+      "logic": "Identified by the canonical customer identifier.",
+      "exclusions": "Prospects are modelled separately.",
+      "originId": "uol:concept:customer",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "account",
+      "name": "Account",
+      "type": "Concept",
+      "domain": "customer",
+      "summary": "A commercial agreement grouping services and billing.",
+      "definition": "A commercial account that groups services and their billing obligations under an agreement.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 3,
+      "owner": "Customer Analytics",
+      "source": "OpenMetadata",
+      "sourcePath": "commercial.customer_accounts",
+      "grain": "Account",
+      "effective": "1 Sep 2026",
+      "synonyms": [
+        "Commercial account"
+      ],
+      "related": [
+        "customer-entity",
+        "service-concept"
+      ],
+      "scope": "Commercial",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:account",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "active-customers",
+      "name": "Active customers",
+      "type": "Metric",
+      "domain": "lifecycle",
+      "summary": "Distinct customers with an active service on the reporting date.",
+      "definition": "The count of distinct customer identifiers that satisfy the Active customer definition on the reporting date.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 7,
+      "owner": "Customer Analytics",
+      "source": "Unity Catalog",
+      "sourcePath": "customer.metrics.active_customers",
+      "grain": "Customer × reporting date",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "Active customer count"
+      ],
+      "related": [
+        "active-customer",
+        "service-concept"
+      ],
+      "scope": "Service",
+      "formula": "COUNT(DISTINCT customer_id)",
+      "logic": "service_status = 'ACTIVE' as of reporting_date",
+      "unit": "Customers",
+      "aggregation": "Distinct count; not additive over time",
+      "dimensions": [
+        "Reporting date",
+        "Service type",
+        "Region"
+      ],
+      "exclusions": "Prospects, test accounts and customers without an active service.",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:active-customers",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "lifecycle-page",
+      "name": "Customer lifecycle",
+      "type": "Page",
+      "domain": "lifecycle",
+      "summary": "Definitions, transitions, exclusions and ownership.",
+      "definition": "A maintained guide to onboarding, active service, suspension and termination. Each state links to an approved definition and accountable owner.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 5,
+      "owner": "Customer Experience",
+      "source": "Authored definitions",
+      "sourcePath": "pages/customer-lifecycle.md",
+      "grain": "Customer",
+      "effective": "1 Oct 2026",
+      "synonyms": [],
+      "related": [
+        "active-customer",
+        "onboarding-complete"
+      ],
+      "scope": "Service",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:lifecycle-page",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "suspended-rule",
+      "name": "Exclude suspended accounts",
+      "type": "Rule",
+      "domain": "retention",
+      "summary": "A narrower eligibility rule discovered in a retention template.",
+      "definition": "Exclude customers whose only service is suspended from the retention reporting population.",
+      "status": "Needs review",
+      "origin": "Inferred",
+      "version": 1,
+      "owner": "Retention Analytics",
+      "source": "OpenMetadata",
+      "sourcePath": "retention_summary.sql · metadata annotation",
+      "grain": "Customer",
+      "effective": "Not approved",
+      "synonyms": [],
+      "related": [
+        "active-customer",
+        "churn-rate"
+      ],
+      "scope": "Retention",
+      "logic": "Candidate rule only. Excluded from agent context until reviewed.",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:suspended-rule",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "churn-rate",
+      "name": "Customer churn rate",
+      "type": "Metric",
+      "domain": "retention",
+      "summary": "Customers leaving active service within a reporting period.",
+      "definition": "Customers who leave active service during the period divided by customers active at the beginning of that period.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 3,
+      "owner": "Retention Analytics",
+      "source": "Unity Catalog",
+      "sourcePath": "customer.metrics.churn_rate",
+      "grain": "Reporting period",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "Service churn"
+      ],
+      "related": [
+        "active-customer",
+        "active-customers"
+      ],
+      "scope": "Retention",
+      "formula": "Customers leaving active service / opening active customers",
+      "unit": "Percent",
+      "aggregation": "Recalculate ratio; do not sum percentages",
+      "dimensions": [
+        "Reporting period",
+        "Service type"
+      ],
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:churn-rate",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "onboarding-complete",
+      "name": "Onboarding complete",
+      "type": "Business term",
+      "domain": "onboarding",
+      "summary": "The first contracted service is available for use.",
+      "definition": "A customer reaches onboarding complete when their first contracted service is activated and available for use.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 2,
+      "owner": "Customer Experience",
+      "source": "Authored definitions",
+      "sourcePath": "terms/onboarding-complete.yaml",
+      "grain": "Customer",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "Onboarded customer"
+      ],
+      "related": [
+        "service-concept",
+        "active-customer"
+      ],
+      "scope": "Service",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:onboarding-complete",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "billing-active",
+      "name": "Active customer",
+      "type": "Business term",
+      "domain": "revenue",
+      "summary": "A customer with a billable account during the accounting period.",
+      "definition": "A customer with at least one billable account during the accounting period, including temporarily suspended services that remain billable.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 6,
+      "owner": "Finance Analytics",
+      "source": "Authored definitions",
+      "sourcePath": "finance/active-customer.yaml",
+      "grain": "Customer × accounting period",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "Billable customer"
+      ],
+      "related": [
+        "account",
+        "mrr"
+      ],
+      "scope": "Billing",
+      "logic": "Billing eligibility, not active service, determines membership.",
+      "exclusions": "Closed accounts and non-billable trial agreements.",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:billing-active",
+      "history": [],
+      "restricted": true
+    },
+    {
+      "id": "mrr",
+      "name": "Monthly recurring revenue",
+      "type": "Metric",
+      "domain": "revenue",
+      "summary": "Normalised monthly recurring subscription charges.",
+      "definition": "Recurring contracted charges normalised to a calendar month, excluding one-off fees and usage charges.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 8,
+      "owner": "Finance Analytics",
+      "source": "Unity Catalog",
+      "sourcePath": "finance.metrics.monthly_recurring_revenue",
+      "grain": "Account × calendar month",
+      "effective": "1 Oct 2026",
+      "synonyms": [
+        "MRR"
+      ],
+      "related": [
+        "account",
+        "billing-active"
+      ],
+      "scope": "Billing",
+      "formula": "SUM(normalised_monthly_recurring_charge)",
+      "unit": "GBP",
+      "aggregation": "Additive over accounts, not over monthly snapshots",
+      "dimensions": [
+        "Month",
+        "Product family",
+        "Currency"
+      ],
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:mrr",
+      "history": [],
+      "restricted": true
+    },
+    {
+      "id": "overdue",
+      "name": "Overdue balance",
+      "type": "Metric",
+      "domain": "collections",
+      "summary": "Unpaid contractual amounts after their due date.",
+      "definition": "The amount contractually due and unpaid after the applicable payment deadline, excluding disputed balances awaiting review.",
+      "status": "Draft",
+      "origin": "Curated",
+      "version": 1,
+      "owner": "Credit Operations",
+      "source": "Authored definitions",
+      "sourcePath": "finance/overdue-balance.yaml",
+      "grain": "Account × as-of date",
+      "effective": "Pending approval",
+      "synonyms": [],
+      "related": [
+        "account"
+      ],
+      "scope": "Collections",
+      "unit": "GBP",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:overdue",
+      "history": [],
+      "restricted": true
+    },
+    {
+      "id": "service-concept",
+      "name": "Service",
+      "type": "Concept",
+      "domain": "service",
+      "summary": "A contracted capability provided to a customer.",
+      "definition": "A contracted capability provided to a customer, with an independently managed service state.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 4,
+      "owner": "Service Operations",
+      "source": "OpenMetadata",
+      "sourcePath": "operations.services",
+      "grain": "Service",
+      "effective": "1 Sep 2026",
+      "synonyms": [
+        "Contracted service"
+      ],
+      "related": [
+        "customer-entity",
+        "account",
+        "service-state"
+      ],
+      "scope": "Operations",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:service-concept",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "service-state",
+      "name": "Service state",
+      "type": "Rule",
+      "domain": "service",
+      "summary": "Allowed service states and their declared transitions.",
+      "definition": "A service has one effective state at a time: pending, active, suspended or terminated. Transitions carry a business-valid timestamp.",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 3,
+      "owner": "Service Operations",
+      "source": "Authored definitions",
+      "sourcePath": "rules/service-state.yaml",
+      "grain": "Service × valid time",
+      "effective": "1 Oct 2026",
+      "synonyms": [],
+      "related": [
+        "service-concept",
+        "active-customer"
+      ],
+      "scope": "Operations",
+      "memberships": [],
+      "validFrom": "2026-10-01",
+      "originId": "uol:service-state",
+      "history": [],
+      "restricted": false
+    },
+    {
+      "id": "individual",
+      "name": "Individual customer",
+      "type": "Concept",
+      "domain": "customer",
+      "definition": "A natural person participating in a customer relationship.",
+      "related": [
+        "customer-entity"
+      ],
+      "grain": "Person",
+      "summary": "A natural person participating in a customer relationship.",
+      "memberships": [],
+      "scope": "Enterprise",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 1,
+      "owner": "Data Office",
+      "source": "Authored definitions",
+      "sourcePath": "concepts/individual.yaml",
+      "effective": "1 Oct 2026",
+      "validFrom": "2026-10-01",
+      "synonyms": [],
+      "originId": "uol:individual",
+      "history": []
+    },
+    {
+      "id": "contract",
+      "name": "Contract",
+      "type": "Concept",
+      "domain": "customer",
+      "definition": "A commercial agreement consisting of contract lines.",
+      "related": [
+        "contract-line"
+      ],
+      "grain": "Contract",
+      "summary": "A commercial agreement consisting of contract lines.",
+      "memberships": [],
+      "scope": "Enterprise",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 1,
+      "owner": "Data Office",
+      "source": "Authored definitions",
+      "sourcePath": "concepts/contract.yaml",
+      "effective": "1 Oct 2026",
+      "validFrom": "2026-10-01",
+      "synonyms": [],
+      "originId": "uol:contract",
+      "history": []
+    },
+    {
+      "id": "contract-line",
+      "name": "Contract line",
+      "type": "Concept",
+      "domain": "customer",
+      "definition": "A separately specified service obligation within a contract.",
+      "related": [
+        "contract"
+      ],
+      "grain": "Contract line",
+      "summary": "A separately specified service obligation within a contract.",
+      "memberships": [],
+      "scope": "Enterprise",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 1,
+      "owner": "Data Office",
+      "source": "Authored definitions",
+      "sourcePath": "concepts/contract-line.yaml",
+      "effective": "1 Oct 2026",
+      "validFrom": "2026-10-01",
+      "synonyms": [],
+      "originId": "uol:contract-line",
+      "history": []
+    },
+    {
+      "id": "private-concept",
+      "name": "Confidential acquisition cohort",
+      "type": "Concept",
+      "domain": "finance",
+      "definition": "Hidden synthetic metadata sentinel.",
+      "related": [],
+      "grain": "Cohort",
+      "hidden": true,
+      "summary": "Hidden synthetic metadata sentinel.",
+      "memberships": [],
+      "scope": "Enterprise",
+      "status": "Approved",
+      "origin": "Curated",
+      "version": 1,
+      "owner": "Data Office",
+      "source": "Authored definitions",
+      "sourcePath": "concepts/private-concept.yaml",
+      "effective": "1 Oct 2026",
+      "validFrom": "2026-10-01",
+      "synonyms": [],
+      "originId": "uol:private-concept",
+      "history": []
+    }
+  ],
+  "providers": [
+    {
+      "id": "uc-customer",
+      "name": "Unity Catalog — Customer",
+      "kind": "uc",
+      "enabled": true,
+      "ttl": 24,
+      "health": "healthy",
+      "scope": [
+        "customer",
+        "operations",
+        "service",
+        "lifecycle",
+        "retention",
+        "onboarding"
+      ],
+      "workspace": "azure-customer-dev",
+      "metastore": "ms-customer",
+      "capabilities": {
+        "discovery": "permitted",
+        "inspection": "permitted",
+        "data": "denied",
+        "modification": "permitted",
+        "management": "unknown"
+      }
+    },
+    {
+      "id": "uc-finance",
+      "name": "Unity Catalog — Finance",
+      "kind": "uc",
+      "enabled": true,
+      "ttl": 24,
+      "health": "healthy",
+      "scope": [
+        "finance",
+        "revenue",
+        "collections"
+      ],
+      "workspace": "azure-finance-dev",
+      "metastore": "ms-finance",
+      "capabilities": {
+        "discovery": "permitted",
+        "inspection": "permitted",
+        "data": "denied",
+        "modification": "permitted",
+        "management": "unknown"
+      }
+    },
+    {
+      "id": "openmetadata",
+      "name": "OpenMetadata",
+      "kind": "openmetadata",
+      "enabled": true,
+      "ttl": 12,
+      "health": "outage",
+      "scope": [
+        "*"
+      ],
+      "workspace": "Metadata service",
+      "metastore": "om-demo",
+      "capabilities": {
+        "discovery": "permitted",
+        "inspection": "permitted",
+        "data": "denied",
+        "modification": "unsupported",
+        "management": "unknown"
+      }
+    },
+    {
+      "id": "authored",
+      "name": "Authored YAML and Markdown",
+      "kind": "authored",
+      "enabled": true,
+      "ttl": 24,
+      "health": "healthy",
+      "scope": [
+        "*"
+      ],
+      "workspace": "Local repository",
+      "metastore": "authored",
+      "capabilities": {
+        "discovery": "permitted",
+        "inspection": "permitted",
+        "data": "denied",
+        "modification": "permitted",
+        "management": "unsupported"
+      }
+    }
+  ],
+  "assets": [
+    {
+      "id": "customer-catalog",
+      "nativeId": "native-customer-catalog",
+      "providerId": "uc-customer",
+      "name": "customer",
+      "type": "catalog",
+      "parent": null,
+      "owner": "Customer Platform",
+      "description": "Governed catalog metadata for customer.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "customer-core",
+      "nativeId": "native-customer-core",
+      "providerId": "uc-customer",
+      "name": "customer.core",
+      "type": "schema",
+      "parent": "customer-catalog",
+      "owner": "Customer Platform",
+      "description": "Governed schema metadata for customer.core.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "customer-metrics",
+      "nativeId": "native-customer-metrics",
+      "providerId": "uc-customer",
+      "name": "customer.metrics",
+      "type": "schema",
+      "parent": "customer-catalog",
+      "owner": "Customer Platform",
+      "description": "Governed schema metadata for customer.metrics.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "customers",
+      "nativeId": "native-customers",
+      "providerId": "uc-customer",
+      "name": "customer.core.customers",
+      "type": "table",
+      "parent": "customer-core",
+      "owner": "Customer Platform",
+      "description": "Governed table metadata for customer.core.customers.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [
+        {
+          "path": "customer_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "comment": "Canonical customer identifier.",
+          "classification": "Internal identifier",
+          "key": "Declared primary key; enforcement unknown"
+        },
+        {
+          "path": "region",
+          "type": "STRING",
+          "nullable": true,
+          "comment": "Reporting region.",
+          "classification": "Internal",
+          "key": "None"
+        },
+        {
+          "path": "status",
+          "type": "STRING",
+          "nullable": false,
+          "comment": "Declared lifecycle status.",
+          "classification": "Internal",
+          "key": "None"
+        }
+      ],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [
+        "customer-entity"
+      ],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "accounts",
+      "nativeId": "native-accounts",
+      "providerId": "uc-customer",
+      "name": "customer.core.accounts",
+      "type": "table",
+      "parent": "customer-core",
+      "owner": "Customer Platform",
+      "description": "Governed table metadata for customer.core.accounts.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [
+        {
+          "path": "account_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "comment": "Account identifier.",
+          "classification": "Internal",
+          "key": "Declared primary key"
+        },
+        {
+          "path": "customer_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "comment": "Customer relationship.",
+          "classification": "Internal identifier",
+          "key": "Declared foreign key"
+        }
+      ],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [
+        "account"
+      ],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "unmapped",
+      "nativeId": "native-unmapped",
+      "providerId": "uc-customer",
+      "name": "customer.core.contact_preferences",
+      "type": "table",
+      "parent": "customer-core",
+      "owner": "Customer Platform",
+      "description": "Governed table metadata for customer.core.contact_preferences.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "active-view",
+      "nativeId": "native-active-view",
+      "providerId": "uc-customer",
+      "name": "customer.metrics.active_customers",
+      "type": "metric_view",
+      "parent": "customer-metrics",
+      "owner": "Customer Platform",
+      "description": "Governed metric view metadata for customer.metrics.active_customers.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [
+        "active-customers",
+        "active-customer"
+      ],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "churn-view",
+      "nativeId": "native-churn-view",
+      "providerId": "uc-customer",
+      "name": "customer.metrics.churn_rate",
+      "type": "view",
+      "parent": "customer-metrics",
+      "owner": "Customer Platform",
+      "description": "Governed view metadata for customer.metrics.churn_rate.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [
+        "churn-rate"
+      ],
+      "observedAt": 1792638000000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "operations-catalog",
+      "nativeId": "native-operations-catalog",
+      "providerId": "uc-customer",
+      "name": "operations",
+      "type": "catalog",
+      "parent": null,
+      "owner": "Customer Platform",
+      "description": "Governed catalog metadata for operations.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "operations-core",
+      "nativeId": "native-operations-core",
+      "providerId": "uc-customer",
+      "name": "operations.core",
+      "type": "schema",
+      "parent": "operations-catalog",
+      "owner": "Customer Platform",
+      "description": "Governed schema metadata for operations.core.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "services",
+      "nativeId": "native-services",
+      "providerId": "uc-customer",
+      "name": "operations.core.services",
+      "type": "table",
+      "parent": "operations-core",
+      "owner": "Customer Platform",
+      "description": "Governed table metadata for operations.core.services.",
+      "tags": {
+        "domain": "Customer"
+      },
+      "fields": [
+        {
+          "path": "service_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "comment": "Service identity.",
+          "classification": "Internal",
+          "key": "Declared primary key"
+        },
+        {
+          "path": "customer_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "comment": "Customer reference.",
+          "classification": "Internal",
+          "key": "Declared foreign key"
+        },
+        {
+          "path": "service_status",
+          "type": "STRING",
+          "nullable": false,
+          "comment": "Effective service status.",
+          "classification": "Internal",
+          "key": "None"
+        },
+        {
+          "path": "reporting_date",
+          "type": "DATE",
+          "nullable": false,
+          "comment": "Business reporting date.",
+          "classification": "Internal",
+          "key": "None"
+        }
+      ],
+      "domainIds": [
+        "customer"
+      ],
+      "knowledgeIds": [
+        "service-concept"
+      ],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "finance-catalog",
+      "nativeId": "native-finance-catalog",
+      "providerId": "uc-finance",
+      "name": "finance",
+      "type": "catalog",
+      "parent": null,
+      "owner": "Finance Engineering",
+      "description": "Governed catalog metadata for finance.",
+      "tags": {
+        "domain": "Finance"
+      },
+      "fields": [],
+      "domainIds": [
+        "finance"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "finance-metrics",
+      "nativeId": "native-finance-metrics",
+      "providerId": "uc-finance",
+      "name": "finance.metrics",
+      "type": "schema",
+      "parent": "finance-catalog",
+      "owner": "Finance Engineering",
+      "description": "Governed schema metadata for finance.metrics.",
+      "tags": {
+        "domain": "Finance"
+      },
+      "fields": [],
+      "domainIds": [
+        "finance"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "mrr-view",
+      "nativeId": "native-mrr-view",
+      "providerId": "uc-finance",
+      "name": "finance.metrics.monthly_recurring_revenue",
+      "type": "metric_view",
+      "parent": "finance-metrics",
+      "owner": "Finance Engineering",
+      "description": "Governed metric view metadata for finance.metrics.monthly_recurring_revenue.",
+      "tags": {
+        "domain": "Finance"
+      },
+      "fields": [],
+      "domainIds": [
+        "finance"
+      ],
+      "knowledgeIds": [
+        "mrr"
+      ],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1",
+      "restricted": true
+    },
+    {
+      "id": "duplicate",
+      "nativeId": "native-duplicate",
+      "providerId": "uc-finance",
+      "name": "customer.core.customers",
+      "type": "table",
+      "parent": null,
+      "owner": "Finance Engineering",
+      "description": "Separate metastore identity; not the Customer workspace table.",
+      "tags": {
+        "domain": "Finance"
+      },
+      "fields": [],
+      "domainIds": [
+        "finance"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1"
+    },
+    {
+      "id": "hidden-asset",
+      "nativeId": "native-hidden-asset",
+      "providerId": "uc-finance",
+      "name": "finance.private.acquisitions",
+      "type": "table",
+      "parent": null,
+      "owner": "Finance Engineering",
+      "description": "Governed table metadata for finance.private.acquisitions.",
+      "tags": {
+        "domain": "Finance"
+      },
+      "fields": [],
+      "domainIds": [
+        "finance"
+      ],
+      "knowledgeIds": [],
+      "observedAt": 1792738800000,
+      "sourceRevision": "native-r1",
+      "hidden": true
+    }
+  ],
+  "relationships": [
+    {
+      "id": "holds",
+      "source": "customer-entity",
+      "target": "account",
+      "type": "business",
+      "label": "holds",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "groups",
+      "source": "account",
+      "target": "service-concept",
+      "type": "business",
+      "label": "groups",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "subtype",
+      "source": "individual",
+      "target": "customer-entity",
+      "type": "is_a",
+      "label": "is a",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "composition",
+      "source": "contract-line",
+      "target": "contract",
+      "type": "part_of",
+      "label": "part of",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "qualifies",
+      "source": "active-customer",
+      "target": "customer-entity",
+      "type": "business",
+      "label": "qualifies",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "billing-qualifies",
+      "source": "billing-active",
+      "target": "customer-entity",
+      "type": "business",
+      "label": "qualifies",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "metric-dependency",
+      "source": "active-customers",
+      "target": "active-customer",
+      "type": "dependency",
+      "label": "defined by",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "page-dependency",
+      "source": "lifecycle-page",
+      "target": "active-customer",
+      "type": "dependency",
+      "label": "documents",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved"
+    },
+    {
+      "id": "native-lineage",
+      "source": "services",
+      "target": "active-view",
+      "type": "lineage",
+      "label": "upstream of",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UC native lineage fixture",
+      "approval": "Approved"
+    },
+    {
+      "id": "declared-join",
+      "source": "services",
+      "target": "customers",
+      "type": "join",
+      "label": "customer reference",
+      "scope": "Declared fixture",
+      "cardinality": "many to one (declared, unverified)",
+      "provenance": "UOL curated declaration",
+      "approval": "Approved",
+      "sourceField": "customer_id",
+      "targetField": "customer_id"
+    },
+    {
+      "id": "private-edge",
+      "source": "hidden-asset",
+      "target": "mrr-view",
+      "type": "lineage",
+      "label": "upstream of",
+      "scope": "Declared fixture",
+      "cardinality": "unspecified",
+      "provenance": "UC native lineage fixture",
+      "approval": "Approved"
+    }
+  ],
+  "mappings": [
+    {
+      "id": "map-customer",
+      "knowledgeId": "customer-entity",
+      "attribute": "identity",
+      "assetId": "customers",
+      "fieldPath": "customer_id",
+      "type": "concept attribute",
+      "scope": "Enterprise",
+      "validFrom": "2026-10-01",
+      "evidence": "Reviewed metadata contract",
+      "status": "Approved"
+    },
+    {
+      "id": "map-active",
+      "knowledgeId": "active-customers",
+      "attribute": "measure",
+      "assetId": "active-view",
+      "fieldPath": "active_customers",
+      "type": "metric input",
+      "scope": "Service",
+      "validFrom": "2026-10-01",
+      "evidence": "Metric definition v7",
+      "status": "Approved"
+    },
+    {
+      "id": "map-status1",
+      "knowledgeId": "active-customer",
+      "attribute": "eligibility",
+      "assetId": "customers",
+      "fieldPath": "status",
+      "type": "concept attribute",
+      "scope": "Service",
+      "validFrom": "2026-10-01",
+      "evidence": "Proposed service interpretation",
+      "status": "Draft"
+    },
+    {
+      "id": "map-status2",
+      "knowledgeId": "billing-active",
+      "attribute": "eligibility",
+      "assetId": "customers",
+      "fieldPath": "status",
+      "type": "concept attribute",
+      "scope": "Billing",
+      "validFrom": "2026-10-01",
+      "evidence": "Competing billing interpretation",
+      "status": "Draft"
+    }
+  ],
+  "cache": [],
+  "observations": [],
+  "proposals": [],
+  "deliveries": [],
+  "targets": [
+    {
+      "id": "customer-catalog",
+      "name": "customer",
+      "kind": "catalog",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed catalog metadata for customer.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "customer-core",
+      "name": "customer.core",
+      "kind": "schema",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed schema metadata for customer.core.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "customer-metrics",
+      "name": "customer.metrics",
+      "kind": "schema",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed schema metadata for customer.metrics.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "customers",
+      "name": "customer.core.customers",
+      "kind": "table",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed table metadata for customer.core.customers.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "accounts",
+      "name": "customer.core.accounts",
+      "kind": "table",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed table metadata for customer.core.accounts.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "unmapped",
+      "name": "customer.core.contact_preferences",
+      "kind": "table",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed table metadata for customer.core.contact_preferences.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "active-view",
+      "name": "customer.metrics.active_customers",
+      "kind": "metric_view",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed metric view metadata for customer.metrics.active_customers.",
+        "tags": {
+          "domain": "Customer"
+        },
+        "yaml": {
+          "version": "1.1",
+          "source": "operations.core.services",
+          "filter": "service_status = 'ACTIVE'",
+          "joins": [
+            {
+              "name": "customers",
+              "source": "customer.core.customers",
+              "on": "source.customer_id = customers.customer_id"
+            }
+          ],
+          "fields": [
+            {
+              "name": "reporting_date",
+              "expr": "reporting_date",
+              "display_name": "Reporting date",
+              "synonyms": [
+                "As-of date"
+              ]
+            }
+          ],
+          "measures": [
+            {
+              "name": "active_customers",
+              "expr": "COUNT(DISTINCT customer_id)",
+              "display_name": "Active customers",
+              "synonyms": [
+                "Live customers"
+              ],
+              "format": {
+                "type": "number",
+                "decimal_places": {
+                  "type": "exact",
+                  "places": 0
+                }
+              }
+            }
+          ]
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "churn-view",
+      "name": "customer.metrics.churn_rate",
+      "kind": "view",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed view metadata for customer.metrics.churn_rate.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "operations-catalog",
+      "name": "operations",
+      "kind": "catalog",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed catalog metadata for operations.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "operations-core",
+      "name": "operations.core",
+      "kind": "schema",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed schema metadata for operations.core.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "services",
+      "name": "operations.core.services",
+      "kind": "table",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "description": "Governed table metadata for operations.core.services.",
+        "tags": {
+          "domain": "Customer"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "finance-catalog",
+      "name": "finance",
+      "kind": "catalog",
+      "providerId": "uc-finance",
+      "revision": 1,
+      "content": {
+        "description": "Governed catalog metadata for finance.",
+        "tags": {
+          "domain": "Finance"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "finance-metrics",
+      "name": "finance.metrics",
+      "kind": "schema",
+      "providerId": "uc-finance",
+      "revision": 1,
+      "content": {
+        "description": "Governed schema metadata for finance.metrics.",
+        "tags": {
+          "domain": "Finance"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "mrr-view",
+      "name": "finance.metrics.monthly_recurring_revenue",
+      "kind": "metric_view",
+      "providerId": "uc-finance",
+      "revision": 1,
+      "content": {
+        "description": "Governed metric view metadata for finance.metrics.monthly_recurring_revenue.",
+        "tags": {
+          "domain": "Finance"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Finance stewards",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "duplicate",
+      "name": "customer.core.customers",
+      "kind": "table",
+      "providerId": "uc-finance",
+      "revision": 1,
+      "content": {
+        "description": "Separate metastore identity; not the Customer workspace table.",
+        "tags": {
+          "domain": "Finance"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "hidden-asset",
+      "name": "finance.private.acquisitions",
+      "kind": "table",
+      "providerId": "uc-finance",
+      "revision": 1,
+      "content": {
+        "description": "Governed table metadata for finance.private.acquisitions.",
+        "tags": {
+          "domain": "Finance"
+        }
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "genie-customer",
+      "name": "Customer intelligence",
+      "kind": "genie",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "serialized_space": {
+          "version": 2,
+          "config": {
+            "sample_questions": [
+              {
+                "id": "q1",
+                "question": [
+                  "How is an active customer defined?"
+                ]
+              }
+            ]
+          },
+          "data_sources": {
+            "tables": [
+              {
+                "identifier": "customer.core.customers"
+              },
+              {
+                "identifier": "operations.core.services"
+              }
+            ],
+            "metric_views": [
+              {
+                "identifier": "customer.metrics.active_customers"
+              }
+            ]
+          },
+          "instructions": {
+            "text_instructions": [
+              {
+                "id": "i1",
+                "content": [
+                  "Use service scope for customer activity."
+                ]
+              }
+            ],
+            "example_question_sqls": [
+              {
+                "id": "sql1",
+                "question": [
+                  "Active customers by date"
+                ],
+                "sql": [
+                  "SELECT reporting_date, MEASURE(active_customers) FROM customer.metrics.active_customers GROUP BY reporting_date"
+                ]
+              }
+            ],
+            "join_specs": [
+              {
+                "id": "j1",
+                "left": {
+                  "identifier": "operations.core.services"
+                },
+                "right": {
+                  "identifier": "customer.core.customers"
+                },
+                "sql": [
+                  "services.customer_id = customers.customer_id"
+                ]
+              }
+            ]
+          },
+          "benchmarks": {
+            "questions": [
+              {
+                "id": "b1",
+                "question": [
+                  "Explain the reporting grain."
+                ],
+                "answer": [
+                  {
+                    "format": "TEXT",
+                    "content": [
+                      "Customer by reporting date."
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "unrelated_setting": "Preserve this existing setting"
+      },
+      "capability": "permitted",
+      "permission": "permitted",
+      "audience": "Internal metadata readers",
+      "atomic": true,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    },
+    {
+      "id": "page-lifecycle",
+      "name": "Customer lifecycle",
+      "kind": "page",
+      "providerId": "uc-customer",
+      "revision": 1,
+      "content": {
+        "summary": "A guide to lifecycle definitions."
+      },
+      "capability": "unsupported",
+      "permission": "unknown",
+      "audience": "Internal metadata readers",
+      "atomic": false,
+      "failNext": false,
+      "mismatchNext": false,
+      "origins": {}
+    }
+  ],
+  "pages": [
+    {
+      "id": "lifecycle-page",
+      "name": "Customer lifecycle",
+      "domain": "lifecycle",
+      "owner": "Customer Experience",
+      "synonyms": [
+        "Customer journey"
+      ],
+      "summary": "Definitions and transitions across the service relationship.",
+      "body": "Use the Service meaning of Active customer for lifecycle reporting. Billing eligibility is a separate meaning. Review suspended services explicitly.",
+      "relatedAssets": [
+        "customers",
+        "services"
+      ],
+      "sources": [
+        "pages/customer-lifecycle.md",
+        "policy/service-eligibility.yaml"
+      ],
+      "state": "Draft"
+    }
+  ],
+  "clock": 1792746000000,
+  "policyVersion": 1,
+  "configVersion": 1,
+  "sequence": 1,
+  "ttlDismissed": false
+}

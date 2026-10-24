@@ -1,0 +1,40 @@
+.cg-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.cg-draft-status,
+.cg-view-summary {
+  color: #52655e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.cg-error {
+  color: #8d342b;
+  border: 1px solid #e5bfb5;
+  background: #fff4ef;
+  border-radius: 9px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+.cg-error ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.graph-list h3 {
+  width: 100%;
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+.graph-list [aria-pressed="true"] {
+  outline: 2px solid #28796f;
+  outline-offset: 2px;
+  background: #edf5ef;
+}
+.graph-list button:focus-visible {
+  outline: 3px solid #28796f;
+  outline-offset: 3px;
+}

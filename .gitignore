@@ -7,3 +7,19 @@ __pycache__/
 *.uol.sqlite3-wal
 
 .dbt-skills-catalog-cache/
+
+# Generated frontend/runtime and local acceptance outputs
+frontend/node_modules/
+frontend/dist/
+frontend/server/uol-backend
+frontend/server/fixtures/
+frontend/screenshots/
+frontend/.vite/
+frontend/docs/*.jpg
+frontend/docs/*.png
+
+# Generated test output and session evidence are not repository documentation.
+/reports/
+*.log
+/frontend/playwright-report/
+/frontend/test-results/
