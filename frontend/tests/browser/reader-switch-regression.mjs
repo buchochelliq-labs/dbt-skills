@@ -1,6 +1,6 @@
 /** Portable UI-only regression. Run with tab.playwright (CUA) or a Playwright page.
  * Precondition: original UI hydrated, Steward reader, no open modal or unsaved edits.
- * The clean-v6 baseline fails at the first guard assertion. No assertion is skipped.
+ * Checks both preserving edits and discarding them before switching readers.
  */
 export async function runReaderSwitchRegression(page) {
   const button = (name) => page.getByRole('button', { name, exact: true });

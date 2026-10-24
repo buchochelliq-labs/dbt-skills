@@ -3,7 +3,6 @@
 from contextlib import contextmanager
 from copy import deepcopy
 import base64
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -211,7 +210,7 @@ class WorkspaceStore:
         with self.lock:
             if len(self.previews) >= 16:
                 self.previews.clear()
-            self.previews[token] = (current["revision"], document)
+            self.previews[token] = (current["revision"], deepcopy(document))
         return {
             "preview_id": token,
             "expected_revision": current["revision"],

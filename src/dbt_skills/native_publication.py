@@ -59,7 +59,6 @@ def _proposal(proposal):
         if not isinstance(changes, list) or not 1 <= len(changes) <= 100:
             raise ValueError()
         ids = []
-        paths = []
         for change in changes:
             if (
                 set(change) != {"id", "path", "value"}
@@ -75,7 +74,6 @@ def _proposal(proposal):
             ):
                 raise ValueError()
             ids.append(change["id"])
-            paths.append(path)
         if (
             len(set(ids)) != len(ids)
             or not isinstance(selected, list)

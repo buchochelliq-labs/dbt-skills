@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ProviderToggle } from "./ProviderToggle";
 import { useDraftGuard, useNavigationGuard } from "./draftGuard";
 import "./connections-graph.css";
 import {
@@ -264,7 +265,7 @@ export function Connections() {
                       {p.workspace} · {p.metastore}
                     </small>
                   </div>
-                  <Status value={p.enabled ? p.health : "paused"} />
+                  <Status value={p.retired ? "Removed" : p.enabled ? p.health : "paused"} />
                 </div>
                 <div className="mini-row">
                   <span>Default TTL · {p.ttl} hours</span>
@@ -287,17 +288,16 @@ export function Connections() {
                       await command("provider.reorder", { id: p.id, delta: 1 })
                     }
                   />
-                  <Button
-                    onClick={async () =>
+                  <ProviderToggle
+                    provider={p}
+                    onToggle={async () =>
                       await command("provider.update", {
                         id: p.id,
                         patch: { enabled: !p.enabled },
                       })
                     }
-                  >
-                    {p.enabled ? "Pause" : "Enable"}
-                  </Button>
-                  <Button onClick={() => setEdit(p.id)}>Configure</Button>
+                  />
+                  <Button disabled={p.retired} onClick={() => setEdit(p.id)}>Configure</Button>
                 </div>
               </div>
             ))}

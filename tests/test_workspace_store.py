@@ -47,3 +47,16 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises(WorkspaceError):
                 s.save({"schema_version": 1, "records": [{"rows": []}]}, 0)
             self.assertEqual(s.read()["revision"], 0)
+
+    def test_preview_response_cannot_change_reviewed_import_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = WorkspaceStore(Path(directory) / 'store.db', key_store=MemoryKeyStore())
+            document = {'schema_version': 1, 'records': [dict(
+                id='design', kind='design', title='Reviewed content', content='Original',
+                references=[], evidence=[], approval='reviewed')]}
+            store.save(document, 0)
+            preview = store.preview_import(store.export())
+            preview['document']['records'][0].update(content='Unreviewed replacement', approval='reviewed')
+            applied = store.apply_import(preview['preview_id'])
+            self.assertEqual(applied['document']['records'][0]['content'], 'Original')
+            self.assertEqual(applied['document']['records'][0]['approval'], 'draft')

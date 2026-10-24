@@ -18,7 +18,7 @@ import webbrowser
 def main():
     root = Path(__file__).resolve().parents[1]
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--frontend', type=Path, default=root.parent / 'frontend')
+    p.add_argument('--frontend', type=Path, default=root / 'frontend')
     p.add_argument('--project-dir', type=Path)
     p.add_argument('--demo', action='store_true', help='Explicit fictional fixture, in its own database')
     p.add_argument('--ephemeral', action='store_true', help='Demo only: discard encrypted storage when stopped')
@@ -52,7 +52,7 @@ def main():
     env['UOL_LOCAL_TOKEN'] = secrets.token_urlsafe(48)
     env['UOL_BACKEND_PORT'] = str(args.backend_port)
     # Override optional packaged preview config: this launcher owns backend lifecycle.
-    env['UOL_PREVIEW_CONFIG'] = str(data_dir / 'disabled-preview-config.json')
+    env.pop('UOL_PREVIEW_CONFIG', None)
     env['PYTHONPATH'] = str(root / 'src') + os.pathsep + env.get('PYTHONPATH', '')
     key_env = args.key_env
     if runtime:

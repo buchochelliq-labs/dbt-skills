@@ -39,7 +39,12 @@ class OntologyApplication:
             and not self.store.simulation
             and self.store.read()["state"]["providers"]
         ):
-            self.bridge.preferences(self.store.read()["state"]["providers"])
+            self._preferences(self.store.read()["state"]["providers"])
+
+    def _preferences(self, providers):
+        # Retired references carry no authority and must not disable a restored
+        # operator provider before its next successful sync.
+        self.bridge.preferences([p for p in providers if not p.get("retired")])
 
     def _native_targets(self, state):
         for configured in getattr(self, "native_config", {}).get("targets", []):
@@ -48,7 +53,7 @@ class OntologyApplication:
             identifier = "native:genie:" + configured["id"]
             if any(t["id"] == identifier for t in state["targets"]):
                 continue
-            candidates = [p["id"] for p in state["providers"] if p["kind"] == "uc"]
+            candidates = [p["id"] for p in state["providers"] if p["kind"] == "uc" and not p.get("retired")]
             provider_id = configured.get("provider_id") or (
                 candidates[0] if len(candidates) == 1 else None
             )
@@ -106,6 +111,8 @@ class OntologyApplication:
                     resolved = {"status": "error"}
                 if resolved.get("status") in ("denied", "error") or not _source_snapshot_current(asset, resolved):
                     asset["hidden"] = True  # stale/legacy metadata requires explicit scoped sync
+        retired = {p["id"] for p in view["providers"] if p.get("retired")}
+        view["targets"] = [t for t in view["targets"] if t["providerId"] not in retired]
         return visible_state(view, reader)
 
     def _packet(self, snapshot, reader, result=None):
@@ -149,7 +156,8 @@ class OntologyApplication:
                     kind={"unity_catalog": "uc", "openmetadata": "openmetadata"}.get(
                         p.get("type"), "authored"
                     ),
-                    enabled=previous.get("enabled", p.get("enabled", True)),
+                    enabled=(p.get("enabled", True) if previous.get("retired")
+                             else previous.get("enabled", p.get("enabled", True))),
                     ttl=previous.get("ttl", 24),
                     health=(
                         "healthy"
@@ -172,6 +180,15 @@ class OntologyApplication:
                     },
                 )
             )
+        # Keep referential integrity for mappings, targets and historical evidence,
+        # but never preserve the authority of a removed operator configuration.
+        configured = {p["id"] for p in providers}
+        for identifier, previous in old.items():
+            if identifier not in configured:
+                tomb = deepcopy(previous)
+                tomb.update(enabled=False, retired=True, health="denied",
+                            capabilities={key: "denied" for key in tomb["capabilities"]})
+                providers.append(tomb)
         # Retain durable order; newly configured instances append.
         order = {p["id"]: i for i, p in enumerate(s["providers"])}
         providers.sort(key=lambda p: order.get(p["id"], len(order)))
@@ -237,7 +254,10 @@ class OntologyApplication:
                 mismatchNext=False,
                 origins={},
             )
-            targets.append(deepcopy(old_target) if old_target else target)
+            # A canonical asset may now resolve through a different provider.
+            # Its prior native target metadata is not evidence about that provider.
+            targets.append(deepcopy(old_target) if old_target and
+                           old_target["providerId"] == prov["provider"] else target)
         active = {a["id"] for a in assets}
         # Departed source identities are withheld tombstones, preserving mappings without exposing old metadata.
         for a in s["assets"]:
@@ -292,7 +312,7 @@ class OntologyApplication:
                     raise WorkspaceError("Import requires local owner")
                 snapshot = self.store.apply_import(payload["previewId"])
                 if self.bridge and not self.store.simulation:
-                    self.bridge.preferences(snapshot["state"]["providers"])
+                    self._preferences(snapshot["state"]["providers"])
                 return self._packet(snapshot, r, True)
             if name == "workspace.reset":
                 if not self.store.simulation:
@@ -340,7 +360,7 @@ class OntologyApplication:
                 and not self.store.simulation
                 and (name.startswith("provider.") or name == "catalog.sync")
             ):
-                self.bridge.preferences(snapshot["state"]["providers"])
+                self._preferences(snapshot["state"]["providers"])
             return self._packet(snapshot, r, snapshot.get("result"))
 
     def agent_context(self, name, args):

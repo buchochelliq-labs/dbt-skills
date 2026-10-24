@@ -109,3 +109,31 @@ class ApplicationResolverTests(unittest.TestCase):
         self.assertEqual(result['facts'][0]['evidence']['sourcePath'], 'terms/active-customer.yaml')
         result = resolve_context(s, {'objectId': 'active-customer', 'scope': 'Service'})
         self.assertEqual(result['state'], 'incomplete')
+
+    def test_repeated_resolution_keeps_recent_observations_within_state_bounds(self):
+        import json
+        from pathlib import Path
+        from dbt_skills.context_limits import check_bounds
+
+        s = json.loads((Path(__file__).parents[1] / 'examples/uol-workspace/fixture.json').read_text())
+        request = {'objectId': 'active-customer', 'scope': 'Service'}
+        for _ in range(600):
+            s['clock'] += 1
+            result = resolve_context(s, request, simulation=True)
+            self.assertEqual(result['state'], 'sufficient')
+            check_bounds(s)
+        self.assertLessEqual(len(s['observations']), 256)
+        self.assertTrue(s['observations'][-1]['hit'])
+        self.assertEqual(s['observations'][-1]['at'], s['clock'])
+        self.assertEqual(len(s['cache']), len(result['facts']))
+
+    def test_resolution_prunes_existing_observation_backlog(self):
+        s = state()
+        resolve(s, simulation=True)
+        old = deepcopy(s['observations'][0])
+        old['at'] = 1
+        s['observations'] = [deepcopy(old) for _ in range(3000)]
+        result = resolve(s, simulation=True)
+        self.assertEqual(result['state'], 'sufficient')
+        self.assertLessEqual(len(s['observations']), 256)
+        self.assertEqual(s['observations'][-1]['at'], s['clock'])

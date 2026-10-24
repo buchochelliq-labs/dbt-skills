@@ -1,6 +1,4 @@
 """Durable source snapshots never replace fresh core permission checks."""
-from copy import deepcopy
-import json
 from pathlib import Path
 import tempfile
 import unittest

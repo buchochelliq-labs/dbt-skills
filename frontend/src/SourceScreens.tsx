@@ -14,6 +14,9 @@ import {
   mayInspect,
   exportEnvelope,
   projection,
+  mappingDefaults,
+  mappingFields,
+  projectionPresentation,
   HOUR,
 } from "./services";
 import type { SourceAsset, SourceField } from "./contracts";
@@ -337,7 +340,7 @@ export function Sources({
               <Title
                 eyebrow="Governance"
                 title="Access & capabilities"
-                description="Read-only permission simulation. UOL ownership and native access are separate."
+                description="Read-only metadata permissions. UOL ownership and native access are separate."
               />
               <Access providerId={provider} />
             </>
@@ -755,26 +758,27 @@ export function MappingWorkbench({
   onObject: (id: string) => void;
 }) {
   const { state, reader, command } = useRepo();
+  const [defaults] = useState(() => mappingDefaults(state, reader, assetId, fieldPath));
   const [open, setOpen] = useState(false),
-    [asset, setAsset] = useState(assetId || "customers"),
-    [field, setField] = useState(fieldPath || ""),
-    [knowledge, setKnowledge] = useState("customer-entity"),
+    [asset, setAsset] = useState(defaults.asset),
+    [field, setField] = useState(defaults.field),
+    [knowledge, setKnowledge] = useState(defaults.knowledge),
     [attribute, setAttribute] = useState("identity"),
     [type, setType] = useState("concept attribute"),
-    [scope, setScope] = useState("Enterprise"),
+    [scope, setScope] = useState(defaults.scope),
     [evidence, setEvidence] = useState(""),
-    [from, setFrom] = useState("2026-10-01"),
+    [from, setFrom] = useState(defaults.from),
     [to, setTo] = useState("");
   const mappingGuard = useDraftGuard(
     open &&
       (!!evidence ||
-        asset !== (assetId || "customers") ||
-        field !== (fieldPath || "") ||
-        knowledge !== "customer-entity" ||
+        asset !== defaults.asset ||
+        field !== defaults.field ||
+        knowledge !== defaults.knowledge ||
         attribute !== "identity" ||
         type !== "concept attribute" ||
-        scope !== "Enterprise" ||
-        from !== "2026-10-01" ||
+        scope !== defaults.scope ||
+        from !== defaults.from ||
         !!to),
     "Semantic mapping",
     () => setOpen(false),
@@ -882,18 +886,7 @@ export function MappingWorkbench({
               onChange={setField}
               options={[
                 { value: "", label: "Whole asset" },
-                ...(a?.fields || []).map((f) => ({
-                  value: f.path,
-                  label: f.path,
-                })),
-                ...(a?.type === "metric_view"
-                  ? [
-                      {
-                        value: "active_customers",
-                        label: "active_customers (measure)",
-                      },
-                    ]
-                  : []),
+                ...mappingFields(state, a).map(path => ({ value: path, label: path })),
               ]}
             />
             <Select
@@ -960,7 +953,7 @@ export function MappingWorkbench({
   );
 }
 export function Access({ providerId }: { providerId: string }) {
-  const { state, reader } = useRepo();
+  const { state, reader, simulation } = useRepo();
   const attempt = useNavigationGuard();
   const p = state.providers.find((p) => p.id === providerId)!;
   return (
@@ -1013,7 +1006,7 @@ export function Access({ providerId }: { providerId: string }) {
       <PermissionSummary />
       <p className="muted">
         No Grant or Revoke actions. Actual Azure privileges depend on the object
-        and account; these outcomes are explicit fixtures.
+        and account; {simulation ? "these outcomes are explicit fixtures." : "these outcomes reflect the server metadata boundary, not a verified native grant."}
       </p>
     </Panel>
   );
@@ -1028,7 +1021,8 @@ function ProjectionEditor() {
     [choice, setChoice] = useState("ancestor");
   if (!state.domains.some((d) => d.id === id))
     return <StateNotice title="No domain available for projection" />;
-  const pr = projection(state, id, choice);
+  const pr = projection(state, id, choice, simulation);
+  const presentation = projectionPresentation(state, id, choice, simulation);
   return (
     <>
       <Title
@@ -1037,7 +1031,7 @@ function ProjectionEditor() {
         description="UOL supports deep ownership hierarchies. Native domains support a domain and one subdomain level."
       />
       <div className="native-domain-cards">
-        {["Customer", "Finance", "Operations"].map((name) => (
+        {presentation.inventory.map((name) => (
           <Panel key={name} title={name}>
             <TreeStructure size={24} />
             <p>
@@ -1086,9 +1080,7 @@ function ProjectionEditor() {
             "Native domain": pr.nativeDomain || "No native assignment",
             "Native subdomain": pr.nativeSubdomain || "None",
             "Depth beyond native hierarchy": pr.lostDepth,
-            "Naming collision": pr.collision
-              ? "Review required"
-              : "No collision in fixtures",
+            "Naming collision": presentation.collisionLabel,
             "Actual Page ownership":
               state.pages[0]?.domain || "No Page supplied",
           }}

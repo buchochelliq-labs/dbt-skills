@@ -179,3 +179,18 @@ class ApplicationCommandsAcceptance(unittest.TestCase):
         self.assertEqual(app.agent_context('model_plan',args)['ontology_context'],[])
         update(hidden=False,status='Draft')
         self.assertEqual(app.agent_context('model_plan',args)['ontology_context'],[])
+
+    def test_nonproposal_dependency_blocks_only_dependent_selected_item(self):
+        dependent = self.command('proposal.create', {'proposal': dict(
+            originId='active-customer', targetId='customers', field='description',
+            after='Dependent edit', reason='Review dependency', dependencies=['active-customer'])})['result']['id']
+        self.command('proposal.review', {'id': dependent})
+        independent = self.proposal('Independent edit', 'accounts')
+        before = deepcopy(self.find('targets', 'customers'))
+        result = self.command('proposal.deliver', {'ids': [dependent, independent]})['result']
+        self.assertEqual({p['id']: p['state'] for p in result},
+                         {dependent: 'Failed', independent: 'Verified'})
+        self.assertEqual(self.find('targets', 'customers'), before)
+        self.assertEqual(self.find('targets', 'accounts')['content']['description'], 'Independent edit')
+        receipt = next(d for d in self.store.read()['state']['deliveries'] if d['proposalId'] == dependent)
+        self.assertFalse(receipt['acknowledged'])

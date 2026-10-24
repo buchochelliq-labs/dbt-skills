@@ -8,7 +8,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { useRepo } from "./store";
-import { path, domainKnowledge, knowledgeView, inherited, ttl } from "./services";
+import { path, domainKnowledge, knowledgeView, inherited, ttl, domainEditError, comparableMeanings } from "./services";
 import type { Knowledge, Domain } from "./contracts";
 import {
   Panel,
@@ -50,6 +50,7 @@ export function Domains({
     [reviewOnly, setReviewOnly] = useState(false);
   const d = state.domains.find((d) => d.id === domainId)!;
   const k = knowledgeView(state, reader).find((k) => k.id === selected);
+  const meanings = comparableMeanings(state, reader);
   const domainItems = domainKnowledge(state, reader, d.id, desc);
   const list = domainItems.filter(
     (k) =>
@@ -95,7 +96,7 @@ export function Domains({
               <p className="definition-lead">{k.definition}</p>
               <div className="inline">
                 <Button onClick={() => onObject(null)}>Back to domain</Button>
-                {k.name === "Active customer" && (
+                {meanings.some(m => m.id === k.id) && (
                   <Button onClick={() => setCompare(true)}>
                     Compare meanings
                   </Button>
@@ -322,21 +323,20 @@ export function Domains({
                       Change the search or include descendants.
                     </StateNotice>
                   )}
-                  <div className="review-note">
+                  {meanings.length > 1 && <div className="review-note">
                     <Sparkle size={22} />
                     <div>
                       <strong>
                         Shared labels can have different meanings.
                       </strong>
                       <p>
-                        Compare Service and Billing before choosing agent
-                        context.
+                        Compare definitions before choosing agent context.
                       </p>
                     </div>
                     <Button onClick={() => setCompare(true)}>
                       Compare meanings
                     </Button>
-                  </div>
+                  </div>}
                 </>
               )}
               {tab === "Governance" && <Governance domain={d} />}{" "}
@@ -468,7 +468,7 @@ export function Domains({
       {edit === "domain" && (
         <DomainDialog
           domain={d}
-          parent={d.parent || "enterprise"}
+          parent={d.parent}
           onClose={() => setEdit(null)}
           onSave={() => setEdit(null)}
         />
@@ -479,15 +479,12 @@ export function Domains({
       {compare && (
         <Modal
           wide
-          title="Two meanings. One familiar label."
-          description="Both definitions are valid within their business scope."
+          title="Compare meanings"
+          description="Review definitions that share a name within their business scopes."
           onClose={() => setCompare(false)}
         >
           <div className="comparison-grid">
-            {knowledgeView(state, reader)
-              .filter((k) =>
-                ["active-customer", "billing-active"].includes(k.id),
-              )
+            {meanings
               .map((k) => (
                 <Panel key={k.id} title={k.scope}>
                   <Status value={k.status} />
@@ -530,7 +527,7 @@ function DomainDialog({
   onSave,
 }: {
   domain?: Domain;
-  parent: string;
+  parent: string | null;
   onClose: () => void;
   onSave: (id: string) => void;
 }) {
@@ -538,18 +535,7 @@ function DomainDialog({
   const [name, setName] = useState(domain?.name || ""),
     [p, setP] = useState(parent),
     [desc, setDesc] = useState(domain?.description || "");
-  const validation = !name.trim()
-    ? "Domain name is required."
-    : domain && path(state, p).some((ancestor) => ancestor.id === domain.id)
-      ? "A domain cannot move into itself or its descendants."
-      : state.domains.some(
-            (candidate) =>
-              candidate.id !== domain?.id &&
-              candidate.parent === p &&
-              candidate.name.toLowerCase() === name.trim().toLowerCase(),
-          )
-        ? "A sibling domain already uses this name."
-        : "";
+  const validation = domainEditError(state, domain, name, p);
   const guard = useDraftGuard(
     name !== (domain?.name || "") ||
       p !== parent ||
@@ -573,7 +559,7 @@ function DomainDialog({
                   id: domain.id,
                   patch: {
                     name,
-                    parent: domain.id === "enterprise" ? null : p,
+                    parent: p,
                     description: desc,
                   },
                 }
@@ -587,9 +573,9 @@ function DomainDialog({
         }}
       >
         <TextInput label="Domain name" value={name} onChange={setName} />
-        <Select
+        {domain?.parent !== null && <Select
           label="Parent domain"
-          value={p}
+          value={p || ""}
           onChange={setP}
           options={state.domains.map((d) => ({
             value: d.id,
@@ -597,7 +583,7 @@ function DomainDialog({
               .map((d) => d.name)
               .join(" / "),
           }))}
-        />
+        />}
         <TextInput label="Description" value={desc} onChange={setDesc} area />
         {validation && (
           <div role="alert">

@@ -1,6 +1,6 @@
 /** Portable browser-only regression for domain membership discovery and deduplication.
  * Precondition: hydrated Steward UI with no dirty edits or open dialog.
- * Test creates fictional metadata. Clean-v6 baseline fails at direct membership visibility.
+ * Test creates fictional metadata.
  */
 export async function runMembershipRegression(page) {
   const button = name => page.getByRole('button', { name, exact: true });
@@ -31,7 +31,7 @@ export async function runMembershipRegression(page) {
   assert((await objectRow().count()) === 1, 'Direct membership duplicated the record');
   await page.getByRole('checkbox', { name: 'Include descendant domains', exact: true }).check();
   assert((await objectRow().count()) === 1, 'Direct plus descendant membership double-counted the record');
-  const visibleRows = await page.locator('.object-list .object-row').count();
+  const visibleRows = await page.locator('.object-list .object-row:visible').count();
   const statsText = await page.getByRole('button', { name: /Knowledge objects$/ }).innerText();
   assert(visibleRows > 0, 'Expected visible domain knowledge rows');
   assert(Number.parseInt(statsText, 10) === visibleRows, 'Knowledge count differs from visible unfiltered rows');

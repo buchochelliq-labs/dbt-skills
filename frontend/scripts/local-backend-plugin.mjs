@@ -3,15 +3,12 @@ import { resolve, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-
-const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function startConfiguredBackend() {
   // An explicitly supplied config enables the bundled fictional preview.
   // Without it, proxy the separately launched local backend as before.
-  const configPath = process.env.UOL_PREVIEW_CONFIG || resolve(frontendRoot, "server/preview-config.json");
-  if (!existsSync(configPath)) return null;
+  const configPath = process.env.UOL_PREVIEW_CONFIG;
+  if (!configPath || !existsSync(configPath)) return null;
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   if (config.simulation !== true) throw new Error("Bundled preview requires explicit simulation=true");
   const base = dirname(resolve(configPath));

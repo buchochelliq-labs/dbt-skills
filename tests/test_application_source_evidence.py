@@ -6,9 +6,10 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
 from dbt_skills.application_api import OntologyApplication
-from dbt_skills.application_store import ApplicationStore, empty_state
+from dbt_skills.application_store import ApplicationStore, empty_state, validate_state
 from dbt_skills.project import discover_project
 from dbt_skills.workspace_service import CoreBridge
 from dbt_skills.workspace_store import WorkspaceError
@@ -73,6 +74,119 @@ class SourceEvidenceTests(unittest.TestCase):
         result = self.command('context.resolve', {'request': {'objectId': self.kid, 'scope': 'Service'}})['result']
         self.assertEqual(result['state'], 'sufficient')
         return result
+
+    def test_removed_provider_preserves_references_without_exposing_sources(self):
+        self.resolve()
+        original = json.loads((self.project / 'catalogs.json').read_text())
+        # A previously configured native target may outlive its provider config.
+        def target(state):
+            retained = deepcopy(state['targets'][0])
+            retained.update(id='native:genie:retained', kind='genie',
+                            name='Retained space', providerId='identity')
+            state['targets'].append(retained)
+            from dbt_skills.application_commands import create_proposal
+            proposal = create_proposal(state, {'originId': self.kid,
+                'targetId': retained['id'], 'field': 'description',
+                'after': 'Reviewed handoff', 'reason': 'Reviewed local semantics'}, 'steward')
+            proposal['state'] = 'Reviewed'
+        self.store.transact(self.store.read()['revision'], target, 'Configured target fixture')
+        config = deepcopy(original)
+        config['providers'] = [p for p in config['providers'] if p['id'] != 'identity']
+        self.write('catalogs.json', config)
+        self.reopen()
+        synced = self.command('catalog.sync')
+        state = self.store.read()['state']
+        provider = next(p for p in state['providers'] if p['id'] == 'identity')
+        self.assertFalse(provider['enabled'])
+        self.assertEqual(provider['health'], 'denied')
+        self.assertTrue(provider['retired'])
+        invalid = deepcopy(state)
+        next(p for p in invalid['providers'] if p['id'] == 'identity')['enabled'] = True
+        with self.assertRaises(WorkspaceError):
+            validate_state(invalid)
+        with patch.object(self.bridge, 'preferences', wraps=self.bridge.preferences) as preferences:
+            self.app._preferences(state['providers'])
+            self.assertNotIn('identity', [p['id'] for p in preferences.call_args.args[0]])
+        self.assertEqual(next(m for m in state['mappings'] if m['id'] == self.mid)['status'], 'Approved')
+        self.assertTrue(any(t['id'] == 'native:genie:retained' for t in state['targets']))
+        for view in (synced['state'], self.command('workspace.export')['result']['state']):
+            self.assertEqual(view['assets'], [])
+            self.assertEqual(view['targets'], [])
+            self.assertEqual(view['mappings'], [])
+            self.assertEqual(view['cache'], [])
+            self.assertEqual(view['observations'], [])
+        proposal_id = state['proposals'][0]['id']
+        self.app.native_adapter = Mock()
+        before_actions = self.store.read()
+        actions = [('target.refresh', {'id': 'native:genie:retained'}),
+                   ('proposal.create', {'proposal': {'originId': self.kid,
+                    'targetId': 'native:genie:retained', 'field': 'description',
+                    'after': 'New handoff', 'reason': 'Reviewed'}}),
+                   ('proposal.deliver', {'ids': [proposal_id]})]
+        actions += [(name, {'id': proposal_id}) for name in
+                    ('proposal.check', 'proposal.reconcile', 'proposal.review',
+                     'proposal.rebase', 'proposal.export')]
+        for name, payload in actions:
+            with self.subTest(action=name), self.assertRaisesRegex(WorkspaceError, 'Target provider is retired'):
+                self.command(name, payload)
+        self.assertEqual(self.app.native_adapter.mock_calls, [])
+        self.assertEqual(self.store.read(), before_actions)
+        revision = self.store.read()['revision']
+        with self.assertRaises(WorkspaceError):
+            self.command('provider.update', {'id': 'identity', 'patch': {'enabled': True}})
+        self.assertEqual(self.store.read()['revision'], revision)
+        self.reopen()
+        self.assertEqual(self.command('catalog.sync')['state']['assets'], [])
+        self.write('catalogs.json', original)
+        self.reopen()
+        restored = self.command('catalog.sync')['state']
+        self.assertTrue(next(p for p in restored['providers'] if p['id'] == 'identity')['enabled'])
+        self.assertFalse(next(p for p in restored['providers'] if p['id'] == 'identity').get('retired'))
+        self.assertEqual(len(restored['assets']), 2)
+        self.resolve()
+
+    def test_page_create_uses_active_provider_and_rejects_no_active_provider(self):
+        config = json.loads((self.project / 'catalogs.json').read_text())
+        config['providers'] = [p for p in config['providers'] if p['id'] != 'identity']
+        self.write('catalogs.json', config)
+        self.reopen()
+        self.command('catalog.sync')
+        payload = {'domain': 'root', 'name': 'Reviewed page', 'type': 'Page',
+                   'definition': 'Local reviewed guidance.'}
+        packet = self.command('knowledge.create', payload)
+        page_id = packet['result']['id']
+        target = next(t for t in packet['state']['targets'] if t['id'] == page_id)
+        self.assertEqual(target['providerId'], 'column_facts')
+        self.assertEqual(target['kind'], 'page')
+        self.command('provider.update', {'id': 'column_facts', 'patch': {'enabled': False}})
+        before = self.store.read()
+        with self.assertRaisesRegex(WorkspaceError, 'Page requires an active provider'):
+            self.command('knowledge.create', payload)
+        self.assertEqual(self.store.read(), before)
+        # The command itself must reject before consuming IDs or appending records.
+        from dbt_skills.application_commands import execute
+        state = deepcopy(before['state'])
+        with self.assertRaisesRegex(WorkspaceError, 'Page requires an active provider'):
+            execute(state, 'knowledge.create', payload, reader='steward', simulation=False)
+        self.assertEqual(state, before['state'])
+
+    def test_renamed_provider_sync_rebinds_assets_and_resets_target_metadata(self):
+        def observed_target(state):
+            for target in state['targets']:
+                target['content'] = {'description': 'Old provider native metadata'}
+                target['permission'] = 'permitted'
+        self.store.transact(self.store.read()['revision'], observed_target, 'Observed target fixture')
+        config = json.loads((self.project / 'catalogs.json').read_text())
+        config['providers'][0]['id'] = 'renamed_identity'
+        self.write('catalogs.json', config)
+        self.reopen()
+        view = self.command('catalog.sync')['state']
+        self.assertEqual({a['providerId'] for a in view['assets']}, {'renamed_identity'})
+        self.assertFalse(next(p for p in view['providers'] if p['id'] == 'identity')['enabled'])
+        # A target with the same canonical asset identity must use its current provider.
+        self.assertEqual({t['providerId'] for t in view['targets']}, {'renamed_identity'})
+        self.assertTrue(all(t['content'] == {} and t['permission'] == 'unknown' for t in view['targets']))
+        self.resolve()
 
     def test_unavailable_source_hides_cached_facts_and_observations(self):
         self.resolve()

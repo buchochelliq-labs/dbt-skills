@@ -112,7 +112,9 @@ PROVIDER = obj(
         health={"enum": ["healthy", "outage", "denied", "malformed"]},
         scope=arr(),
         capabilities=dictionary(OUTCOME),
-    )
+        retired=B,
+    ),
+    ("retired",),
 )
 FIELD = obj(fields("path type comment classification key", nullable=B))
 ASSET = obj(
@@ -322,6 +324,9 @@ def validate_state(value):
             if key not in ids[group]:
                 raise ValueError("dangling reference")
 
+        for provider in value["providers"]:
+            if provider.get("retired") and provider["enabled"]:
+                raise ValueError("retired provider cannot be enabled")
         for d in value["domains"]:
             ref(d["parent"], "domains", True)
         for k in value["knowledge"]:

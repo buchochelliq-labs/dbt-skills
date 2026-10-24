@@ -142,4 +142,4 @@ flowchart TB
   AGENT["Independent Codex agent"] --> MCP
 ```
 
-The original full UI remains an explicit simulated mode. The connected authoring repository is not yet a migration of every demo governance type, and its records are not silently promoted into the planner. Native delivery has no HTTP write endpoint. Provider reads are real adapter implementations; live-account validation remains outstanding.
+The original React UI uses the authoritative Python application for both explicit fictional simulation and configured metadata providers. Approved ontology context enters model planning only through the canonical resolver. Native delivery has no HTTP write endpoint. Provider reads are real adapter implementations; live-account validation remains outstanding.

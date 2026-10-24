@@ -635,23 +635,23 @@ export function rebase(s: State, id: string) {
   p.state = "Draft";
   p.reviewDecision = undefined;
 }
-export function projection(s: State, id: string, choice: string) {
+export function projection(s: State, id: string, choice: string, simulation = true) {
   const full = path(s, id);
   const names = full.slice(1).map((d) => d.name);
   const sub =
-    choice === "flatten" ? names.slice(1).join("-") : names[1] || null;
+    choice === "flatten" ? names.slice(1).join("-") || null : names[1] || null;
   return {
     uolId: id,
     fullPath: full.map((d) => d.name).join(" / "),
     choice,
-    nativeDomain: choice === "uol-only" ? null : names[0],
+    nativeDomain: choice === "uol-only" ? null : names[0] || null,
     nativeSubdomain: choice === "uol-only" ? null : sub,
     tags:
-      choice === "uol-only"
+      choice === "uol-only" || !names.length
         ? {}
         : { [names[0]]: "", ...(sub ? { [`${names[0]}/${sub}`]: "" } : {}) },
     lostDepth: Math.max(0, names.length - 2),
-    collision: s.domains.some((d) => d.id !== id && d.name === sub),
+    collision: simulation ? s.domains.some((d) => d.id !== id && d.name === sub) : null,
     pageDomain: s.pages.find((p) => p.domain === id)?.domain ?? null,
   };
 }
@@ -754,4 +754,31 @@ export class MockPublicationAdapter implements PublicationAdapter {
     target.revision++;
     return target;
   }
+}
+
+export function domainEditError(state: State, domain: Domain | undefined, name: string, parent: string | null) {
+  if (!name.trim()) return "Domain name is required.";
+  if (domain && parent && path(state, parent).some(d => d.id === domain.id)) return "A domain cannot move into itself or its descendants.";
+  if (state.domains.some(d => d.id !== domain?.id && d.parent === parent && d.name.toLowerCase() === name.trim().toLowerCase())) return "A sibling domain already uses this name.";
+  return "";
+}
+export function comparableMeanings(state: State, reader: Reader) {
+  const visible = knowledgeView(state, reader);
+  const name = visible.find(k => visible.filter(other => other.name === k.name).length > 1)?.name;
+  return name ? visible.filter(k => k.name === name) : [];
+}
+export function mappingDefaults(state: State, reader: Reader, assetId?: string, fieldPath?: string) {
+  const assets = assetView(state, reader).filter(a => !["catalog", "schema"].includes(a.type));
+  const asset = assets.find(a => a.id === assetId) || assets[0];
+  const objects = knowledgeView(state, reader);
+  const knowledge = objects.find(k => asset?.knowledgeIds.includes(k.id)) || objects[0];
+  return { asset: asset?.id || "", field: fieldPath || "", knowledge: knowledge?.id || "", scope: knowledge?.scope || "", from: new Date(state.clock).toISOString().slice(0, 10) };
+}
+export function mappingFields(state: State, asset: State["assets"][number] | undefined) {
+  const measures = asset?.type === "metric_view" ? state.targets.find(t => t.id === asset.id)?.content.yaml?.measures : [];
+  return [...new Set([...(asset?.fields || []).map(f => f.path), ...(Array.isArray(measures) ? measures.flatMap(m => typeof m?.name === "string" ? [m.name] : []) : [])])];
+}
+export function projectionPresentation(state: State, id: string, choice: string, simulation: boolean) {
+  const plan = projection(state, id, choice);
+  return { inventory: simulation ? ["Customer", "Finance", "Operations"] : [], collisionLabel: simulation ? (plan.collision ? "Review required" : "No collision in fixtures") : "Not verified against native inventory" };
 }

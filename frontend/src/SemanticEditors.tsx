@@ -3,7 +3,7 @@ import { stringify, parse } from "yaml";
 import { Download } from "@phosphor-icons/react";
 import { useRepo } from "./store";
 import { assetView, knowledgeView, exportEnvelope } from "./services";
-import { validateMetric } from "./nativeValidation";
+import { validateMetric, genieInstructionText } from "./nativeValidation";
 import {
   Panel,
   Title,
@@ -38,14 +38,8 @@ export function MetricEditor({ assetId }: { assetId: string }) {
   );
   const initial = t.content.yaml || {
     version: "1.1",
-    source: "finance.core.accounts",
-    fields: [{ name: "month", expr: "accounting_month" }],
-    measures: [
-      {
-        name: "monthly_recurring_revenue",
-        expr: "SUM(normalised_monthly_recurring_charge)",
-      },
-    ],
+    source: "",
+    measures: [],
   };
   const [expectedRevision] = useState(t.revision);
   const [text, setText] = useState(stringify(initial)),
@@ -522,9 +516,7 @@ function GenieEditorContent() {
   const target = targets.find((t) => t.id === targetId)!;
   const [snapshot, setSnapshot] = useState(structuredClone(target)),
     [text, setText] = useState(
-      target.content.serialized_space.instructions.text_instructions[0].content.join(
-        "\n",
-      ),
+      genieInstructionText(target.content.serialized_space),
     ),
     [full, setFull] = useState(
       JSON.stringify(target.content.serialized_space, null, 2),
@@ -554,7 +546,7 @@ function GenieEditorContent() {
         (x: any) => typeof x !== "string",
       )
     )
-      err = "Complete version 2 configuration required.";
+      err = "Complete version 2 configuration with a text instruction block required. Use Complete configuration to review and repair the native snapshot.";
   } catch {
     err = "Configuration is not valid JSON.";
   }
@@ -593,9 +585,7 @@ function GenieEditorContent() {
             setSnapshot(structuredClone(t));
             setFull(JSON.stringify(t.content.serialized_space, null, 2));
             setText(
-              t.content.serialized_space.instructions.text_instructions[0].content.join(
-                "\n",
-              ),
+              genieInstructionText(t.content.serialized_space),
             );
           })
         }
@@ -619,9 +609,7 @@ function GenieEditorContent() {
               setSnapshot(structuredClone(target));
               setFull(JSON.stringify(target.content.serialized_space, null, 2));
               setText(
-                target.content.serialized_space.instructions.text_instructions[0].content.join(
-                  "\n",
-                ),
+                genieInstructionText(target.content.serialized_space),
               );
               setPreview(false);
             })

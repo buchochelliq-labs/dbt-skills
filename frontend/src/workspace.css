@@ -1778,5 +1778,6 @@ td {
 }
 .object-row > .badge { flex:0 0 auto; }
 
-.connected-workspace{min-height:100vh;background:#fafbf6}.connected-header{display:flex;align-items:center;gap:18px;padding:20px 32px;border-bottom:1px solid #dbe2da;background:#fff}.connected-header>button{margin-left:auto}.connected-main{max-width:1440px;margin:auto;padding:32px}.connected-tabs{display:flex;gap:10px;margin:24px 0;flex-wrap:wrap}.connected-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}.connected-grid>section{min-width:0}.connected-workspace details{margin:18px 0}.connected-workspace .check{display:flex;align-items:flex-start;margin:12px 0;overflow-wrap:anywhere}.connected-workspace pre{max-height:420px;overflow:auto}.connected-workspace .object-row{width:100%}@media(max-width:900px){.connected-grid{grid-template-columns:1fr}.connected-main{padding:20px}.connected-header{padding:14px;gap:10px;flex-wrap:wrap}}
+.connected-main{max-width:1440px;margin:auto;padding:32px}
+@media(max-width:900px){.connected-main{padding:20px}}
 .server-saving{position:fixed;bottom:16px;right:20px;z-index:2000;padding:10px 16px;background:#164f48;color:white;border-radius:8px;box-shadow:0 3px 12px #0002;font-size:13px}

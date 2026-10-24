@@ -7,7 +7,6 @@ from .workspace_store import WorkspaceError
 from .application_resolver import resolve_context
 from .native_publication import (
     validate_proposal,
-    export_handoff,
     fingerprint,
     verify_readback,
 )
@@ -19,6 +18,10 @@ def item(s, collection, identifier):
     found = next((x for x in s[collection] if x["id"] == identifier), None)
     if found is None:
         raise WorkspaceError("Object unavailable")
+    if collection == "targets":
+        provider = next((p for p in s["providers"] if p["id"] == found["providerId"]), None)
+        if provider and provider.get("retired"):
+            raise WorkspaceError("Target provider is retired; restore operator configuration and sync")
     return found
 
 
@@ -330,6 +333,17 @@ def execute(
         )
     if reader != "steward":
         raise WorkspaceError("This reader cannot modify metadata")
+    # Check retained references before native reads, result export, or mutation.
+    if name.startswith("proposal.") and name != "proposal.create":
+        proposal_ids = payload["ids"] if name == "proposal.deliver" else [payload["id"]]
+        for proposal_id in proposal_ids:
+            proposal = item(s, "proposals", proposal_id)
+            item(s, "targets", proposal["targetId"])
+    if name == "knowledge.create" and payload.get("type") == "Page":
+        active = [p for p in s["providers"] if p["enabled"] and not p.get("retired")]
+        if not active:
+            raise WorkspaceError("Page requires an active provider; configure and sync a provider first")
+        provider = next((p for p in active if p["kind"] == "authored"), active[0])
     if not simulation:
         s["clock"] = int(datetime.now(timezone.utc).timestamp() * 1000)
     if name == "domain.create":
@@ -392,11 +406,11 @@ def execute(
         return d
     if name == "knowledge.create":
         d = item(s, "domains", payload["domain"])
-        id = ident(s, "knowledge")
         definition = text(payload["definition"], "Definition")
         kind = payload["type"]
         if kind not in ["Concept", "Business term", "Metric", "Rule", "Page"]:
             raise WorkspaceError("Unknown knowledge type")
+        id = ident(s, "knowledge")
         k = dict(
             id=id,
             name=text(payload["name"], "Name"),
@@ -423,11 +437,7 @@ def execute(
             history=[],
         )
         s["knowledge"].append(k)
-        if kind == "Page" and s["providers"]:
-            provider = next(
-                (p for p in s["providers"] if p["kind"] == "authored"),
-                s["providers"][0],
-            )
+        if kind == "Page":
             s["targets"].append(
                 dict(
                     id=id,
@@ -521,6 +531,8 @@ def execute(
         else:
             p = item(s, "providers", payload["id"])
             patch = payload["patch"]
+            if p.get("retired") and patch.get("enabled"):
+                raise WorkspaceError("Removed providers require operator configuration and sync")
             patch_allowed(
                 patch,
                 [
@@ -813,10 +825,10 @@ def execute(
             ):
                 p["state"] = "Failed"
                 message = "Audience unsuitable"
-            elif any(
-                item(s, "proposals", dep)["state"] != "Verified"
-                for dep in p["dependencies"]
-            ):
+            elif not set(p["dependencies"]) <= {
+                dependency["id"] for dependency in s["proposals"]
+                if dependency["state"] == "Verified"
+            }:
                 p["state"] = "Failed"
                 message = "Dependency not verified"
             elif not simulation:

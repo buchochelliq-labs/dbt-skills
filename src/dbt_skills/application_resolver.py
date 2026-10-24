@@ -7,6 +7,9 @@ import json
 import re
 import time
 
+# Recent usage samples only; immutable repository revisions hold audit history.
+MAX_OBSERVATIONS = 256
+
 
 def _norm(value):
     return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
@@ -379,6 +382,7 @@ def resolve_context(
                     hit=bool(cached),
                 )
             )
+            del state["observations"][:-MAX_OBSERVATIONS]
             if not cached:
                 state["cache"] = [
                     e

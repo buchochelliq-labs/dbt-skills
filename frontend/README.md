@@ -27,7 +27,7 @@ python scripts/run-local.py --frontend frontend --project-dir /absolute/project/
 
 The project supplies `modelling.yml`, `catalogs.json` and its dbt `artifacts/manifest.json`. Start with **Sync catalog**. Only project-referenced source/produced assets are fetched; ambiguous identities remain quarantined. UC/OpenMetadata credentials are server environment variables referenced by the operator configuration. See [local workspace](../docs/LOCAL_WORKSPACE.md), [Unity Catalog](../docs/UNITY_CATALOG.md), [OpenMetadata](../docs/OPENMETADATA.md) and [persistence](../docs/APPLICATION_PERSISTENCE.md).
 
-The preview's `server/preview-config.json` explicitly chooses fictional fixtures and a frozen Linux backend; the source launcher overrides this configuration. Git excludes the frozen binary and generated UI assets. For a frozen preview, install PyInstaller in the backend environment, then run `python scripts/build-preview-backend.py --frontend frontend` from the repository root and `npm run build` in frontend. Rebuild after backend edits. Normal local use runs Python source. No runtime database, token or encryption key is committed.
+The preview's `server/preview-config.json` chooses fictional fixtures and a frozen Linux backend only when explicitly enabled with `UOL_PREVIEW_CONFIG=server/preview-config.json npm run dev`. Plain `npm run dev` proxies the separately launched backend using `UOL_BACKEND_PORT` and `UOL_LOCAL_TOKEN` or `UOL_TOKEN_FILE`. Git excludes the frozen binary and generated UI assets. For a frozen preview, install PyInstaller in the backend environment, then run `python scripts/build-preview-backend.py --frontend frontend` from the repository root and `npm run build` in frontend. Rebuild after backend edits. Normal local use runs Python source. No runtime database, token or encryption key is committed.
 
 ## Original workspace
 
@@ -72,4 +72,4 @@ Six portable browser journeys run through Playwright or the managed browser. Run
 
 Native observation is authenticated, bounded and metadata-only. Actual write permission/audience remains unknown unless a trusted authorization callback supplies evidence. Unsupported destinations, missing conditional updates and Pages use reviewed handoffs. Live UC/OpenMetadata/Genie tenant compatibility has not been tested with credentials. No source rows, arbitrary query execution, native grants, live writes, ontology-indexing success, Genie answer use or measured cache savings are claimed.
 
-The production `dist/client/index.html` references the current bundle. Serve it with the local API proxy; a standalone HTML file cannot run Python or encrypted storage. `UOL-Workspace.html` is now a local startup guide, not a disconnected mock application. No public deployment was performed.
+The production `dist/client/index.html` references the current bundle. Serve it with the local API proxy; a standalone HTML file cannot run Python or encrypted storage.

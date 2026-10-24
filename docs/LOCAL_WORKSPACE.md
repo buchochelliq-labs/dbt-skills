@@ -22,6 +22,8 @@ The launcher starts both processes, generates a process-only loopback session to
 
 The project supplies `modelling.yml`, `catalogs.json`, and `artifacts/manifest.json`. Choose **Sync catalog** to ingest only project-referenced sources and outputs; ambiguous identities remain quarantined. Configure UC/OpenMetadata endpoints, exact identities, trusted hosts and credential-environment names in the operator-owned catalogs configuration. Free-form domain provider-policy text is descriptive governance, not an executable ordering language. Browser controls can reorder/enable configured instances and change TTL; they cannot add endpoints or change source scope. See UNITY_CATALOG.md, OPENMETADATA.md, CATALOG.md#project-membership-delta-sync-and-quarantine and CATALOG_CACHE.md.
 
+Removing or renaming a configured provider retains a disabled reference so existing mappings and history remain valid. Its source assets and native targets are withheld. Restore the provider in operator configuration and sync to make it available again; browser controls cannot reactivate a removed provider.
+
 The launcher uses conventional filenames. For different paths or native observation configuration, start the service directly with `python -m dbt_skills.workspace_service --help` and give the frontend the same `UOL_LOCAL_TOKEN` (or owner-only `UOL_TOKEN_FILE`). API binds 127.0.0.1, checks host/origin/token, bounds JSON and rejects unknown commands. The frontend proxy enforces same-origin POST. This is a single-user local product; not a multi-user production server.
 
 ## Contracts and authority

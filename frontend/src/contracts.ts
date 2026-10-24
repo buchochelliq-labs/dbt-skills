@@ -63,6 +63,7 @@ export interface ScopedDefinition {
   exclusions: string;
 }
 export interface Provider {
+  retired?: boolean;
   id: string;
   name: string;
   kind: "uc" | "openmetadata" | "authored";

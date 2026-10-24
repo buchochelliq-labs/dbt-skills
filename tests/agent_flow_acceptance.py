@@ -13,7 +13,6 @@ from mcp.shared.exceptions import MCPError
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / 'examples/data-model-workflow'
-TRANSCRIPT = ROOT / 'docs/agent-flow-transcript.json'
 
 def hashes(path):
     return {str(p.relative_to(path)): hashlib.sha256(p.read_bytes()).hexdigest() for p in path.rglob('*') if p.is_file()}
@@ -37,10 +36,8 @@ async def main():
                     except MCPError as exc:
                         payload = {'protocol_error': {'code': exc.code, 'message': exc.message}}
                         events.append({'method': 'tools/call', 'name': name, 'arguments': args, 'result': payload})
-                        TRANSCRIPT.write_text(json.dumps(events, indent=2) + '\n')
                         return payload
                     events.append({'method': 'tools/call', 'name': name, 'arguments': args, 'result': payload})
-                    TRANSCRIPT.write_text(json.dumps(events, indent=2) + '\n')
                     return payload.get('structured_content') or json.loads(payload['content'][0]['text'])
                 ctx = await call('modelling_context', {})
                 cid = ctx['context_id']
@@ -87,7 +84,7 @@ async def main():
                 assert broken['status'] == 'needs_clarification'
                 print('Proposal:', proposal.get('status'), 'Missing:', missing['relationships'][0]['status'], 'Stale:', stale, 'Broken:', broken['relationships'][0]['status'])
         assert hashes(FIXTURE) == before, 'original fixture mutated'
-    print(f'Wrote {len(events)} protocol events to {TRANSCRIPT}')
+    print(f'Passed {len(events)} MCP protocol events without writing a transcript.')
 
 if __name__ == '__main__':
     asyncio.run(main())

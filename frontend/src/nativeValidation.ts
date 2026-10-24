@@ -126,3 +126,8 @@ export function validateMetric(text: string, runtime: string) {
   }
   return { errors, value };
 }
+
+export function genieInstructionText(value: any): string {
+  const content = value?.instructions?.text_instructions?.[0]?.content;
+  return Array.isArray(content) && content.every(line => typeof line === "string") ? content.join("\n") : "";
+}

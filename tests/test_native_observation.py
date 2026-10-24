@@ -8,7 +8,6 @@ from dbt_skills.native_observation import (
     MAX_BYTES,
 )
 from dbt_skills.native_publication import (
-    fingerprint,
     validate_proposal,
     verify_readback,
 )
