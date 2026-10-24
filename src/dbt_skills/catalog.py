@@ -393,6 +393,9 @@ def load_catalog(path: Path) -> CatalogResolver:
         if entry.get('type') == 'unity_catalog':
             from .unity_catalog import UnityCatalogProvider
             providers.append(CachedProvider(UnityCatalogProvider(entry), options, disk_path=path.parent / '.dbt-skills-catalog-cache' / (entry['id'] + '.db')))
+        elif entry.get('type') == 'openmetadata':
+            from .openmetadata import OpenMetadataProvider
+            providers.append(CachedProvider(OpenMetadataProvider(entry), options, disk_path=path.parent / '.dbt-skills-catalog-cache' / (entry['id'] + '.db')))
         elif (set(entry) == {'id', 'type', 'path', 'scope'} and entry['type'] == 'file'
               and isinstance(entry['path'], str) and 1 <= len(entry['path']) <= 4096):
             providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))

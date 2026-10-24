@@ -2,6 +2,8 @@
 
 import argparse
 import asyncio
+from copy import deepcopy
+import json
 from pathlib import Path
 import re
 import sys
@@ -43,6 +45,28 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
     catalog_path = (project.root / catalog_path).resolve() if catalog_path is not None else None
     business_context_path = (project.root / business_context_path).resolve() if business_context_path is not None else None
     lock, state = RLock(), {}
+    # Preferences outlive pinned-context replacement; the configured registry does not.
+    preferences = None
+
+    def apply_preferences(catalog):
+        configured = tuple(catalog.providers)
+        catalog.application_providers = configured
+        if preferences is None:
+            return
+        available = {provider.id: provider for provider in configured}
+        ordered = []
+        for preference in preferences:
+            provider = available.pop(preference["id"], None)
+            if provider is None:
+                continue
+            original = getattr(provider, "original", provider)
+            if hasattr(original, "options"):
+                original.options["ttl_seconds"] = min(86400, max(1, int(preference.get("ttl", 24) * 3600)))
+            if preference.get("enabled", True):
+                ordered.append(provider)
+        # Newly configured providers remain discoverable and enabled by default.
+        ordered.extend(available.values())
+        catalog.providers = tuple(ordered)
 
     def capture(*, delta=False):
         policy = load_document(policy_path) if policy_path is not None else None
@@ -58,6 +82,11 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
         previous = state.get('catalog') if delta else None
         if catalog is not None:
             catalog = scope_catalog(catalog, snapshot, previous=previous)
+            catalog.application_types = {
+                item["id"]: item["type"]
+                for item in json.loads(catalog_path.read_text())["providers"]
+            }
+            apply_preferences(catalog)
             if state and not delta:
                 for provider in catalog.providers:
                     force = getattr(provider.original, 'force_refresh', None)
@@ -224,6 +253,41 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                 return {**result, "context_id": context_id}
             return call(context_id, run, require_policy=True)
 
+    # Application-only hooks share this exact pinned resolver; not additional agent tools.
+    def application_preferences(next_preferences):
+        nonlocal preferences
+        with lock:
+            preferences = deepcopy(next_preferences)
+            catalog = state.get("catalog")
+            if catalog is None:
+                return
+            catalog.providers = catalog.application_providers
+            apply_preferences(catalog)
+
+    def application_catalog_snapshot():
+        with lock:
+            catalog=state.get("catalog")
+            if catalog is None:return {"providers":[],"assets":[],"context":summary()}
+            active = catalog.providers
+            try:
+                catalog.providers = catalog.application_providers
+                info = catalog.describe()
+            finally:
+                catalog.providers = active
+            for provider in info["providers"]:
+                provider["type"] = catalog.application_types[provider["id"]]
+                provider["enabled"] = any(p.id == provider["id"] for p in active)
+            assets=[]
+            for identifier in sorted(catalog.allowed - catalog.blocked):
+                facts=catalog.resolve(identifier,["relation","columns"])
+                if facts["status"] in ("denied","error"):continue
+                relation=facts["selected"].get("relation")
+                if not relation:continue
+                assets.append({"asset_id":identifier,"relation":relation,"columns":facts["selected"].get("columns"),"status":facts["status"]})
+            return {"providers":info["providers"],"assets":assets,"context":summary(),"quarantine":catalog.quarantine()}
+
+    server.application_preferences=application_preferences
+    server.application_catalog_snapshot=application_catalog_snapshot
     return server
 
 

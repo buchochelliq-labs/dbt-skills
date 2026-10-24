@@ -1,5 +1,7 @@
 # dbt-skills
 
+**Optional UOL workspace:** [Run the original React UI with the encrypted Python backend](docs/LOCAL_WORKSPACE.md).
+
 **Start here:** [Run locally with Northwind and Copilot](docs/RUN_LOCALLY.md).
 
 Try the read-only [modelling policy CLI](docs/MODELLING_POLICY.md) to validate
