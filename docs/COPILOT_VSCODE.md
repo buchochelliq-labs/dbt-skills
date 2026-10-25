@@ -69,3 +69,25 @@ Select optional `--business-context business.json` to expose the read-only
 with per-record rationale, supplied review status and provenance. No policy or
 catalog is required. Read [business context](BUSINESS_CONTEXT.md) for the format,
 pinning/refresh rules and evidence binding to saved design decisions.
+
+## Clarification and explicitly reviewed local updates
+
+Ask useful questions about intent, scope and terminology; retain supplied answers
+and avoid repeating resolved questions. Offer scoped durable updates when useful.
+Conversation answers are not permission to save; decline/defer leaves them in the
+conversation. Keep transient save/approval status out of durable record rationale.
+
+`model_plan`, `model_propose_decision` and optional `business_context_propose` expose
+typed nested request schemas through real MCP discovery. The business proposal tool
+appears only with operator-selected `--business-context`; it requires a complete
+concept or relationship record and an explicit matching ID for replacement.
+It checks pinned file provenance and preserves unrelated records. No tool takes
+paths or writes files. Use decision proposals for evidence-bound choices and
+`modelling_propose` for naming exceptions/standards, not business vocabulary.
+
+For explicitly approved local updates, review the returned `local_update` and have
+the developer run the [operator acceptance CLI](BUSINESS_CONTEXT.md#propose-and-explicitly-accept-a-scoped-update)
+with that object and its exact digest. Then refresh and read back the record;
+old context IDs are invalid. The MCP server cannot approve or apply a proposal.
+Configured catalog priority, conservative/partial planning, and advisory type
+assessment are described in [catalog resolution](CATALOG.md#configurable-conflict-resolution).

@@ -1,6 +1,7 @@
 """Prepare review-only saved design choices; never write or approve a record."""
 from copy import deepcopy
 
+from .local_context_updates import prepare_update
 from .design_decisions import DesignDecisionError, validate_decisions, validate_answers, answer_identity
 from .context_limits import ContextLimitError, check_bounds
 from .model_planning import PlanningError, _request, plan_model
@@ -31,7 +32,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     # Do not let existing records supply choices: a new proposal must be explicit.
     planning = plan_model(project, policy, catalog, plan_request, snapshot=snapshot, business=business)
     result = {'status': 'needs_clarification', 'planning': planning, 'questions': [],
-              'proposed_document': None, 'decisions_patch': [],
+              'proposed_document': None, 'decisions_patch': [], 'local_update': None,
               'decisions_base': deepcopy(decisions['provenance']) if decisions else None,
               'review_requirements': ['Review the complete record and unresolved planning questions before saving',
                                       'Verify the decisions base digest and source evidence have not changed before saving',
@@ -81,6 +82,8 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     validate_decisions(document)
     result.update(status='pending_review', proposed_document=document,
                   decisions_patch=patch if decisions else [{'op': 'add', 'path': '', 'value': document}])
+    if decisions is None or document != decisions['document']:
+        result['local_update'] = prepare_update(decisions, document)
     try:
         check_bounds(result)
     except ContextLimitError:

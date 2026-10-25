@@ -4,6 +4,7 @@ from copy import deepcopy
 import json
 import re
 
+from .metadata_types import assess_types
 from .business_context import load_business_context, validate_business_context
 from .catalog import CatalogError, FIELDS, _document, load_catalog
 from .design_decisions import decision_context, select_decision, answer_identity, validate_decisions, load_design_decisions
@@ -63,7 +64,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
     snapshot = inspect_artifacts(project) if snapshot is None else snapshot
     manifest = snapshot['manifest']
     result = {'schema_version': 1, 'status': 'needs_clarification', 'intent': request['intent'],
-              'entities': [], 'relationships': [], 'suggestions': [], 'questions': [], 'evidence': {},
+              'entities': [], 'relationships': [], 'withheld_assets': [], 'suggestions': [], 'questions': [], 'evidence': {},
               'policy_provenance': deepcopy(policy['provenance']),
               'business_context': deepcopy(business['provenance']) if business else None,
               'source': {k: manifest.get(k) for k in ('path', 'sha256', 'status', 'identity', 'freshness', 'generated_at', 'observed_at')},
@@ -91,7 +92,7 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
         identifier = asset['asset_id']
         facts = catalog.resolve(identifier, list(FIELDS))
         if facts['status'] in ('denied', 'error'):
-            result.update(status='blocked', evidence={}, entities=[], relationships=[], suggestions=[], questions=[])
+            result.update(status='blocked', evidence={}, entities=[], relationships=[], suggestions=[], questions=[], withheld_assets=[])
             if facts.get('scope_reason') == 'conflicting_bindings':
                 question('catalog_conflict', 'Clarify conflicting physical relation mappings before fetching project context.', identifier)
             elif facts.get('scope_reason'):
@@ -100,12 +101,15 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
                 question('catalog_unavailable', 'Resolve catalog access or provider failure before planning.', identifier)
             return result
         result['evidence'][identifier] = facts
-    if any(f['status'] == 'conflict' for f in result['evidence'].values()):
+    withheld = {identifier for identifier, facts in result['evidence'].items() if facts.get('unresolved_conflicts', facts['conflicts'])}
+    if withheld:
         for identifier, facts in result['evidence'].items():
-            if facts['conflicts']:
+            if identifier in withheld:
                 question('catalog_conflict', 'Resolve conflicting catalog declarations before selecting a design.', identifier, fields=facts['conflicts'])
-        _limit(result)
-        return result
+        result['withheld_assets'] = sorted(withheld)
+        if catalog.resolution['planning_mode'] == 'conservative':
+            _limit(result)
+            return result
 
     resources = manifest.get('resources', [])
     models = {r['unique_id'] for r in resources if r.get('resource_type') == 'model' and r.get('package_name') == project.name}
@@ -118,6 +122,8 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
                 result['evidence'][a['asset_id']], catalog.config, business) for a in request['assets']}
     for asset in request['assets']:
         identifier = asset['asset_id']
+        if identifier in withheld:
+            continue
         context = contexts[identifier]
         decision = select_decision(decisions, context, asset, contexts, assets_by_id)
         messages = {'incomplete': 'Explicitly select every related asset before reusing this design decision.', 'stale': 'Review the saved design choice against changed evidence before reusing it.',
@@ -209,15 +215,31 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
         for fk in claim['value']:
             target = fk['target_asset']
             relationship = {**deepcopy(fk), 'asset_id': identifier, 'provenance': deepcopy(claim['provenance']),
-                            'status': 'unresolved', 'cardinality': 'unverified', 'target_key': 'unknown'}
+                            'status': 'unresolved', 'cardinality': 'unverified', 'target_key': 'unknown',
+                            'type_assessments': [], 'warnings': []}
             result['relationships'].append(relationship)
             if not set(fk['columns']) <= columns:
                 question('relationship_columns_missing', 'Reconcile relationship columns with the source column metadata.', identifier, target_asset=target)
+            elif target in withheld:
+                relationship['status'] = 'blocked_conflict'
+                question('catalog_conflict', 'Resolve conflicting target declarations before reviewing this relationship.', identifier, target_asset=target)
             elif target not in entities:
                 question('select_relationship_target', 'Explicitly select the target asset to inspect this declared relationship.', identifier, target_asset=target)
             elif not set(fk['target_columns']) <= entities[target][1]:
                 question('relationship_columns_missing', 'Reconcile relationship columns with the target column metadata.', identifier, target_asset=target)
             else:
+                source_claim = result['evidence'][identifier]['selected']['columns']
+                target_claim = result['evidence'][target]['selected']['columns']
+                source_types = {c['name']: c.get('type') for c in source_claim['value']}
+                target_types = {c['name']: c.get('type') for c in target_claim['value']}
+                for source_column, target_column in zip(fk['columns'], fk['target_columns']):
+                    assessment = {**assess_types(source_types[source_column], target_types[target_column], catalog.resolution['type_compatibility']),
+                                  'source_column': source_column, 'target_column': target_column,
+                                  'source_provenance': deepcopy(source_claim['provenance']),
+                                  'target_provenance': deepcopy(target_claim['provenance'])}
+                    relationship['type_assessments'].append(assessment)
+                    if assessment['severity'] == 'warning':
+                        relationship['warnings'].append({'code': 'relationship_type_mismatch', **deepcopy(assessment)})
                 relationship['status'] = 'declared_endpoints_valid'
                 relationship['target_key'] = 'matches_declared_primary_key' if set(fk['target_columns']) == set(entities[target][2]) else 'not_established'
                 question('confirm_relationship', 'Confirm relationship meaning, cardinality, optionality and temporal alignment before joining.', identifier, target_asset=target, columns=deepcopy(fk['columns']), target_columns=deepcopy(fk['target_columns']))

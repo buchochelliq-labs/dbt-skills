@@ -38,6 +38,24 @@ class DesignDecisionProposalTests(unittest.TestCase):
         self.assertEqual(plan['entities'][0]['grain']['basis'], 'recorded_design_decision')
         self.assertIn('functional_dependencies', self.fixture.codes(result['planning']))
 
+    def test_local_update_create_accept_and_unchanged_replacement(self):
+        from dbt_skills.local_context_updates import accept_update
+        result = self.propose()
+        proposal = result['local_update']
+        self.assertIsNone(proposal['base'])
+        accepted = accept_update(self.root, 'local-decisions.json', proposal,
+                                 accepted_digest=proposal['proposal_sha256'])
+        self.assertEqual(accepted['status'], 'saved')
+        loaded = load_design_decisions(self.root / 'local-decisions.json')
+        self.request['replace_record_id'] = 'customer_design'
+        unchanged = self.propose(loaded)
+        self.assertEqual(unchanged['status'], 'pending_review')
+        self.assertIsNone(unchanged['local_update'])
+        self.request['record']['rationale'] = 'Revised rationale, same scope.'
+        changed = self.propose(loaded)
+        self.assertEqual(changed['local_update']['base'], loaded['provenance'])
+        self.assertEqual(changed['local_update']['proposed_document'], changed['proposed_document'])
+
     def test_existing_match_requires_explicit_replacement(self):
         decisions = self.fixture.save([self.fixture.record()])
         result = self.propose(decisions)

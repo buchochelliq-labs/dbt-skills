@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "providers"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "providers": {"type": "array", "minItems": 1, "maxItems": 8, "items": {"type": "object", "required": ["id", "type"], "properties": {"id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"}, "type": {"enum": ["file", "unity_catalog", "openmetadata"]}}}},
+    "cache": {"type": "object"},
+    "resolution": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "planning_mode": {"enum": ["conservative", "partial"], "default": "conservative"},
+        "type_compatibility": {"enum": ["compatible", "exact"], "default": "compatible"},
+        "provider_priority": {"type": "object", "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "order": {"type": "array", "maxItems": 8, "default": [], "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"}}
+          },
+          "description": "When enabled, order must contain every configured provider ID exactly once. Disabled order has no effect. Runtime validates this cross-field constraint."
+        }
+      }
+    }
+  }
+}
