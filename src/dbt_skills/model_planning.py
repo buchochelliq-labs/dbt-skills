@@ -4,7 +4,7 @@ from copy import deepcopy
 import json
 import re
 
-from .metadata_types import assess_types
+from .metadata_types import assess_types, assess_native_types
 from .business_context import load_business_context, validate_business_context
 from .catalog import CatalogError, FIELDS, _document, load_catalog
 from .design_decisions import decision_context, select_decision, answer_identity, validate_decisions, load_design_decisions
@@ -237,6 +237,11 @@ def plan_model(project, policy, catalog, request, *, snapshot=None, decisions=No
                                   'source_column': source_column, 'target_column': target_column,
                                   'source_provenance': deepcopy(source_claim['provenance']),
                                   'target_provenance': deepcopy(target_claim['provenance'])}
+                    assessment['native_type_evidence'] = assess_native_types(
+                        deepcopy(next(c.get('type_descriptor') for c in source_claim['value'] if c['name'] == source_column)),
+                        deepcopy(next(c.get('type_descriptor') for c in target_claim['value'] if c['name'] == target_column)))
+                    if assessment['native_type_evidence']['severity'] == 'warning':
+                        assessment['severity'] = 'warning'
                     relationship['type_assessments'].append(assessment)
                     if assessment['severity'] == 'warning':
                         relationship['warnings'].append({'code': 'relationship_type_mismatch', **deepcopy(assessment)})

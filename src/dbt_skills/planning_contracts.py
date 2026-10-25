@@ -101,3 +101,99 @@ def inlined_schema(model):
 PlanInput = Annotated[object, WithJsonSchema(inlined_schema(ModelPlanRequest))]
 DecisionInput = Annotated[object, WithJsonSchema(inlined_schema(ModelProposeDecisionRequest))]
 BusinessInput = Annotated[object, WithJsonSchema(inlined_schema(BusinessContextProposeRequest))]
+
+
+class RecordsSearchRequest(RequestModel):
+    kind: Literal['concepts', 'relationships', 'decisions', 'mappings']
+    record_id: str = Field(default=None, min_length=1, max_length=256)
+    text: str = Field(default=None, min_length=1, max_length=256)
+    scope: dict[AssetId, Annotated[str, Field(min_length=1,max_length=256)]] = Field(default_factory=dict,max_length=32)
+    status: Literal['proposed','reviewed'] = None
+    offset: int = Field(default=0,ge=0,le=200000)
+    limit: int = Field(default=20,ge=1,le=20)
+
+
+class ResolutionPriority(RequestModel):
+    enabled: bool = False
+    order: list[AssetId] = Field(default_factory=list,max_length=8)
+
+
+class ResolutionSettings(RequestModel):
+    planning_mode: Literal['conservative','partial'] = 'conservative'
+    type_compatibility: Literal['compatible','exact'] = 'compatible'
+    provider_priority: ResolutionPriority = Field(default_factory=ResolutionPriority)
+
+
+class ResolutionPreviewRequest(RequestModel):
+    asset_ids: list[AssetId] = Field(min_length=1,max_length=8)
+    fields: list[Literal['relation','columns','primary_key','foreign_keys']] = Field(min_length=1,max_length=4)
+    settings: ResolutionSettings
+
+
+class DiffRequest(RequestModel):
+    before: str = Field(min_length=32,max_length=32)
+    after: str = Field(min_length=32,max_length=32)
+    asset_ids: list[AssetId] = Field(default=None,max_length=8)
+    record_ids: list[AssetId] = Field(default=None,max_length=32)
+    offset: int = Field(default=0,ge=0,le=200000)
+    limit: int = Field(default=20,ge=1,le=20)
+
+
+class LocalUpdatePayload(RequestModel):
+    schema_version: Literal[1]
+    base: dict[str,str] | None
+    proposed_document: dict
+    review_diff: str = Field(max_length=1048576)
+    proposal_sha256: str = Field(pattern='^[a-f0-9]{64}$')
+
+
+class UpdateReviewRequest(RequestModel):
+    proposal: LocalUpdatePayload
+    rebase: bool = False
+
+
+class MappingRequest(RequestModel):
+    id: AssetId
+    record_ids: list[AssetId] = Field(min_length=1,max_length=16)
+    asset_id: AssetId
+    columns: list[Column] = Field(default_factory=list,max_length=32)
+    meaning: Literal['represents','representation_equivalence','relationship_evidence']
+    scope: dict[Column, Annotated[str,Field(min_length=1,max_length=256)]] = Field(max_length=32)
+    rationale: str = Field(min_length=1,max_length=4096)
+    recorded_by: str = Field(min_length=1,max_length=256)
+    recorded_at: str = Field(max_length=64)
+    supporting_evidence: list[Annotated[str,Field(min_length=1,max_length=1024)]] = Field(min_length=1,max_length=16)
+    alternatives: list[AssetId] = Field(default_factory=list,max_length=8)
+    replace_record_id: AssetId = None
+
+
+class ImpactRequest(RequestModel):
+    asset_ids: list[AssetId] = Field(min_length=1,max_length=8)
+    columns: list[Column] = Field(default_factory=list,max_length=32)
+    record_ids: list[AssetId] = Field(default_factory=list,max_length=32)
+    change: str = Field(min_length=1,max_length=2048)
+    offset: int = Field(default=0,ge=0,le=200000)
+    limit: int = Field(default=20,ge=1,le=20)
+
+
+SearchInput = Annotated[object, WithJsonSchema(inlined_schema(RecordsSearchRequest))]
+PreviewInput = Annotated[object, WithJsonSchema(inlined_schema(ResolutionPreviewRequest))]
+DiffInput = Annotated[object, WithJsonSchema(inlined_schema(DiffRequest))]
+ReviewInput = Annotated[object, WithJsonSchema(inlined_schema(UpdateReviewRequest))]
+MappingInput = Annotated[object, WithJsonSchema(inlined_schema(MappingRequest))]
+ImpactInput = Annotated[object, WithJsonSchema(inlined_schema(ImpactRequest))]
+
+
+def validate_request(model, value):
+    """Discard pydantic's input-bearing diagnostics at the adapter boundary."""
+    from .context_limits import check_bounds
+    try:
+        check_bounds(value)
+        # JSON schema advertises contracts; strict runtime validation forbids coercion.
+        result = model.model_validate(value, strict=True).model_dump(exclude_none=True)
+        if model is UpdateReviewRequest:
+            from copy import deepcopy
+            result['proposal'] = deepcopy(value['proposal'])
+        return result
+    except (ValueError, TypeError, RecursionError):
+        raise ValueError('Invalid bounded review request') from None

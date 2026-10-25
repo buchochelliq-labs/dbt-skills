@@ -106,3 +106,34 @@ Success returns `status: saved`, the document path and SHA256, and
 After success, call `modelling_refresh`, discard the old context ID, and read back
 the updated record before claiming persistence. A save does not prove business
 meaning, authorize broader changes or authenticate supplied review status.
+
+## Search and review before operator acceptance
+
+`context_records_search(context_id, request)` supports `kind` values `concepts`,
+`relationships`, `decisions`, and `mappings`; optional exact `record_id`, bounded
+`text`, exact subset `scope`, and `status` (`proposed`/`reviewed`). Follow
+`next_offset`; pages have at most 20 records and offset at most 200000. Each result
+includes its pinned file revision, locator and unverified freshness information.
+This surface searches selected local context only; it does not implicitly search
+an optional UOL or promote supplied review status into authenticated approval.
+Decision/mapping evidence requires current catalog scope/provider access.
+
+An identical `business_context_propose` replacement returns `status: unchanged`,
+an empty patch and no save payload. Keep the existing attribution and timestamp;
+do not manufacture an edit to force a proposal.
+
+`context_update_review` takes `request: {"proposal": <local_update>, "rebase":
+false}`. Its bounded statuses are `ready`, `unchanged`, `stale`, and `invalid`.
+It rechecks the selected current file, exact payload digest and review diff.
+With `rebase: true`, an exact retained base permits a three-way record merge:
+unrelated edits are preserved; competing edits to one record return
+`same_record_conflict`. A `rebase_available` result contains a new
+`rebased_update` and requires fresh explicit acceptance of its new digest. A
+missing/evicted base cannot be safely rebased. The tool never writes or approves.
+
+The operator CLI retains the compatibility error `code:
+context_update_not_saved` and adds a bounded `reason`: `stale_base`,
+`digest_mismatch`, `target_conflict`, `write_failure`, or `invalid_proposal`.
+It never includes raw exceptions or document excerpts. A stale/different
+proposal requires fresh review; operator acceptance of the exact digest remains
+the only save boundary. Refresh and read back after a successful save.

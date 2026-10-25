@@ -174,4 +174,4 @@ class LocalUpdateTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)['status'], 'saved')
         result = subprocess.run(args, capture_output=True, text=True)
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(json.loads(result.stdout), {'status': 'error', 'code': 'context_update_not_saved'})
+        self.assertEqual(json.loads(result.stdout), {'status': 'error', 'code': 'context_update_not_saved', 'reason': 'stale_base'})

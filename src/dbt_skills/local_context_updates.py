@@ -22,7 +22,10 @@ from .design_decisions import validate_decisions
 
 
 class ContextUpdateError(ValueError):
-    """Static failure diagnostic, safe to return without input details."""
+    """Static compatibility code plus a bounded actionable reason."""
+    def __init__(self, reason='invalid_proposal'):
+        self.reason = reason if reason in {'invalid_proposal', 'stale_base', 'digest_mismatch', 'target_conflict', 'write_failure'} else 'invalid_proposal'
+        super().__init__('context_update_not_saved')
 
 
 def _canonical(value):
@@ -75,7 +78,7 @@ def prepare_update(loaded, document):
         check_bounds(proposal)
         return proposal
     except (ValueError, TypeError, KeyError, OSError, RecursionError):
-        raise ContextUpdateError('context_update_not_saved') from None
+        raise ContextUpdateError() from None
 
 
 def _target(root, selected):
@@ -111,6 +114,7 @@ def accept_update(root, selected, proposal, *, accepted_digest):
     """Save only an exact reviewed proposal to an operator-selected project path."""
     lock_fd = None
     lock_path = temporary = None
+    reason = 'digest_mismatch'
     try:
         check_bounds(proposal)
         if (not isinstance(proposal, dict) or set(proposal) != {'schema_version', 'base', 'proposed_document', 'review_diff', 'proposal_sha256'} or
@@ -119,16 +123,21 @@ def accept_update(root, selected, proposal, *, accepted_digest):
                 proposal['proposal_sha256'] != accepted_digest or
                 _digest({k: v for k, v in proposal.items() if k != 'proposal_sha256'}) != accepted_digest):
             raise ValueError
+        reason = 'target_conflict'
         target = _target(root, selected)
         lock_path = target.with_name(target.name + '.lock')
         lock_fd = os.open(lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        reason = 'invalid_proposal'
         current = _current(target)
+        reason = 'stale_base'
         if proposal['base'] != (current['provenance'] if current else None):
             raise ValueError
+        reason = 'invalid_proposal'
         # Reconstruct the complete payload from the current raw file. A rehashed
         # fake diff or redirected base must not pass merely by knowing SHA256.
         if prepare_update(current, proposal['proposed_document']) != proposal:
             raise ValueError
+        reason = 'write_failure'
         mode = stat.S_IMODE(target.stat().st_mode) if current else 0o600
         fd, temporary = tempfile.mkstemp(prefix='.' + target.name + '.', dir=target.parent)
         raw = (json.dumps(proposal['proposed_document'], sort_keys=True, indent=2, ensure_ascii=True, allow_nan=False) + '\n').encode()
@@ -143,6 +152,7 @@ def accept_update(root, selected, proposal, *, accepted_digest):
         _target(root, selected)
         if current:
             if hashlib.sha256(_raw(target)).hexdigest() != current['provenance']['sha256']:
+                reason = 'stale_base'
                 raise ValueError
             os.replace(temporary, target)
             temporary = None
@@ -165,7 +175,7 @@ def accept_update(root, selected, proposal, *, accepted_digest):
         return {'status': 'saved', 'document': str(target), 'sha256': hashlib.sha256(raw).hexdigest(),
                 'refresh_required': True, 'directory_synced': directory_synced}
     except (ValueError, TypeError, KeyError, OSError, RecursionError):
-        raise ContextUpdateError('context_update_not_saved') from None
+        raise ContextUpdateError(reason) from None
     finally:
         if temporary is not None:
             try:
@@ -195,8 +205,8 @@ def main(argv=None):
         result = accept_update(args.project_dir, args.target, proposal, accepted_digest=args.accept_sha256)
         print(json.dumps(result))
         return 0
-    except (ValueError, OSError, RuntimeError, TypeError, KeyError):
-        print(json.dumps({'status': 'error', 'code': 'context_update_not_saved'}))
+    except (ValueError, OSError, RuntimeError, TypeError, KeyError) as error:
+        print(json.dumps({'status': 'error', 'code': 'context_update_not_saved', 'reason': error.reason if isinstance(error, ContextUpdateError) else 'invalid_proposal'}))
         return 1
 
 

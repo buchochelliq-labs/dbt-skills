@@ -309,3 +309,70 @@ the proposal file contains **only `local_update`**, not the whole response or ju
 the proposed document. An answer or proposal request is not permission to save.
 After explicit acceptance, refresh MCP and read back before claiming persistence.
 No MCP write/accept tool is introduced, and local decisions do not promote standards.
+
+## Snapshot review, explicit mappings and impact
+
+The modelling MCP exposes six read-only review tools with typed `request`
+objects; none accepts a filesystem path, saves local context, executes SQL, or
+reads data rows. Discover the advertised schemas for exact fields.
+
+- `modelling_context_diff`: `before` and `after` retained context IDs, optional
+  `asset_ids`/`record_ids`, and `offset`/`limit`. Reports added/removed/changed
+  fields, provenance, conservative affected-decision candidates, and unknown
+  catalog coverage. Includes policy, proposals, business context, design
+  decisions, manifest metadata and observed catalog facts. Eight process-local
+  snapshots are retained; unavailable/evicted IDs return `snapshot_not_retained`.
+  Up to 32 explicitly observed catalog assets fit each bounded snapshot; resolve
+  or plan against an asset before refreshing to retain its evidence. Refresh
+  alone does not query providers. Historical IDs are evidence only: current
+  scope/config/provider checks still gate every historical asset. A denial/error
+  clears the entire historical comparison. Refresh IDs never revive old planning
+  authorization. Pages contain at most 20 changes, offset at most 200000.
+- `catalog_resolution_preview`: compare settings as described in
+  [catalog guidance](CATALOG.md); the proposed settings are never applied.
+- `context_update_review` and `context_records_search`: review and locate local
+  context as described in [business context guidance](BUSINESS_CONTEXT.md).
+- `metadata_mapping_propose`: explicitly select concept/relationship `record_ids`,
+  `asset_id`, optional `columns`, exact nonempty `scope`, `meaning` (`represents`,
+  `representation_equivalence`, or `relationship_evidence`), rationale,
+  attribution, timestamp, `supporting_evidence` and optional alternative asset
+  IDs. Requires selected business and design-decisions files, current metadata
+  and matching local-record scopes. Returns an unverified `pending_review`
+  mapping plus the ordinary digest-bound local update. Mappings are typed
+  `record_type: metadata_mapping` records in the existing reviewed decision
+  document, with evidence fingerprints and retained alternatives. They never
+  supply planner grain/history choices or establish equivalence automatically.
+  Existing IDs require matching `replace_record_id`. UOL is optional; no second
+  graph store is created. Only explicit operator digest acceptance can save.
+- `model_change_impact`: select `asset_ids`, optional `columns` and `record_ids`,
+  and a bounded `change` description. Reports direct/related decision candidates
+  and known downstream manifest resource dependencies. Follow lineage pagination.
+  `column_lineage` is explicitly `unknown`; missing evidence never establishes
+  zero impact. Names, declared keys and conceptual relationships do not create
+  lineage edges or joins. Impact is conservative review evidence, not execution.
+
+All requests/results and retained snapshots use existing 1 MiB/structural
+bounds. Results may be unavailable when selected documents or evidence exceed
+those limits; narrow the context rather than bypassing validation. Retention
+ends when the server restarts. Local file freshness is explicit; remote live
+permission revocation still depends on provider/cache behavior and is not proven
+by a successful metadata response.
+
+Historical asset filters also restrict decision/mapping contents and affected
+IDs. An explicit empty asset list requests business/policy-only evidence and
+omits decision, catalog and manifest metadata. An omitted filter includes all
+retained decisions, including snapshots with no observed catalog facts. Every
+exposed decision/mapping requires current access to its anchor, related contexts,
+alternative assets and semantic-answer targets. Search checks the records on the
+returned page; impact checks every affected record, including explicit record-ID
+selections. Review/rebase and mapping proposal payloads check the complete
+returned decision document. Any linked denial/error clears the entire response.
+Diff/impact offsets allow 0–200000, covering the bounded traversal and manifest
+edge limits; pages remain at most 20 entries. Impact's `resource_ids` summary is
+bounded to 128 IDs and explicitly reports `resource_ids_total` and
+`resource_ids_truncated`; its paginated lineage is independently complete within
+the selected manifest evidence.
+Authorization for complete review diffs covers removed/replaced baseline records
+as well as proposed records. Rebase checks both the retained original base and
+the current document used as the new baseline; dropping an old restricted link
+from the proposed document cannot authorize disclosure of its previous evidence.

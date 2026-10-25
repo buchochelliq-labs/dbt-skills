@@ -163,6 +163,13 @@ def _document(path):
 
 
 def _validate_facts(facts):
+    from .metadata_types import validate_descriptor
+    for column in facts.get("columns", []):
+        if isinstance(column, dict) and "type_descriptor" in column:
+            try:
+                validate_descriptor(column["type_descriptor"])
+            except ValueError:
+                raise CatalogError("Invalid bounded native type descriptor") from None
     if not Draft202012Validator(_FACTS).is_valid(facts):
         raise CatalogError('Unsupported or invalid catalog metadata')
     if 'columns' in facts:
@@ -351,7 +358,8 @@ class CatalogResolver:
         result = {'asset_id': asset_id, 'status': 'partial', 'selected': selected, 'claims': claims,
                   'missing': list(fields), 'conflicts': conflicts, 'resolved_conflicts': [], 'unresolved_conflicts': [], 'attempts': attempts,
                   'unqueried': [p.id for p in providers],
-                  'selection': 'First configured claim per fact; conflicts require clarification',
+                  'effective_policy': deepcopy(self.resolution),
+                  'selection': ('First claim in explicit provider priority; all encountered claims retained' if priority['enabled'] else 'First configured claim per fact; conflicts require clarification'),
                   'limitations': ['Unqueried providers imply neither agreement nor disagreement',
                                   'Declared keys and relationships are not proof of enforcement or normal form']}
         for provider in providers:

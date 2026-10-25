@@ -89,6 +89,73 @@
                         "boolean",
                         "null"
                       ]
+                    },
+                    "type_descriptor": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "schema_version": {
+                          "const": 1
+                        },
+                        "native": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "family": {
+                          "enum": [
+                            "string",
+                            "int64",
+                            "float64",
+                            "decimal",
+                            "boolean",
+                            "date",
+                            "timestamp",
+                            "binary",
+                            "array",
+                            "map",
+                            "struct",
+                            "unknown"
+                          ]
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "precision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 65535
+                            },
+                            "scale": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 65535
+                            },
+                            "length": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 65535
+                            }
+                          }
+                        },
+                        "children": {
+                          "type": "array",
+                          "maxItems": 32,
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "name": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+                        }
+                      },
+                      "required": [
+                        "schema_version",
+                        "native",
+                        "family"
+                      ]
                     }
                   },
                   "required": [

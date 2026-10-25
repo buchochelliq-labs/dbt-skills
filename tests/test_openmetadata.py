@@ -14,7 +14,7 @@ from dbt_skills.catalog import CatalogError, load_catalog, CatalogResolver, File
 TABLE = {'name': 'customers', 'fullyQualifiedName': 'service.demo.xyz.customers',
          'id': '12345678-1234-1234-1234-123456789abc',
          'columns': [{'name': 'customer_id', 'dataType': 'BIGINT', 'constraint': 'NOT_NULL',
-                      'description': 'PRIVATE', 'dataTypeDisplay': 'PRIVATE'}],
+                      'description': 'PRIVATE', 'dataTypeDisplay': 'BIGINT'}],
          'sampleData': {'rows': [['PRIVATE']]}, 'description': 'PRIVATE', 'schemaDefinition': 'PRIVATE'}
 
 
@@ -51,7 +51,7 @@ class OpenMetadataTests(unittest.TestCase):
             result = resolver.resolve('customers', ['relation', 'columns'])
             self.assertEqual(result['status'], 'complete')
             self.assertEqual(result['selected']['columns']['value'],
-                             [{'name': 'customer_id', 'type': 'int64', 'nullable': False}])
+                             [{'name': 'customer_id', 'type': 'int64', 'nullable': False, 'type_descriptor':{'schema_version':1,'native':'BIGINT','family':'int64'}}])
             self.assertNotIn('PRIVATE', json.dumps(result))
             self.assertNotIn('test-token', json.dumps(result))
             provenance = result['selected']['columns']['provenance']
@@ -198,8 +198,9 @@ class OpenMetadataTests(unittest.TestCase):
         with patch('urllib.request.OpenerDirector.open', return_value=io.BytesIO(json.dumps(table).encode())):
             result = first.fetch('customers', ['columns'])
         self.assertEqual(result.status, 'available')
-        self.assertEqual(result.claims[0].value, [{'name': 'a', 'type': 'unknown', 'nullable': None},
+        self.assertEqual([{k:v for k,v in c.items() if k!='type_descriptor'} for c in result.claims[0].value], [{'name': 'a', 'type': 'unknown', 'nullable': None},
             {'name': 'b', 'type': 'string', 'nullable': True}, {'name': 'c', 'type': 'int64', 'nullable': False}])
+        self.assertEqual([c['type_descriptor']['native'] for c in result.claims[0].value], ['UNRECOGNIZED','VARCHAR','INT'])
         self.entry['assets']['customers'] = 'other.demo.xyz.customers'
         second = self.load().providers[0]
         self.assertNotEqual(first.project_bindings(), second.project_bindings())
