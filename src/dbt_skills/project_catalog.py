@@ -151,6 +151,8 @@ class ProjectCatalog(CatalogResolver):
                 def fetch(self, asset_id, fields):
                     return ProviderResult('denied')
             result = CatalogResolver([Denied()]).resolve(asset_id, fields)
+            result['effective_policy'] = deepcopy(self.resolution)
+            result['selection'] = ('First claim in explicit provider priority; all encountered claims retained' if self.resolution['provider_priority']['enabled'] else 'First configured claim per fact; conflicts require clarification')
             result['scope_reason'] = 'conflicting_bindings' if asset_id in self.blocked else 'outside_project'
             return result
         return super().resolve(asset_id, fields)

@@ -47,7 +47,7 @@ class ModellingMCPTests(unittest.TestCase):
             async with self.client() as client:
                 listed = await client.list_tools()
                 tools = {t.name: t for t in listed.tools}
-                self.assertEqual(set(tools), {"modelling_context", "modelling_refresh", "modelling_rules", "modelling_infer", "modelling_render", "modelling_compare", "modelling_propose"})
+                self.assertEqual(set(tools), {"modelling_context", "modelling_refresh", "modelling_rules", "modelling_infer", "modelling_render", "modelling_compare", "modelling_propose", "modelling_context_diff", "catalog_resolution_preview", "context_update_review", "context_records_search", "metadata_mapping_propose", "model_change_impact"})
                 self.assertTrue(all(t.annotations.read_only_hint for t in tools.values()))
                 self.assertTrue(all(not t.annotations.destructive_hint for t in tools.values()))
                 context = (await client.call_tool("modelling_context", {})).structured_content
@@ -110,7 +110,7 @@ class ModellingMCPTests(unittest.TestCase):
     def test_legacy_handshake_and_modelling_rules(self):
         async def exercise():
             async with self.client(mode="legacy") as client:
-                self.assertEqual(len((await client.list_tools()).tools), 7)
+                self.assertEqual(len((await client.list_tools()).tools), 13)
                 key = (await client.call_tool("modelling_context", {})).structured_content["context_id"]
                 rules = (await client.call_tool("modelling_rules", {"context_id": key, "section": "modelling"})).structured_content
                 self.assertEqual(rules["rules"][0]["normal_form"], "4NF")

@@ -40,3 +40,8 @@ through a human-owned context file. The agent can use definitions, rationale and
 provenance to reason about the complete data model without requiring UOL or a catalog.
 
 Catalog context supports [bounded local caching](docs/CATALOG_CACHE.md), including optional encrypted persistence and no metadata TTL.
+
+Read-only review tools support retained context diffs, resolution previews,
+local record search, digest-bound update review/rebase, explicit semantic mapping
+proposals and conservative change impact. See [model planning](docs/MODEL_PLANNING.md)
+for scope, retention, unknown lineage and operator-acceptance boundaries.

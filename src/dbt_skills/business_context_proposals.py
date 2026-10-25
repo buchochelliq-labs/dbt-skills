@@ -35,6 +35,8 @@ def prepare_business_update(loaded, request):
             records.append(deepcopy(record))
             patch = [{'op': 'add', 'path': f'/{section}/-', 'value': deepcopy(record)}]
         validate_business_context(document)
+        if document == loaded['document']:
+            return {'status': 'unchanged', 'business_context_patch': [], 'limitations': ['No changes or save payload; retain existing attribution and timestamps']}
         result = {'status': 'pending_review', 'proposed_document': document, 'business_context_patch': patch,
                   'local_update': prepare_update(loaded, document),
                   'review_requirements': ['Review the full scoped record, diff and exact proposal digest before explicit operator acceptance',

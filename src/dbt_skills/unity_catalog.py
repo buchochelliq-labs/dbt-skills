@@ -10,6 +10,8 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import build_opener, HTTPRedirectHandler, Request
 
+from .metadata_types import native_descriptor
+
 from .catalog import (CatalogError, Claim, ProviderResult, _identifier, _fields,
                       _search_args, _validate_facts, _pairs, _MAX_BYTES)
 
@@ -172,6 +174,8 @@ class UnityCatalogProvider:
                     raise ValueError()
                 facts['columns'] = [{'name': c['name'], 'type': _TYPES.get(c.get('type_name'), 'unknown'),
                                      'nullable': c.get('nullable')} for c in doc['columns']]
+            for column, upstream in zip(facts.get('columns', []), doc.get('columns', [])):
+                column['type_descriptor'] = native_descriptor(upstream.get('type_text', upstream.get('type_name', 'unknown')), column['type'])
             _validate_facts(facts)
             retrieved = datetime.now(timezone.utc).isoformat()
             revision = _digest({'table_id': table_id, 'facts': facts})

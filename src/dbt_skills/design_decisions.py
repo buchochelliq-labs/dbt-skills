@@ -68,6 +68,12 @@ def validate_decisions(document):
             raise ValueError
         ids = set()
         for record in records:
+            if isinstance(record, dict) and record.get('record_type') == 'metadata_mapping':
+                validate_mapping(record)
+                if record['id'] in ids:
+                    raise ValueError
+                ids.add(record['id'])
+                continue
             if not isinstance(record, dict) or set(record) - {'answers', 'related_contexts'} != {'id', 'intent', 'asset_id', 'scope', 'grain', 'history', 'rationale', 'recorded_by', 'recorded_at', 'evidence'}:
                 raise ValueError
             if 'answers' in record:
@@ -148,7 +154,7 @@ def select_decision(decisions, context, asset, contexts=None, assets=None):
     if decisions is None:
         return {'status': 'none'}
     matches = [(i, r) for i, r in enumerate(decisions['document']['records'])
-               if all(r[k] == context[k] for k in ('intent', 'asset_id', 'scope'))]
+               if r.get('record_type') != 'metadata_mapping' and all(r[k] == context[k] for k in ('intent', 'asset_id', 'scope'))]
     if not matches:
         return {'status': 'none'}
     if len(matches) > 1:
@@ -174,3 +180,20 @@ def select_decision(decisions, context, asset, contexts=None, assets=None):
                 break
     return {'status': status, 'record': deepcopy(record),
             'provenance': {**decisions['provenance'], 'locator': f'/records/{index}'}}
+
+
+def validate_mapping(record):
+    """Typed scope-bound mapping assertions share the reviewed decision store."""
+    from .planning_contracts import MappingRequest, validate_request
+    required = {'record_type','status','evidence'}
+    if not required <= set(record) or record['record_type'] != 'metadata_mapping' or record['status'] not in ('proposed','reviewed'):
+        raise ValueError('Invalid mapping record')
+    request = {k:v for k,v in record.items() if k not in required}
+    if 'replace_record_id' in request:
+        raise ValueError('Invalid mapping record')
+    validate_request(MappingRequest, request)
+    if not _timestamp(record['recorded_at']) or not record['scope'] or len(set(record['record_ids'])) != len(record['record_ids']) or len(set(record['columns'])) != len(record['columns']):
+        raise ValueError('Invalid mapping record')
+    evidence = record['evidence']
+    if not isinstance(evidence, dict) or set(evidence) != {'business_context_sha256','catalog_facts_sha256'} or any(not isinstance(v,str) or re.fullmatch('[a-f0-9]{64}',v) is None for v in evidence.values()):
+        raise ValueError('Invalid mapping record')

@@ -62,7 +62,7 @@ def prepare_design_decision(project, policy, catalog, request, *, decisions=None
     validate_decisions({'schema_version': 1, 'kind': 'design_decisions', 'records': [record]})
     document = deepcopy(decisions['document']) if decisions else {'schema_version': 1, 'kind': 'design_decisions', 'records': []}
     records = document['records']
-    matches = [(i, r) for i, r in enumerate(records) if all(r[k] == context[k] for k in ('intent', 'asset_id', 'scope'))]
+    matches = [(i, r) for i, r in enumerate(records) if r.get('record_type') != 'metadata_mapping' and all(r[k] == context[k] for k in ('intent', 'asset_id', 'scope'))]
     selected = [(i, r) for i, r in matches if r['id'] == replacement]
     # An explicit replacement must name the sole record in this exact context.
     if (replacement is not None and (len(matches) != 1 or len(selected) != 1)) or (replacement is None and matches):

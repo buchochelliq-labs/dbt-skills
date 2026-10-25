@@ -14,7 +14,7 @@ from dbt_skills.catalog import CatalogError, load_catalog, CatalogResolver, File
 TABLE = {'catalog_name': 'demo', 'schema_name': 'xyz', 'name': 'customers',
          'full_name': 'demo.xyz.customers', 'table_id': '12345678-1234-1234-1234-123456789abc',
          'columns': [{'name': 'customer_id', 'type_name': 'LONG', 'nullable': False,
-                      'comment': 'PRIVATE', 'type_text': 'PRIVATE'}],
+                      'comment': 'PRIVATE', 'type_text': 'bigint'}],
          'properties': {'secret': 'PRIVATE'}, 'view_definition': 'PRIVATE'}
 
 
@@ -50,7 +50,7 @@ class UnityCatalogTests(unittest.TestCase):
             result = resolver.resolve('customers', ['relation', 'columns'])
             self.assertEqual(result['status'], 'complete')
             self.assertEqual(result['selected']['columns']['value'],
-                             [{'name': 'customer_id', 'type': 'int64', 'nullable': False}])
+                             [{'name': 'customer_id', 'type': 'int64', 'nullable': False, 'type_descriptor':{'schema_version':1,'native':'bigint','family':'int64'}}])
             self.assertNotIn('PRIVATE', json.dumps(result))
             self.assertNotIn('test-token', json.dumps(result))
             provenance = result['selected']['columns']['provenance']

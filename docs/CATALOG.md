@@ -199,3 +199,32 @@ Application-disabled providers stay disabled during planning.
 relationship targets marked `blocked_conflict`. Permissions still block the entire
 response. `type_compatibility` controls advisory relationship type warnings; see
 [model planning](MODEL_PLANNING.md). Neither setting executes casts or verifies joins.
+
+## Read-only resolution previews and native type evidence
+
+`catalog_resolution_preview` takes `context_id` and a typed `request` with
+`asset_ids` (1–8), `fields` and candidate `settings` in the existing resolution
+format. It reports current/proposed facts, retained conflicts, missing fields,
+unqueried providers, attempt traces and planner withholding. It never applies
+settings. A denied/error provider or out-of-project asset clears both result
+sets for the whole request. Conservative mode withholds all selected entities
+on unresolved conflict; partial mode withholds conflicted entities. Unknown
+providers imply neither agreement nor disagreement. Failed resolution outputs
+include the same effective policy used on success.
+
+The normalized column `type` enum remains unchanged. Optional `type_descriptor`
+is version 1 evidence: required `schema_version: 1`, `native` (1–1024 characters),
+`family` (the normalized enum), optional `parameters` (`precision`, `scale`,
+`length`, integers 0–65535), optional `name`, and optional `children` descriptors.
+Only these keys are allowed. Limits are four child levels, 32 children per node
+and 64 total nodes. File catalogs may supply structured nesting; Unity Catalog
+and OpenMetadata preserve their native type spelling, with decimal parameters
+when available. Native syntax is retained as untrusted evidence, not parsed into
+SQL or executed. Unknown grammar remains unverified.
+
+Planning preserves descriptors and provenance through `native_type_evidence`.
+Normalized exact matching remains a normalized-label assessment. Different
+native descriptors add a review warning even when normalized labels match;
+identical descriptors are only an `unverified_match`. This does not prove native
+equivalence, casting safety or join safety. The adapters do not promise complete
+provider-specific nested parsing.
