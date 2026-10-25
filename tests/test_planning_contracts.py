@@ -8,6 +8,7 @@ import sys
 import unittest
 
 from mcp import Client, MCPError, StdioServerParameters
+from jsonschema import Draft202012Validator
 import metadata_fixture
 from test_local_context_updates import document, concept
 
@@ -49,6 +50,52 @@ class PlanningContractTests(unittest.TestCase):
                         self.assertNotIn('PRIVATE_SENTINEL', str(caught.exception))
             async with self.client(business=False) as client:
                 self.assertNotIn('business_context_propose', {t.name for t in (await client.list_tools()).tools})
+        asyncio.run(exercise())
+
+    def test_discovered_decision_schema_validates_complete_anchor(self):
+        async def exercise():
+            async with self.client() as client:
+                tools = {t.name: t for t in (await client.list_tools()).tools}
+                validator = Draft202012Validator(tools['model_propose_decision'].input_schema)
+                key = (await client.call_tool('modelling_context', {})).structured_content['context_id']
+                valid = {'context_id': key, 'request': {
+                    'plan': {'intent': 'Review customers', 'assets': [
+                        {'asset_id': 'urn:demo:xyz:customers', 'grain': ['customer_id'], 'history': 'source_rows'},
+                        {'asset_id': 'urn:demo:xyz:orders'}]},
+                    'record': {'id': 'customer_design', 'rationale': 'Preserve source rows.',
+                               'recorded_by': 'operator', 'recorded_at': '2026-10-25T00:00:00Z'}}}
+                for history in ['source_rows', 'current', 'historical']:
+                    valid['request']['plan']['assets'][0]['history'] = history
+                    self.assertTrue(validator.is_valid(valid))
+                mutations = [
+                    ('asset_id', 123), ('asset_id', 'invalid identifier'),
+                    ('grain', False), ('grain', []), ('grain', ['bad column']),
+                    ('grain', ['customer_id', 'customer_id']), ('grain', ['x'] * 33),
+                    ('history', 'INVALID'), ('history', False),
+                    ('scope', False), ('scope', {'domain': 123}),
+                    ('arbitrary', 'PRIVATE_SENTINEL'),
+                ]
+                for field, value in mutations:
+                    invalid = copy.deepcopy(valid)
+                    invalid['request']['plan']['assets'][0][field] = value
+                    with self.subTest(field=field, value=value):
+                        self.assertFalse(validator.is_valid(invalid))
+                for field in ['asset_id', 'grain', 'history']:
+                    invalid = copy.deepcopy(valid)
+                    del invalid['request']['plan']['assets'][0][field]
+                    with self.subTest(missing=field):
+                        self.assertFalse(validator.is_valid(invalid))
+                for anchor in [123, [], None]:
+                    invalid = copy.deepcopy(valid)
+                    invalid['request']['plan']['assets'][0] = anchor
+                    with self.subTest(anchor=anchor):
+                        self.assertFalse(validator.is_valid(invalid))
+                malformed = copy.deepcopy(valid)
+                malformed['request']['plan']['assets'][0] = {
+                    'asset_id': 123, 'grain': False, 'history': 'INVALID', 'arbitrary': 'PRIVATE_SENTINEL'}
+                with self.assertRaises(MCPError) as caught:
+                    await client.call_tool('model_propose_decision', malformed)
+                self.assertNotIn('PRIVATE_SENTINEL', str(caught.exception))
         asyncio.run(exercise())
 
     def test_real_propose_cli_accept_refresh_and_read_back(self):

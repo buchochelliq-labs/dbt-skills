@@ -46,7 +46,9 @@ class DecisionRecord(RequestModel):
 
 class DecisionPlanRequest(ModelPlanRequest):
     assets: list[PlanAsset] = Field(min_length=1, max_length=8,
-        json_schema_extra={'prefixItems': [{'required': ['asset_id', 'grain', 'history']}]},
+        # Keep positional requirements in a separate branch: prefixItems next
+        # to items would exempt the anchor from the PlanAsset item schema.
+        json_schema_extra={'allOf': [{'prefixItems': [{'required': ['asset_id', 'grain', 'history']}]}]},
         description='First asset is the anchor and requires explicit grain and history; remaining assets are explicitly selected related context.')
 
 
