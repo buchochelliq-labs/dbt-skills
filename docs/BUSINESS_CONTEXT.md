@@ -61,5 +61,48 @@ decisions without business context remain compatible when no file is selected.
 
 This is a bounded file input, not a replacement ontology engine. Optional UOL and
 remote ontology sources remain separate; importing these records into UOL, mapping
-concepts to physical assets, automatic discovery and preparing business-context
-file edits are not implemented in this slice.
+concepts to physical assets and automatic discovery remain separate concerns.
+
+## Propose and explicitly accept a scoped update
+
+With `--business-context` selected, read-only `business_context_propose(context_id,
+request)` accepts `section` (`concepts` or `relationships`), a complete typed `record`,
+and optional `replace_record_id`. Replacement requires the same record ID; omitting
+it never silently updates an existing record. Endpoint IDs must already exist in
+the proposed document. Unrelated records are preserved. The pinned file must still
+match its original raw-byte digest. Request schemas are visible in MCP discovery;
+invalid requests return sanitized core errors.
+
+An answer in conversation is not permission to save. The agent should remember
+answers, offer useful durable scoped updates, and leave declined/deferred updates
+conversational. Local answers do not become catalog facts or team-wide policy.
+Persist durable rationale, not transient statements about whether saving was approved.
+
+The pending response includes `proposed_document`, a test/replace or add
+`business_context_patch`, and `local_update`. Review the complete record and
+`local_update.review_diff`. Save **only the `local_update` object** to a proposal JSON
+file, then explicitly accept its exact `proposal_sha256` as the operator:
+
+```sh
+python -m dbt_skills.local_context_updates --project-dir /path/to/project \
+  --target business.json --proposal /path/to/review.json \
+  --accept-sha256 EXACT_REVIEWED_PROPOSAL_SHA256
+```
+
+The operator CLI supports business context and design decisions only; MCP has no
+write or accept tool and no path-taking proposal tool. Existing targets must match
+the proposal's absolute base path and raw SHA256. New targets require a null base
+and must be absent. Targets stay within the selected project, without `..` or
+symlinks. Full payload/diff reconstruction rejects tampering, stale bases and
+replay. A sibling exclusive lock coordinates writers; file fsync and atomic replace
+(or create-only link) publish the change. Existing modes are preserved; new files
+use mode 0600 where supported. `directory_synced: false` means publication succeeded
+but directory durability could not be confirmed on that platform. Protection is
+against ordinary stale/cooperating writes, not hostile external directory races.
+The digest binds content, not the identity or authority of the person accepting it.
+
+Success returns `status: saved`, the document path and SHA256, and
+`refresh_required: true`. Failure returns static `context_update_not_saved`.
+After success, call `modelling_refresh`, discard the old context ID, and read back
+the updated record before claiming persistence. A save does not prove business
+meaning, authorize broader changes or authenticate supplied review status.

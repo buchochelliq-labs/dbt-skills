@@ -253,19 +253,46 @@ class FileCatalogProvider:
                 'next_offset': offset + limit if offset + limit < len(matches) else None}
 
 
+def resolution_options(value=None, provider_ids=()):
+    value = {} if value is None else value
+    if not isinstance(value, dict) or set(value) - {'planning_mode', 'type_compatibility', 'provider_priority'}:
+        raise CatalogError('Invalid catalog resolution configuration')
+    result = {'planning_mode': 'conservative', 'type_compatibility': 'compatible',
+              'provider_priority': {'enabled': False, 'order': []}}
+    result.update(deepcopy(value))
+    priority = result['provider_priority']
+    if (result['planning_mode'] not in ('conservative', 'partial') or
+            result['type_compatibility'] not in ('compatible', 'exact') or
+            not isinstance(priority, dict) or set(priority) - {'enabled', 'order'}):
+        raise CatalogError('Invalid catalog resolution configuration')
+    priority = {'enabled': False, 'order': [], **priority}
+    order = priority['order']
+    if type(priority['enabled']) is not bool or not isinstance(order, list) or len(order) > 8:
+        raise CatalogError('Invalid provider priority')
+    for identifier in order:
+        _identifier(identifier)
+    if priority['enabled'] and (len(order) != len(set(order)) or set(order) != set(provider_ids)):
+        raise CatalogError('Enabled priority must name every configured provider exactly once')
+    result['provider_priority'] = priority
+    return result
+
+
 class CatalogResolver:
-    """First sufficient fact groups, preserving all conflicts encountered en route.
+    """First sufficient facts by default; explicit priority reads all active providers.
+
+    Both modes preserve encountered claims and conflicts.
 
     Provider plugins are trusted code. Their structured result values are validated
     here; exceptions are never returned. A denial/error withholds all partial claims.
     """
-    def __init__(self, providers: list[CatalogProvider]):
+    def __init__(self, providers: list[CatalogProvider], resolution=None):
         if not 1 <= len(providers) <= 8:
             raise CatalogError('Configure one to eight catalog providers')
         for p in providers:
             _identifier(p.id)
         if len({p.id for p in providers}) != len(providers):
             raise CatalogError('Provider IDs must be unique')
+        self.resolution = resolution_options(resolution, [p.id for p in providers])
         self.providers = tuple(providers)
         self.config = None
 
@@ -289,7 +316,7 @@ class CatalogResolver:
                 providers.append(deepcopy(info))
             except Exception:
                 providers.append({'id': provider.id, 'status': 'error', 'capabilities': []})
-        return {'config': deepcopy(self.config), 'providers': providers}
+        return {'config': deepcopy(self.config), 'providers': providers, 'resolution': deepcopy(self.resolution)}
 
     def search(self, provider_id: str, query: str, *, offset=0, limit=20):
         self._check_config()
@@ -319,13 +346,15 @@ class CatalogResolver:
         _identifier(asset_id, asset=True)
         _fields(fields)
         selected, claims, attempts, conflicts = {}, {}, [], []
+        priority = self.resolution['provider_priority']
+        providers = sorted(self.providers, key=lambda p: priority['order'].index(p.id)) if priority['enabled'] else self.providers
         result = {'asset_id': asset_id, 'status': 'partial', 'selected': selected, 'claims': claims,
-                  'missing': list(fields), 'conflicts': conflicts, 'attempts': attempts,
-                  'unqueried': [p.id for p in self.providers],
+                  'missing': list(fields), 'conflicts': conflicts, 'resolved_conflicts': [], 'unresolved_conflicts': [], 'attempts': attempts,
+                  'unqueried': [p.id for p in providers],
                   'selection': 'First configured claim per fact; conflicts require clarification',
                   'limitations': ['Unqueried providers imply neither agreement nor disagreement',
                                   'Declared keys and relationships are not proof of enforcement or normal form']}
-        for provider in self.providers:
+        for provider in providers:
             result['unqueried'].remove(provider.id)
             try:
                 response = provider.fetch(asset_id, fields)
@@ -358,7 +387,7 @@ class CatalogResolver:
                 response = ProviderResult('error')
             attempts.append({'provider': provider.id, 'status': response.status})
             if response.status in ('denied', 'error'):
-                result.update(status=response.status, selected={}, claims={}, conflicts=[], missing=list(fields))
+                result.update(status=response.status, selected={}, claims={}, conflicts=[], resolved_conflicts=[], unresolved_conflicts=[], missing=list(fields))
                 return result
             for claim in response.claims:
                 item = {'value': deepcopy(claim.value), 'provenance': deepcopy(claim.provenance)}
@@ -368,9 +397,12 @@ class CatalogResolver:
                 elif selected[claim.field]['value'] != item['value'] and claim.field not in conflicts:
                     conflicts.append(claim.field)
             result['missing'] = [f for f in fields if f not in selected]
-            if not result['missing']:
+            if not result['missing'] and not priority['enabled']:
                 break
-        result['status'] = 'conflict' if conflicts else ('partial' if result['missing'] else 'complete')
+        result['resolved_conflicts' if priority['enabled'] else 'unresolved_conflicts'] = list(conflicts)
+        if priority['enabled']:
+            result['selection'] = 'First claim in explicit provider priority; all encountered claims retained'
+        result['status'] = 'conflict' if result['unresolved_conflicts'] else ('partial' if result['missing'] else 'complete')
         return result
 
 
@@ -378,8 +410,10 @@ def load_catalog(path: Path) -> CatalogResolver:
     """Operator-selected config; JSON paths are relative to that config file."""
     path = Path(path).resolve()
     doc, revision = _document(path)
-    if not isinstance(doc, dict) or not {'schema_version', 'providers'} <= set(doc) or set(doc) - {'schema_version', 'providers', 'cache'} or type(doc['schema_version']) is not int or doc['schema_version'] != 1 or not isinstance(doc['providers'], list) or not 1 <= len(doc['providers']) <= 8:
+    if not isinstance(doc, dict) or not {'schema_version', 'providers'} <= set(doc) or set(doc) - {'schema_version', 'providers', 'cache', 'resolution'} or type(doc['schema_version']) is not int or doc['schema_version'] != 1 or not isinstance(doc['providers'], list) or not 1 <= len(doc['providers']) <= 8:
         raise CatalogError('Invalid catalog configuration')
+    if 'resolution' in doc and not isinstance(doc['resolution'], dict):
+        raise CatalogError('Invalid catalog resolution configuration')
     from .catalog_cache import cache_options, CachedProvider
     defaults = cache_options(doc.get('cache', {}))
     providers = []
@@ -401,6 +435,6 @@ def load_catalog(path: Path) -> CatalogResolver:
             providers.append(FileCatalogProvider(entry['id'], path.parent / entry['path'], entry['scope']))
         else:
             raise CatalogError('Invalid or unsupported catalog provider configuration')
-    resolver = CatalogResolver(providers)
+    resolver = CatalogResolver(providers, doc.get('resolution'))
     resolver.config = {'document': str(path), 'revision': revision}
     return resolver

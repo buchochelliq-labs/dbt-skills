@@ -111,7 +111,7 @@ class ProjectCatalog(CatalogResolver):
         self.allowed = frozenset(self.fingerprints)
         for provider in providers:
             provider.allowed = provider.allowed - self.blocked
-        super().__init__(providers)
+        super().__init__(providers, catalog.resolution)
         self.config = deepcopy(catalog.config)
         for provider in self.providers:
             binder = getattr(provider.original, 'bind_project', None)
@@ -171,4 +171,7 @@ class ProjectCatalog(CatalogResolver):
 
 
 def scope_catalog(catalog, snapshot, *, previous=None):
+    if isinstance(catalog, ProjectCatalog) and previous is None and catalog.manifest == {
+            k: snapshot.get('manifest', {}).get(k) for k in ('sha256', 'status', 'identity')}:
+        return catalog
     return ProjectCatalog(catalog, snapshot, previous)

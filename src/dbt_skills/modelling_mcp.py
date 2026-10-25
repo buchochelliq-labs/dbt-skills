@@ -14,6 +14,8 @@ from mcp import MCPError
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
+from .business_context_proposals import prepare_business_update
+from .planning_contracts import PlanInput, DecisionInput, BusinessInput
 from .catalog import CatalogError, load_catalog
 from .project_catalog import scope_catalog
 from .business_context import BusinessContextError, load_business_context, read_business_context
@@ -198,6 +200,10 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
         def business_context(context_id: str, section: Literal["concepts", "relationships"] = "concepts", offset: int = 0, limit: int = 20) -> dict[str, object]:
             return call(context_id, lambda: {**read_business_context(state["business"], section, offset=offset, limit=limit), "context_id": context_id})
 
+        @server.tool(annotations=_READ, description="Propose a complete scoped business concept or relationship for explicit local review. Existing records require a matching replacement ID. No files are written; conversation answers are not save permission. After operator acceptance refresh and read back.")
+        def business_context_propose(context_id: str, request: BusinessInput) -> dict[str, object]:
+            return call(context_id, lambda: {**prepare_business_update(state['business'], request), 'context_id': context_id})
+
     if catalog_path is not None:
         @server.tool(annotations=_READ, description="Read a bounded page of quarantined identity mappings and configuration provenance. These assets are excluded from normal search, fetch and design context pending correction and sync.")
         def catalog_quarantine(context_id: str, offset: int = 0, limit: int = 20) -> dict[str, object]:
@@ -218,7 +224,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
         def catalog_search(context_id: str, provider_id: str, query: str = "", offset: int = 0, limit: int = 20) -> dict[str, object]:
             return call(context_id, lambda: {**state["catalog"].search(provider_id, query, offset=offset, limit=limit), "context_id": state["context_id"]})
 
-        @server.tool(annotations=_READ, description="Resolve exact asset ID facts across ordered providers. Stops at sufficiency or denial/error; preserves encountered conflicts and provenance. Keys are declarations, not proof.")
+        @server.tool(annotations=_READ, description="Resolve exact asset ID facts. Default stops at sufficiency; enabled configured priority reads all active providers in priority order and reports resolved versus unresolved conflicts. Denial/error clears facts. Preserves claims and provenance; keys are declarations, not proof.")
         def catalog_resolve(context_id: str, asset_id: str, fields: list[Literal["relation", "columns", "primary_key", "foreign_keys"]]) -> dict[str, object]:
             return call(context_id, lambda: {**state["catalog"].resolve(asset_id, fields), "context_id": state["context_id"]})
 
@@ -236,7 +242,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
                     raise DesignDecisionError("Selected design decisions changed; refresh context before planning")
 
         @server.tool(annotations=_READ, description="Prepare a pending design decision document, including optional semantic answers, and review patch from explicit choices and pinned evidence. Requires rationale and attribution; no writes or approval. Existing matching records require an explicit replacement ID.")
-        def model_propose_decision(context_id: str, request: dict[str, object]) -> dict[str, object]:
+        def model_propose_decision(context_id: str, request: DecisionInput) -> dict[str, object]:
             def run():
                 check_planning_files()
                 result = prepare_design_decision(project, state["policy"], state["catalog"], request,
@@ -245,7 +251,7 @@ def create_server(project, *, policy_path=None, proposals_path=None, catalog_pat
             return call(context_id, run, require_policy=True)
 
         @server.tool(annotations=_READ, description="Assemble review-only entity/key/relationship hypotheses and targeted design questions for selected catalog assets. Uses pinned project context and declared scoped standards; no data, SQL generation, approval or execution. Keys do not prove grain or normal form.")
-        def model_plan(context_id: str, request: dict[str, object]) -> dict[str, object]:
+        def model_plan(context_id: str, request: PlanInput) -> dict[str, object]:
             def run():
                 check_planning_files()
                 result = plan_model(project, state["policy"], state["catalog"], request, snapshot=state["snapshot"], decisions=state["design_decisions"], business=state["business"])

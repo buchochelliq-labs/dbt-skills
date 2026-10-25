@@ -167,3 +167,35 @@ automatic dbt execution; the host agent can invoke sync after artifact regenerat
 Initial reads remain lazy. Use `modelling_refresh` to discard all observations and
 retry/recheck remote metadata, including failures for unchanged assets. Delta sync
 does not revalidate unchanged remote permissions or schema.
+
+## Configurable conflict resolution
+
+The optional catalog configuration `resolution` object defaults to:
+
+```json
+{
+  "planning_mode": "conservative",
+  "type_compatibility": "compatible",
+  "provider_priority": {"enabled": false, "order": []}
+}
+```
+
+See [catalog configuration schema](../src/dbt_skills/catalog-config.schema.json),
+which is separate from the provider metadata document schema. Runtime also checks
+provider-specific options and cross-field constraints.
+
+By default, the first sufficient providers supply facts; encountered conflicts
+remain unresolved, and unqueried providers imply no agreement or disagreement.
+Disabled priority order has no effect. Enable priority with an order containing
+**every configured provider ID exactly once** to read all active providers in that
+order and select the first claim per field. Claims, provenance and conflicts remain
+visible in `resolved_conflicts` and `unresolved_conflicts`. Resolution is an operator
+selection policy, not proof of correctness. Any encountered denial/error clears all
+facts; priority cannot override project scope, scope mismatch or identity quarantine.
+Application-disabled providers stay disabled during planning.
+
+`conservative` planning stops candidate generation on unresolved catalog conflicts.
+`partial` planning returns unaffected entities and `withheld_assets`, with affected
+relationship targets marked `blocked_conflict`. Permissions still block the entire
+response. `type_compatibility` controls advisory relationship type warnings; see
+[model planning](MODEL_PLANNING.md). Neither setting executes casts or verifies joins.

@@ -276,3 +276,36 @@ previously reviewed choice. Existing single-asset records remain compatible.
 The existing explicit replacement workflow applies to the anchor's intent/asset/
 scope. Changing dependency selections requires a reviewed replacement, rather than
 silently rebinding a saved answer to another entity. CLI and MCP use the same code.
+
+## Typed requests, resolution and local acceptance
+
+MCP discovery now exposes complete nested request schemas for `model_plan` and
+`model_propose_decision`, including explicit history modes `source_rows`, `current`
+and `historical`. The first decision asset must supply grain and history. Runtime
+core validation retains static errors without echoing invalid request contents.
+
+Catalog `resolution.planning_mode` defaults to `conservative`, withholding candidates
+when unresolved catalog conflicts exist. `partial` emits unaffected candidates,
+returns `withheld_assets`, and marks relationships to withheld targets
+`blocked_conflict`. Encountered permission/provider errors still clear the whole
+response. Explicit provider priority can resolve conflicting fact selections while
+retaining every encountered claim and provenance; it never overrides identity scope.
+
+Relationships expose ordered `type_assessments` for source/target column pairs,
+selected types and both column-claim provenances. Equal recognized scalar types are
+`exact`; differing numeric types are `potentially_compatible`; cross-family types
+`require_review` (assessment value `requires_review`). Unknown and complex types
+remain `unknown`, even when their labels match. All are unverified. Compatible mode
+(default) reports numeric differences as information; exact mode warns. Cross-family
+differences warn in either mode. `warnings` includes the warning assessments with
+code `relationship_type_mismatch`. `declared_endpoints_valid` only means the named
+columns exist; it does not prove type compatibility, cardinality or safe casting.
+
+Changed successful `model_propose_decision` results also include `local_update`;
+an unchanged document has `local_update: null`. The operator may review and accept
+that payload with the same [local acceptance workflow](BUSINESS_CONTEXT.md#propose-and-explicitly-accept-a-scoped-update).
+This CLI alternative complements manually saving `proposed_document`: for the CLI,
+the proposal file contains **only `local_update`**, not the whole response or just
+the proposed document. An answer or proposal request is not permission to save.
+After explicit acceptance, refresh MCP and read back before claiming persistence.
+No MCP write/accept tool is introduced, and local decisions do not promote standards.
