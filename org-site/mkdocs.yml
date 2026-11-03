@@ -1,0 +1,68 @@
+site_name: Buchochelliq Labs
+site_description: Open-source tools from Buchochelliq Labs. Semantic code review, analytics engineering, and Rust terminal libraries.
+site_url: https://buchochelliq-labs.github.io/
+repo_url: https://github.com/buchochelliq-labs
+repo_name: buchochelliq-labs
+copyright: "© 2026 Buchochelliq Labs"
+
+theme:
+  name: material
+  icon:
+    logo: material/elephant
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/buchochelliq-labs
+
+nav:
+  - Home: index.md
+  - Projects:
+      - projects/index.md
+      - IntentumDiff: projects/intentumdiff.md
+      - OpenDataSuite: projects/open-data-suite.md
+      - dbt-skills: projects/dbt-skills.md
+      - rs-rich: projects/rs-rich.md
+      - release-kit: projects/release-kit.md
+  - All repositories: catalog.md
+  - About: about.md
